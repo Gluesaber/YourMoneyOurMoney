@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+package-lock.json
+server/prisma/migrations/
+# Docs are written by hand; Prettier would re-wrap their tables.
+docs/
+*.md
