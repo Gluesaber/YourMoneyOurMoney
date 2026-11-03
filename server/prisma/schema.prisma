@@ -1,0 +1,25 @@
+// S1-01 creates only the User model, which the session and test-login harness need.
+// S1-02 adds Account, Transaction and TransactionLine.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  isEnabled    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
