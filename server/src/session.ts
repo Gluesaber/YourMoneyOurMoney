@@ -6,6 +6,7 @@ const PgSession = connectPgSimple(session);
 export const SESSION_COOKIE_NAME = "ymom.sid";
 
 // Sessions live in Postgres (connect-pg-simple), so a server restart does not log everyone out.
+// The "session" table is created by the Prisma migrations (model Session), not by the library.
 // HTTP-only, SameSite=Lax cookie; Secure only in production. The client is same-origin in dev
 // through client/vite.config.ts's /api proxy. S1-04 documents the full lifecycle.
 export function createSessionMiddleware() {
@@ -19,7 +20,7 @@ export function createSessionMiddleware() {
   }
 
   return session({
-    store: new PgSession({ conString, tableName: "session", createTableIfMissing: true }),
+    store: new PgSession({ conString, tableName: "session", createTableIfMissing: false }),
     name: SESSION_COOKIE_NAME,
     secret,
     resave: false,
