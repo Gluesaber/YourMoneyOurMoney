@@ -18,3 +18,5 @@ coverage/
 /playwright/.cache/
 # local agent instructions
 integration-points-and-agent-instructions.md
+antigravity.md
+.agents/
