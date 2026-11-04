@@ -165,7 +165,7 @@ The system enforces 13 immutable business rules across the service layer and dat
 - **Error Handling:** If the user account was disabled during an active session, the session is rejected with 401 `UNAUTHENTICATED`.
 
 #### FR-AUTH-05: Fixed Session Expiration (24-Hour Duration)
-- **Description:** User sessions expire exactly 24 hours after login (`rolling: false`, `maxAge: 24 * 60 * 60 * 1000`). Stored sessions are managed in PostgreSQL via `connect-pg-simple`. There is no sliding/rolling inactivity extension; a session remains valid for up to 24 hours from creation unless explicitly destroyed via logout or revoked due to account deactivation.
+- **Description:** User sessions expire 24 hours after login (`rolling: false`, `maxAge: 24 * 60 * 60 * 1000`). Because `express-session` calls `req.session.touch()` on each request and `connect-pg-simple` pushes the PostgreSQL `expire` column forward (`rolling: false` only stops re-sending `Set-Cookie`), server-side absolute expiration is enforced by recording `req.session.loginAt = Date.now()` on login and having `requireUser` reject any session older than 24 hours with 401 `UNAUTHENTICATED`.
 - **Actor:** System.
 - **Outputs:** Expired sessions return 401 `UNAUTHENTICATED` upon subsequent requests.
 
@@ -455,7 +455,7 @@ The system enforces 13 immutable business rules across the service layer and dat
 ### 6.1 Security Requirements
 
 - **NFR-SEC-01 (Password Hashing):** All user passwords must be hashed using `bcryptjs` with a work factor (salt rounds) >= 10. Passwords must never be stored in plaintext, logged, or returned in any API response.
-- **NFR-SEC-02 (Session Security):** Sessions must be managed server-side in PostgreSQL using `connect-pg-simple`. Session cookies (`ymom.sid`) must be configured with `httpOnly: true`, `sameSite: 'lax'`, `rolling: false`, and `secure: true` in production environments. Sessions have an absolute lifespan of 24 hours from login (`maxAge: 24 * 60 * 60 * 1000`) with no sliding inactivity extension.
+- **NFR-SEC-02 (Session Security):** Sessions must be managed server-side in PostgreSQL using `connect-pg-simple`. Session cookies (`ymom.sid`) must be configured with `httpOnly: true`, `sameSite: 'lax'`, `rolling: false`, `maxAge: 24 * 60 * 60 * 1000`, and `secure: true` in production environments. Sessions have an absolute lifespan of 24 hours from login enforced on the server via `req.session.loginAt` in `requireUser`.
 - **NFR-SEC-03 (Data Isolation & Anti-Enumeration):** Cross-tenant data access attempts must return 404 `NOT_FOUND` rather than 403 `FORBIDDEN`, ensuring unauthorized actors cannot determine the existence of resources owned by other users.
 - **NFR-SEC-04 (Role-Based Access Enforcement):** Authorization checks must be enforced at the middleware layer before route handlers execute. Financial routes require `role === 'USER'`; administration routes require `role === 'ADMIN'`.
 
