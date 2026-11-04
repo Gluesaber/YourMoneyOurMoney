@@ -1,12 +1,13 @@
 # YourMoneyOurMoney — System-Level SDS
 
-> **Status:** draft. Sections 2–7 are the **shared contracts frozen in S1-02** — both tracks code against
-> them, and any change needs a PR reviewed by both members. Sections 1 and 8 are completed in **S1-09**.
+> **Status:** Sprint 1 baseline. Sections 2–7 are the **shared contracts frozen in S1-02** — both tracks code
+> against them, and any change needs a PR reviewed by both members. Sections 1 and 8 were added in **S1-09**.
 > Business-rule IDs (BR-xx) are defined in `docs/srs.md` (S1-03); they are quoted here for convenience.
+> The sprint-by-sprint feature allocation is in `docs/sprints/plan.md`.
 
 | § | Section | Owner issue |
 |---|---|---|
-| 1 | Architecture and stack | S1-09 |
+| 1 | Architecture, stack and UI structure | S1-09 |
 | 2 | Roles and permission matrix | S1-02 |
 | 3 | Data model | S1-02 |
 | 4 | Balance rules | S1-02 |
@@ -17,10 +18,109 @@
 
 ---
 
-## 1. Architecture and stack
+## 1. Architecture, stack and UI structure
 
-*To be completed in S1-09.* Summary: React (Vite) UI → Express REST API (TypeScript) → Prisma → PostgreSQL 16.
-One server process, one database. See `README.md` for the current stack list and setup.
+### 1.1 Architecture
+
+A **modular monolith**: one browser app, one API process, one database. Three logical layers, as the course
+spec requires (UI → API/application layer → persistent database), without microservices.
+
+```mermaid
+flowchart LR
+  subgraph Browser
+    UI["React SPA<br/>pages · useAuth · api()"]
+  end
+  subgraph API["Express API (one Node.js process)"]
+    MW["Middleware<br/>json · session · requireUser · requireRole"]
+    R["Routes<br/>auth · admin · accounts · transactions · summary"]
+    S["Services<br/>ledger: validation + balance rules"]
+    E["errorHandler<br/>shared error shape"]
+  end
+  DB[("PostgreSQL 16<br/>app tables + session")]
+
+  UI -- "HTTPS JSON /api/*<br/>session cookie" --> MW --> R --> S
+  R -- "Prisma" --> DB
+  S -- "Prisma ($transaction)" --> DB
+  MW -- "session store" --> DB
+  R -. "throws AppError" .-> E
+```
+
+**Request path.** `express.json()` → session lookup (cookie → `session` table) → `requireUser` loads the user
+into `req.user` → `requireRole` → route validates input with zod → service applies business rules and writes
+through Prisma inside one database transaction → JSON response. Any thrown error ends in `errorHandler`,
+which returns `{ error: { code, message, details? } }` (§5.1).
+
+**Layer responsibilities.**
+
+| Layer | Does | Does not |
+|---|---|---|
+| React client | Screens, form state, baht ↔ satang conversion, route guards for navigation | Enforce permissions or business rules (the server re-checks everything) |
+| Routes (`server/src/routes/`) | Auth guards, input parsing with zod, ownership checks (`assertOwned`), shaping responses | Contain balance or allocation logic |
+| Services (`server/src/services/`) | Business rules (BR-01, 02, 09–13), balance computation (§4) | Read `req` / `res` — plain functions, unit-testable |
+| Database | Persistence, constraints (§3.3), sessions | — |
+
+### 1.2 Stack and why
+
+The course encourages reusing the Labs 1–4 (TokTickIT) stack; we did, so both members start with tools they
+already know. Choices specific to this product are marked ★.
+
+| Area | Choice | Why |
+|---|---|---|
+| Language | TypeScript 5.7, client and server | One language end to end; shared shapes are type-checked |
+| UI | React 18, Vite 6, React Router 7, Bootstrap 5.3 | Known from Labs 1–4; Bootstrap gives usable forms and tables with little custom CSS |
+| API | Express 4 (REST, JSON) | Known from Labs 1–4; small, easy to test with Supertest |
+| Validation | ★ zod | One schema both validates requests and produces field-level error details for the 400 response |
+| Database | PostgreSQL 16 | Real transactions for all-or-nothing saves (BR-13); CHECK constraints and composite foreign keys enforce rules in the database (§3.3) |
+| Data access | Prisma 5 | Typed queries, versioned migrations, seed script |
+| Sessions | `express-session` + `connect-pg-simple` | ★ Server-side sessions can be invalidated at once when an admin disables a user (BR-06); a stateless token would stay valid until it expired |
+| Passwords | bcryptjs | Hashing without native build tools on Windows dev machines |
+| Money | ★ integers in satang | Exact arithmetic: allocation lines must equal the total exactly (BR-01), which floating point cannot guarantee |
+| Tests | Vitest + Supertest, React Testing Library, Playwright | Unit, API/database, and end-to-end levels as the spec requires |
+| Code quality | ★ ESLint + Prettier | Lint and format become CI checks in Lab 5 |
+
+### 1.3 Testing architecture
+
+| Level | Tool | Database | Location |
+|---|---|---|---|
+| Unit | Vitest | none | `server/test/unit/`, `client/test/` |
+| API / database | Vitest + Supertest | `ymom_test` (separate from dev), migrated by `test/globalSetup.ts`, reset by `resetDb()` | `server/test/api/` |
+| End to end | Playwright (Chromium) | dev database, seeded | `e2e/` |
+
+API tests log in with `agentAs(username)` through a route that exists only when `NODE_ENV=test` (§5.2), so
+data-side features can be tested without depending on the login feature.
+
+### 1.4 UI structure and conventions
+
+**Screens (Sprint 1).** Routes live in `client/src/App.tsx`; every page sits inside the shared `Layout`
+(navbar with username and Log out).
+
+| Route | Role | Screen | Issue |
+|---|---|---|---|
+| `/` | any | Redirects: logged out → `/login`, USER → `/dashboard`, ADMIN → `/admin/users` | S1-01 |
+| `/login` | anonymous | Login form | S1-08 |
+| `/dashboard` | USER | Balances, credit-card debt, income vs expense, category totals | S1-14 |
+| `/accounts/:id/opening-balance` | USER | Set an account's opening balance | S1-14 |
+| `/transactions/new?kind=PAYMENT\|RECEIVE` | USER | Payment or Receive form with allocation lines | S1-14 |
+| `/transactions` | USER | Transaction history | S1-14 |
+| `/transactions/:id` | USER | One transaction with its lines | S1-14 |
+| `/admin/users` | ADMIN | User list with enable/disable | S1-08 |
+| `*` | any | Not found | S1-01 |
+
+The S1-14 routes are the planned shape; S1-10's UI spec may adjust them.
+
+**Conventions.**
+- **Access.** `<RequireRole>` wraps every role-only page: logged out → `/login`; wrong role → that role's home.
+  This is navigation only; the server enforces every permission.
+- **Money.** Users type and read **baht** with two decimals (`1,500.00`); the client converts with
+  `toSatang` / `formatBaht` and always sends satang. Amounts are right-aligned in tables.
+- **Dates.** Shown and entered as calendar dates; sent as `YYYY-MM-DD`.
+- **Errors.** A failed request shows the server's `message` in a Bootstrap alert above the form; field-level
+  `details` from `VALIDATION_ERROR` highlight the matching inputs. The client never invents business-rule
+  messages of its own.
+- **Loading.** A spinner with `role="status"` while data loads; buttons are disabled while a request is in flight
+  so a double click cannot submit twice.
+- **Accessibility.** Every input has a `<label>`; headings follow page structure (one `h1` per page); tests
+  find elements by role and accessible name.
 
 ---
 
@@ -332,5 +432,60 @@ docs/system-sds.md                       shared — this document
 
 ## 8. Configuration and deployment
 
-*To be completed in S1-09.* Current configuration is listed in `README.md` §3 and `server/.env.example`.
-Docker packaging, CI/CD and GCP deployment are added in Lab 5.
+### 8.1 Configuration
+
+All configuration comes from environment variables; nothing environment-specific is hard-coded.
+Real values are never committed — `.env` files are git-ignored and `server/.env.example` lists every variable.
+
+| Variable | Used by | Dev / test value | Production (planned) |
+|---|---|---|---|
+| `DATABASE_URL` | Prisma, session store | `ymom` on `localhost:5434` (Docker) | Cloud SQL connection string, from Secret Manager |
+| `SESSION_SECRET` | Session cookie signing | any long random string; tests use a fixed test-only value | random secret from Secret Manager |
+| `PORT` | API listen port | `3000` | set by Cloud Run |
+| `NODE_ENV` | Cookie `Secure` flag, test-only routes | `development`; `test` under Vitest | `production` |
+| `TEST_DATABASE_URL` | Vitest only (optional) | defaults to `ymom_test` on `localhost:5434` | not used |
+
+Rules:
+- The server **refuses to start** without `DATABASE_URL` or `SESSION_SECRET` (`server/src/session.ts`).
+- `NODE_ENV=production` turns on the `Secure` cookie flag, so production must be served over HTTPS.
+- Test-only routes (`/api/test/*`) exist only when `NODE_ENV=test`; a test proves they are absent otherwise.
+- Database changes ship only as Prisma migrations; demo data comes from the seed script, so any environment
+  can be rebuilt reproducibly (`prisma migrate deploy` then `prisma db seed`).
+
+### 8.2 Environments
+
+| Environment | Runs | Database | Purpose |
+|---|---|---|---|
+| Local dev | `npm run dev` in `server/` and `client/`; Vite proxies `/api` | Docker `ymom` | Development, manual checks, Playwright |
+| Local test | `npm test` | Docker `ymom_test` | Automated unit and API/database tests |
+| CI (Lab 5) | GitHub Actions | PostgreSQL service container | Lint, type check, tests on every PR |
+| Production (Lab 5) | One container on GCP | Managed PostgreSQL | Deployed releases from `main` |
+
+The spec does not require a separate cloud staging environment; `Sprint-1/staging` is a Git branch for
+integration, not a deployment.
+
+### 8.3 Planned deployment (built in Lab 5, due 15 Nov)
+
+This is the plan the code is designed for now; Lab 5's GCP access instructions may change the services used.
+
+```mermaid
+flowchart LR
+  Dev["Developer PR"] --> CI["GitHub Actions<br/>lint · typecheck · tests"]
+  CI -- "required check passes" --> Main["merge to main + tag"]
+  Main --> Build["Build Docker image<br/>(client build + server)"]
+  Build --> Approve{"Manual approval"}
+  Approve --> Migrate["prisma migrate deploy"]
+  Migrate --> Run["GCP container service<br/>(e.g. Cloud Run)"]
+  Run --> SQL[("Managed PostgreSQL<br/>(e.g. Cloud SQL)")]
+```
+
+- **One image.** A multi-stage Dockerfile builds the React client and the server; in production Express also
+  serves `client/dist`, so the browser and API share one origin and the SameSite=Lax cookie works unchanged.
+  (Sprint 1 serves the client only through Vite in dev; static serving is added in Lab 5.)
+- **Behind a proxy.** GCP terminates HTTPS in front of the container, so the server must set
+  `app.set("trust proxy", 1)` in production for `Secure` cookies to be issued.
+- **Persistence.** Data lives in managed PostgreSQL, outside the container, so it survives restarts and
+  redeployments — a Lab 5 grading point.
+- **Quality gate.** A failing required check blocks the merge to `main`, which blocks the release.
+- **Migrations before traffic.** `prisma migrate deploy` runs as a release step before the new revision serves.
+- **Secrets.** `DATABASE_URL` and `SESSION_SECRET` come from a secret store at runtime, never from the image.
