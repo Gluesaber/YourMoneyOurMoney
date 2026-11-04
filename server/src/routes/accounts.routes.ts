@@ -7,7 +7,7 @@ import { asyncHandler } from "../lib/asyncHandler.js";
 import { assertOwned } from "../lib/ownership.js";
 import { MAX_INT, calendarDate, fromDateOnly, parseId, toDateOnly } from "../lib/validation.js";
 import { requireRole, requireUser } from "../middleware/auth.js";
-import { computeBalances } from "../services/ledger.js";
+import { loadLedger } from "../services/userLedger.js";
 
 // F-03 Accounts and opening balances — docs/sprints/sprint-1/F-03-accounts.md.
 export const accountsRouter = Router();
@@ -69,21 +69,7 @@ accountsRouter.put(
 );
 
 async function loadAccountsWithBalances(userId: number) {
-  const prisma = getPrisma();
-  const [accounts, transactions] = await Promise.all([
-    prisma.account.findMany({ where: { userId } }),
-    prisma.transaction.findMany({
-      where: { userId },
-      select: {
-        kind: true,
-        sourceAccountId: true,
-        totalAmount: true,
-        lines: { select: { accountId: true, amount: true } },
-      },
-    }),
-  ]);
-  const balances = computeBalances(accounts, transactions);
-
+  const { accounts, balances } = await loadLedger(userId);
   return accounts
     .sort((a, b) => TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type) || a.name.localeCompare(b.name))
     .map((a) => toAccountResponse(a, balances.get(a.id)!));

@@ -121,3 +121,31 @@ export function validateTransaction(
     });
   }
 }
+
+export interface SummaryAccount extends LedgerAccount {
+  name: string;
+}
+
+// GET /api/summary body (system-sds.md §5.3, F-05 §3) from accounts and their computed balances.
+// Income and expense totals are the INCOME / EXPENSE account balances: those accounts only ever move by
+// RECEIVE lines (income) and PAYMENT lines (expense), so transfers, borrowing, lending, repayments and
+// opening balances can never reach them (BR-08, BR-12). Every list is sorted by name and keeps zero values.
+export function summarize(accounts: SummaryAccount[], balances: Map<number, number>) {
+  const ofType = (type: AccountType) =>
+    accounts
+      .filter((a) => a.type === type)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((a) => ({ accountId: a.id, name: a.name, value: balances.get(a.id) ?? 0 }));
+  const sum = (list: { value: number }[]) => list.reduce((s, e) => s + e.value, 0);
+
+  const income = ofType("INCOME");
+  const expense = ofType("EXPENSE");
+  return {
+    cash: ofType("CASH").map(({ value, ...e }) => ({ ...e, balance: value })),
+    loansTaken: ofType("LOAN_TAKEN").map(({ value, ...e }) => ({ ...e, outstanding: value })),
+    loansGiven: ofType("LOAN_GIVEN").map(({ value, ...e }) => ({ ...e, outstanding: value })),
+    totals: { income: sum(income), expense: sum(expense) },
+    income: income.map(({ value, ...e }) => ({ ...e, total: value })),
+    expense: expense.map(({ value, ...e }) => ({ ...e, total: value })),
+  };
+}
