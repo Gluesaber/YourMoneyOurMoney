@@ -24,10 +24,10 @@ This document provides a comprehensive inventory of all product features across 
 | **F-08** | Debt & Receivable Lifecycle (Lending & Borrowing) | **Sprint 2** | Decided at sprint planning | Planned | Loan given / loan taken tracking, repayments, outstanding debts |
 | **F-09** | Transaction Search, Filtering & Sorting | **Sprint 2** | Decided at sprint planning | Planned | Date range filtering, category search, keyword matching (`q`) |
 | **F-10** | Favorite & Duplicate Transactions | **Sprint 2** | Decided at sprint planning | Planned | Quick re-entry, star and view favorite transactions, clone records |
-| **F-11** | Financial Reports & Periodic Spending Analytics [Added by Team] | **Sprint 3** | Decided at sprint planning | Planned | Monthly income vs expense charts, category spend trends (DL-09) |
+| **F-11** | Financial Reports & Periodic Spending Summaries | **Sprint 3** | Decided at sprint planning | Planned | Monthly income vs expense & category reports (brief), plus visual charts `[Added by Team]` (DL-09) |
 | **F-12** | Transaction Editing, Voiding & Audit Corrections | **Sprint 3** | Decided at sprint planning | Planned | Revise transaction notes/lines, void transactions with rollback |
 | **F-13** | Data Export (CSV & JSON) [Added by Team] | **Sprint 3** | Decided at sprint planning | Planned | Export transaction ledgers and account statements (DL-09) |
-| **F-14** | User Profile & Security Settings [Added by Team] | **Sprint 3** | Decided at sprint planning | Planned | Change password, user creation governance (DL-09) |
+| **F-14** | User Profile & Security Settings [Added by Team] | **Sprint 3** | Decided at sprint planning | Planned | Self-service password change and session review (DL-09) |
 
 ---
 
@@ -157,7 +157,7 @@ This document provides a comprehensive inventory of all product features across 
 - **Detailed Capabilities:**
   - Create new accounts specifying name, type, and subtype (`POST /api/accounts`).
   - Validate unique account names per user namespace (`(userId, name)`).
-  - Edit account names and update opening balances; account type changes are strictly prohibited once transactions exist for the account (`CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS`) to avoid ledger corruption.
+  - Edit account names and update opening balances; account type changes are strictly prohibited once transactions exist for the account (`CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS` — to be added to `errors.ts` and SDS §5.1 in Sprint 2) to avoid ledger corruption.
   - Archive or delete unused accounts (restricted if transactions reference the account via foreign key constraints).
 - **Mapped FRs:** FR-ACC-02, FR-ACC-03, FR-ACC-04, FR-ACC-06.
 - **Mapped BRs:** BR-03, BR-04, BR-12.
@@ -235,14 +235,14 @@ This document provides a comprehensive inventory of all product features across 
 - **User Story:**  
   *As a personal user, I want to star frequent transactions as favorites and duplicate past transactions with one click, so that recurring manual entries (like monthly bills) take minimal time to log.*
 - **Detailed Capabilities:**
-  - Toggle `isFavorite` on transactions (`PATCH /api/transactions/:id/favorite`).
+  - Toggle `isFavorite` on transactions (`PATCH /api/transactions/:id/favorite`) and view/filter favorite transactions (`GET /api/transactions?favorite=true`).
   - Quick-action "Duplicate" button in transaction list that copies source, categories, and amounts into the transaction form for the current date.
   - Dedicated "Favorites" tab or dashboard widget for rapid 1-click recording.
 - **Mapped FRs:** FR-TX-07, FR-TX-08.
 - **Mapped BRs:** BR-04.
 - **API Endpoints:**
   - `PATCH /api/transactions/:id/favorite`
-  - `GET /api/transactions/favorites`
+  - `GET /api/transactions?favorite=true`
 - **UI Components:** `FavoriteStarToggle`, `DuplicateTransactionButton`, `QuickExpenseWidget`.
 - **Dependencies:** F-04, F-05.
 
@@ -250,15 +250,15 @@ This document provides a comprehensive inventory of all product features across 
 
 ## 4. Sprint 3 Features (Analytics, Audit & Maintenance)
 
-### F-11: Financial Reports & Periodic Spending Analytics [Added by Team]
+### F-11: Financial Reports & Periodic Spending Summaries
 - **Target Sprint:** Sprint 3
 - **Track Owner:** Decided at sprint planning
 - **Status:** Planned
 - **User Story:**  
-  *As a personal user, I want to view monthly expense versus income breakdown charts and category trends, so that I understand my financial habits over time.*
+  *As a personal user, I want to view monthly expense versus income breakdown reports, category spending summaries, and visual trend charts, so that I understand my financial habits over time.*
 - **Detailed Capabilities:**
-  - Aggregated monthly totals for income and expense over the trailing 12 months.
-  - Breakdown pie/bar charts showing top spending categories.
+  - Aggregated monthly totals for income and expense and category spending summaries over the trailing 12 months (brief scope).
+  - Visual breakdown pie/bar charts showing top spending categories and monthly trends (`[Added by Team]`, see Decision Log DL-09).
   - Average daily spend calculations.
 - **Mapped FRs:** FR-SUM-04.
 - **Mapped BRs:** BR-03, BR-04, BR-08.
