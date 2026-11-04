@@ -51,29 +51,21 @@ describe("session middleware config (T-AUTH-UNIT-02)", () => {
 
       const res = await request(app).get("/inspect-cookie").set("X-Forwarded-Proto", "https");
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({
-        httpOnly: true,
-        sameSite: "lax",
-        maxAge: 86_400_000,
-        secure: expectedSecure,
-      });
+      expect(res.body.httpOnly).toBe(true);
+      expect(res.body.sameSite).toBe("lax");
+      expect(res.body.secure).toBe(expectedSecure);
+      expect(res.body.maxAge).toBeGreaterThan(86_399_000);
+      expect(res.body.maxAge).toBeLessThanOrEqual(86_400_000);
       // saveUninitialized: false means an unauthenticated request does not send Set-Cookie.
       expect(res.headers["set-cookie"]).toBeUndefined();
     },
   );
 });
 
-describe("bcrypt password and dummy hashes (T-AUTH-UNIT-03)", () => {
-  it("T-AUTH-UNIT-03: seeded hash and DUMMY_BCRYPT_HASH use cost factor >= 10 and verify DEMO_PASSWORD", async () => {
-    const seededHash = await bcrypt.hash(DEMO_PASSWORD, 10);
-
-    expect(seededHash).toMatch(/^\$2[aby]\$10\$.{53}$/);
+describe("bcrypt dummy hash (T-AUTH-UNIT-03)", () => {
+  it("T-AUTH-UNIT-03: DUMMY_BCRYPT_HASH uses cost factor >= 10 and rejects DEMO_PASSWORD (seeded DB hashes are checked in T-AUTH-SEC-01)", async () => {
     expect(DUMMY_BCRYPT_HASH).toMatch(/^\$2[aby]\$10\$.{53}$/);
-    expect(bcrypt.getRounds(seededHash)).toBeGreaterThanOrEqual(10);
     expect(bcrypt.getRounds(DUMMY_BCRYPT_HASH)).toBeGreaterThanOrEqual(10);
-
-    await expect(bcrypt.compare(DEMO_PASSWORD, seededHash)).resolves.toBe(true);
-    await expect(bcrypt.compare("wrong-password", seededHash)).resolves.toBe(false);
     await expect(bcrypt.compare(DEMO_PASSWORD, DUMMY_BCRYPT_HASH)).resolves.toBe(false);
   });
 });

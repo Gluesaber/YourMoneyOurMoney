@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
+import bcrypt from "bcryptjs";
 import { createApp } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
 import { SESSION_COOKIE_NAME } from "../../src/session.js";
@@ -45,7 +46,7 @@ describe("POST /api/auth/login (T-AUTH-API-01)", () => {
       const sessions = await prisma.session.findMany();
       const matching = sessions
         .map((s) => s.sess as { userId?: number; loginAt?: number })
-        .find((sess) => sess.userId === user.id);
+        .find((sess) => sess.userId === user.id && typeof sess.loginAt === "number");
       expect(matching).toBeDefined();
       expect(matching!.loginAt).toBeGreaterThanOrEqual(before);
       expect(matching!.loginAt).toBeLessThanOrEqual(after);
@@ -239,12 +240,15 @@ describe("disabled-user session invalidation (T-AUTH-API-04)", () => {
 });
 
 describe("credential and response field protection (T-AUTH-SEC-01)", () => {
-  it("T-AUTH-SEC-01: stores only cost-10 bcrypt hashes in DB and never leaks passwordHash or extra fields in /api/auth/* responses", async () => {
+  it("T-AUTH-SEC-01: stores only cost-10 bcrypt hashes in DB that verify DEMO_PASSWORD and never leaks passwordHash or extra fields in /api/auth/* responses", async () => {
     const users = await prisma.user.findMany();
     expect(users.length).toBeGreaterThanOrEqual(3);
     for (const u of users) {
       expect(u.passwordHash).toMatch(/^\$2[aby]\$10\$.{53}$/);
       expect(u.passwordHash).not.toBe(DEMO_PASSWORD);
+      expect(bcrypt.getRounds(u.passwordHash)).toBeGreaterThanOrEqual(10);
+      await expect(bcrypt.compare(DEMO_PASSWORD, u.passwordHash)).resolves.toBe(true);
+      await expect(bcrypt.compare("wrong-password", u.passwordHash)).resolves.toBe(false);
     }
 
     const agent = request.agent(createApp());
