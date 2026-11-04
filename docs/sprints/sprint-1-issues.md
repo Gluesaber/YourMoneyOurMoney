@@ -288,16 +288,5 @@ Write `docs/sprints/sprint-1/F-03-…`, `F-04-…`, `F-05-…`. **Merge before a
 
 ---
 
-## Suggested timeline
-
-| Day | A | B |
-|---|---|---|
-| Tue 3 Nov | S1-01, S1-02 (pair) | S1-01, S1-02 (pair) |
-| Wed 4 Nov | S1-03, S1-04 | S1-09, S1-10 |
-| Thu 5 Nov | S1-05, S1-06 | S1-11, S1-12 |
-| Fri 6 Nov | S1-07, S1-08 | S1-12, S1-13 |
-| Sat 7 Nov | finish S1-08, review B's PRs | S1-14, review A's PRs |
-| Sun 8 Nov | S1-15, S1-16 (pair) | S1-15, S1-16 (pair) |
-
 **Not in Sprint 1:** creating/managing accounts, loan-given/taken flows beyond the seeds, transfer UI,
 editing/correcting transactions, search and filter, favorites, duplicate, reports.
