@@ -48,8 +48,8 @@ describe("T-ADM-API-04 (a): unauthenticated requests to protected routes return 
     }
   });
 
-  // /api/admin/* lands in S1-07. Marked it.fails until S1-07 mounts adminRouter.
-  it.fails("rejects anonymous requests to /api/admin/* with 401 UNAUTHENTICATED", async () => {
+  // /api/admin/* mounted in S1-07.
+  it("rejects anonymous requests to /api/admin/* with 401 UNAUTHENTICATED", async () => {
     const anon = request(createApp());
     const listRes = await anon.get("/api/admin/users");
     expect(listRes.status).toBe(401);
@@ -62,22 +62,19 @@ describe("T-ADM-API-04 (a): unauthenticated requests to protected routes return 
 });
 
 describe("T-ADM-API-04 (b): USER calling /api/admin/* returns 403 FORBIDDEN", () => {
-  // /api/admin/* lands in S1-07. Marked it.fails until S1-07 mounts adminRouter.
-  it.fails(
-    "rejects USER (alice) on GET /api/admin/users and PATCH /api/admin/users/:id with 403 FORBIDDEN",
-    async () => {
-      const aliceAgent = await agentAs("alice");
-      const bob = await prisma.user.findUniqueOrThrow({ where: { username: "bob" } });
+  // /api/admin/* mounted in S1-07.
+  it("rejects USER (alice) on GET /api/admin/users and PATCH /api/admin/users/:id with 403 FORBIDDEN", async () => {
+    const aliceAgent = await agentAs("alice");
+    const bob = await prisma.user.findUniqueOrThrow({ where: { username: "bob" } });
 
-      const listRes = await aliceAgent.get("/api/admin/users");
-      expect(listRes.status).toBe(403);
-      expect(listRes.body.error.code).toBe("FORBIDDEN");
+    const listRes = await aliceAgent.get("/api/admin/users");
+    expect(listRes.status).toBe(403);
+    expect(listRes.body.error.code).toBe("FORBIDDEN");
 
-      const patchRes = await aliceAgent.patch(`/api/admin/users/${bob.id}`).send({ isEnabled: false });
-      expect(patchRes.status).toBe(403);
-      expect(patchRes.body.error.code).toBe("FORBIDDEN");
-    },
-  );
+    const patchRes = await aliceAgent.patch(`/api/admin/users/${bob.id}`).send({ isEnabled: false });
+    expect(patchRes.status).toBe(403);
+    expect(patchRes.body.error.code).toBe("FORBIDDEN");
+  });
 });
 
 describe("T-ADM-API-04 (c): ADMIN calling any financial route returns 403 FORBIDDEN (BR-05)", () => {
