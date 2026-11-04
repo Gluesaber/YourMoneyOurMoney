@@ -255,10 +255,12 @@ balance(account) = openingBalance
 Category totals after step 4: Salary 30,000.00 · Dining 900.00 · Groceries 600.00. In the API these are
 `3850000`, `0`, `3000000`, `150000`, `90000`, `60000` satang.
 
-### 4.4 Open questions (decide in S1-10)
+### 4.4 Decisions on earlier open questions (S1-10)
 
-- May a CASH balance go negative (overdraft)? The database does not prevent it.
-- May a transaction date be in the future?
+Recorded in `docs/sprints/sprint-1/F-04-transactions.md` §8:
+
+- **Overdraft:** allowed. A CASH balance may go negative; there is no balance check when saving.
+- **Transaction dates:** any real calendar date from 2000-01-01 to 2099-12-31, including future dates.
 
 ---
 
