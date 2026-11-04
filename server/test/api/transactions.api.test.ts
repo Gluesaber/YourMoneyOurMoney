@@ -119,6 +119,29 @@ describe("POST /api/transactions — accepted", () => {
     expect(blank.body.transaction.note).toBeNull();
   });
 
+  it("applies the 200-character note limit after trimming", async () => {
+    const text = "x".repeat(199);
+    const res = await (
+      await agentAs("alice")
+    )
+      .post("/api/transactions")
+      .send({ ...demo1(), note: `  ${text}  ` });
+    expect(res.status).toBe(201);
+    expect(res.body.transaction.note).toBe(text);
+  });
+
+  it("accepts the first and last allowed dates (2000-01-01, 2099-12-31)", async () => {
+    const agent = await agentAs("alice");
+    await agent
+      .post("/api/transactions")
+      .send({ ...demo1(), date: "2000-01-01" })
+      .expect(201);
+    await agent
+      .post("/api/transactions")
+      .send({ ...demo1(), date: "2099-12-31" })
+      .expect(201);
+  });
+
   it("after the demo transactions, GET /api/accounts shows the demo balances", async () => {
     const agent = await agentAs("alice");
     await agent

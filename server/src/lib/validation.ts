@@ -5,11 +5,18 @@ import { z } from "zod";
 // PostgreSQL INTEGER limit: the most satang one value can hold, and the largest valid id.
 export const MAX_INT = 2_147_483_647;
 
-// A real calendar date in YYYY-MM-DD: "2026-02-30" has the right shape but does not exist.
+// Every date the API accepts (transaction dates and opening-balance dates) falls in this range, which
+// catches typo years such as 0026 or 2926 (F-03 §2 R4, F-04 §8).
+export const MIN_DATE = "2000-01-01";
+export const MAX_DATE = "2099-12-31";
+
+// A real calendar date in YYYY-MM-DD within MIN_DATE…MAX_DATE: "2026-02-30" has the right shape but
+// does not exist. Same-length YYYY-MM-DD strings compare correctly as text.
 export const calendarDate = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Use the format YYYY-MM-DD.")
-  .refine((s) => toDateOnly(fromDateOnly(s)) === s, "Not a real calendar date.");
+  .refine((s) => toDateOnly(fromDateOnly(s)) === s, "Not a real calendar date.")
+  .refine((s) => s >= MIN_DATE && s <= MAX_DATE, "Use a date from 2000 to 2099.");
 
 // Dates are stored as UTC midnight in a DATE column, so they never shift with the server's time zone.
 export function fromDateOnly(s: string): Date {

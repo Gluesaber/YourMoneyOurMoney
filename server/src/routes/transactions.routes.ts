@@ -20,13 +20,15 @@ const accountId = z.number().int().min(1).max(MAX_INT);
 const createBody = z.object({
   kind: z.enum(["PAYMENT", "RECEIVE"]),
   sourceAccountId: accountId,
-  date: calendarDate.refine((s) => s >= "2000-01-01" && s <= "2099-12-31", "Use a date from 2000 to 2099."),
+  date: calendarDate,
   totalAmount: satang,
+  // Trimmed before the length check, so surrounding spaces never count towards the 200 characters.
   note: z
     .string()
-    .max(200)
+    .trim()
+    .max(200, "Use 200 characters or fewer.")
     .nullish()
-    .transform((s) => s?.trim() || null),
+    .transform((s) => s || null),
   lines: z
     .array(z.object({ accountId, amount: satang }))
     .min(1)
