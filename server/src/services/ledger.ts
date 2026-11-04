@@ -1,4 +1,5 @@
 import type { AccountType, TransactionKind } from "@prisma/client";
+import { AppError, ErrorCode } from "../lib/errors.js";
 
 // Track B business logic (docs/system-sds.md §4, docs/sprints/sprint-1/F-04, F-05). Plain functions only:
 // no Prisma, no Express, so they can be unit-tested without a database.
@@ -52,4 +53,71 @@ export function computeBalances(
     for (const line of t.lines) apply(line.accountId, line.amount, LINE_SIGN[t.kind]);
   }
   return balances;
+}
+
+export type TransactionInput = LedgerTransaction;
+
+// F-04 §2 steps 3–6, in that order; the first broken rule is thrown and nothing else is checked.
+// `accountsById` holds every account the input refers to, already confirmed to be the user's (step 2).
+// The allowed types are the keys of the sign tables above, so BR-09 / BR-10 and the balance rules can
+// never disagree.
+export function validateTransaction(
+  input: TransactionInput,
+  accountsById: Map<number, { id: number; type: AccountType }>,
+): void {
+  const typeOf = (id: number) => {
+    const account = accountsById.get(id);
+    if (!account) throw new Error(`validateTransaction: account ${id} was not loaded`);
+    return account.type;
+  };
+
+  // Step 3 — BR-09.
+  const sourceType = typeOf(input.sourceAccountId);
+  if (SOURCE_SIGN[input.kind][sourceType] === undefined) {
+    throw new AppError(
+      400,
+      ErrorCode.INVALID_ACCOUNT_TYPE,
+      input.kind === "PAYMENT"
+        ? "A payment must come from a cash or loan-taken account."
+        : "Money can only be received into a cash account.",
+      { field: "sourceAccountId", type: sourceType },
+    );
+  }
+
+  // Step 4 — BR-11.
+  const sourceAsLine = input.lines.findIndex((l) => l.accountId === input.sourceAccountId);
+  if (sourceAsLine !== -1) {
+    throw new AppError(
+      400,
+      ErrorCode.VALIDATION_ERROR,
+      "The source account cannot also be an allocation line.",
+      {
+        field: "lines",
+        lineIndex: sourceAsLine,
+      },
+    );
+  }
+
+  // Step 5 — BR-10.
+  for (const [lineIndex, line] of input.lines.entries()) {
+    const type = typeOf(line.accountId);
+    if (LINE_SIGN[input.kind][type] === undefined) {
+      throw new AppError(
+        400,
+        ErrorCode.INVALID_ACCOUNT_TYPE,
+        `Line ${lineIndex + 1} uses a ${type.toLowerCase().replace("_", " ")} account, which is not allowed in a ${input.kind.toLowerCase()}.`,
+        { field: "lines", lineIndex, type },
+      );
+    }
+  }
+
+  // Step 6 — BR-01.
+  const linesTotal = input.lines.reduce((sum, l) => sum + l.amount, 0);
+  if (linesTotal !== input.totalAmount) {
+    throw new AppError(400, ErrorCode.ALLOCATION_MISMATCH, "The allocation lines must add up to the total.", {
+      totalAmount: input.totalAmount,
+      linesTotal,
+      difference: linesTotal - input.totalAmount,
+    });
+  }
 }

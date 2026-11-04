@@ -1,6 +1,8 @@
 # F-03 — Accounts and Opening Balances (Sprint 1 contract)
 
 > **Status:** contract for S1-11 (backend) and S1-14 (UI). Merged before any S1-11 code (S1-10).
+> **Revision (S1-12, PR #24 review):** R4 now limits `openingDate` to 2000-01-01 … 2099-12-31, the same range as
+> transaction dates, so a typo year cannot skew balances. AC-ACC-07 and T-ACC-API-07 updated to match.
 > **Requirements:** FR-ACC-01, FR-ACC-02, FR-ACC-03, FR-ACC-04, FR-ACC-05 · BR-03, BR-04, BR-08, BR-12
 > **Shared contracts used:** `docs/system-sds.md` §2 (roles), §3 (data model), §4 (balance rules), §5 (API)
 
@@ -44,7 +46,7 @@ Setting it again replaces the previous values; the opening balance is not cumula
 | R1 | A user sees and changes only their own accounts | BR-04 | 404 `NOT_FOUND` |
 | R2 | Only CASH, LOAN_TAKEN, LOAN_GIVEN accounts take an opening balance | BR-12 | 400 `INVALID_ACCOUNT_TYPE` |
 | R3 | `openingBalance` is an integer number of satang, 0 … 2,147,483,647 | BR-03 | 400 `VALIDATION_ERROR` |
-| R4 | `openingDate` is a real calendar date `YYYY-MM-DD` | — | 400 `VALIDATION_ERROR` |
+| R4 | `openingDate` is a real calendar date `YYYY-MM-DD` from 2000-01-01 to 2099-12-31 (same range as transaction dates, F-04 §8) | — | 400 `VALIDATION_ERROR` |
 | R5 | An opening balance is never income or expense | BR-08 | (computed; see F-05) |
 | R6 | Balance = opening balance + transaction effects (`system-sds.md` §4.1) | FR-ACC-01 | (computed) |
 
@@ -106,7 +108,7 @@ No schema change: uses `Account.openingBalance` and `Account.openingDate` from m
 | AC-ACC-04 | Given Bank has an opening balance, when alice sets it again to 500,000, then the opening balance is 500,000 (replaced, not added). |
 | AC-ACC-05 | When alice sets an opening balance on Credit Card (LOAN_TAKEN), it is accepted and Credit Card's `balance` (debt) equals it. |
 | AC-ACC-06 | When alice sets an opening balance on Dining (EXPENSE) or Salary (INCOME), then 400 `INVALID_ACCOUNT_TYPE` and nothing changes. |
-| AC-ACC-07 | When the amount is negative, a decimal, a string, above 2,147,483,647, or missing, or the date is missing / not a real date, then 400 `VALIDATION_ERROR` and nothing changes. |
+| AC-ACC-07 | When the amount is negative, a decimal, a string, above 2,147,483,647, or missing, or the date is missing / not a real date / outside 2000–2099, then 400 `VALIDATION_ERROR` and nothing changes. |
 | AC-ACC-08 | When alice sets an opening balance on bob's account or a non-existent id, then 404 `NOT_FOUND` and bob's account is unchanged. |
 | AC-ACC-09 | Anonymous → 401 and ADMIN → 403 on both routes. |
 | AC-ACC-10 | After setting Bank's opening balance, summary income and expense totals are still 0 (BR-08). |
@@ -122,7 +124,7 @@ No schema change: uses `Account.openingBalance` and `Account.openingDate` from m
 | T-ACC-API-04 | API | Bank set to 1000000, then 500000 | `openingBalance` 500000 | AC-ACC-04 |
 | T-ACC-API-05 | API | `PUT` Credit Card `{250000, …}` | 200; Credit Card `balance` 250000 | AC-ACC-05 |
 | T-ACC-API-06 | API | `PUT` Dining and Salary `{100, …}` | 400 `INVALID_ACCOUNT_TYPE`; DB unchanged | AC-ACC-06 |
-| T-ACC-API-07 | API (table) | amounts `-1`, `1.5`, `"100"`, `2147483648`, missing; dates `"2026-02-30"`, `"03/11/2026"`, missing | each 400 `VALIDATION_ERROR`; DB unchanged | AC-ACC-07 |
+| T-ACC-API-07 | API (table) | amounts `-1`, `1.5`, `"100"`, `2147483648`, missing; dates `"2026-02-30"`, `"03/11/2026"`, missing, `"1999-12-31"`, `"2100-01-01"`, `"0026-11-01"` | each 400 `VALIDATION_ERROR`; DB unchanged | AC-ACC-07 |
 | T-ACC-API-08 | API | alice `PUT` bob's Bank; `PUT /api/accounts/999999/…`; `PUT /api/accounts/abc/…` | 404 each; bob's Bank unchanged | AC-ACC-08 |
 | T-ACC-API-09 | API | no session; `agentAs("admin")`; both routes | 401; 403 | AC-ACC-09 |
 | T-ACC-API-10 | API | set Bank opening balance; `GET /api/summary` | `totals.income` 0, `totals.expense` 0 | AC-ACC-10 |

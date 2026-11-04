@@ -3,6 +3,7 @@ import request from "supertest";
 import { createApp } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
 import { seed } from "../../prisma/seedData.js";
+import { accountOf } from "../helpers/accounts.js";
 import { agentAs } from "../helpers/auth.js";
 import { resetDb } from "../helpers/db.js";
 
@@ -20,11 +21,6 @@ const SEEDED_IN_ORDER = [
   { name: "Groceries", type: "EXPENSE", subtype: null },
   { name: "Telecom", type: "EXPENSE", subtype: null },
 ];
-
-async function accountOf(username: string, name: string) {
-  const user = await prisma.user.findUniqueOrThrow({ where: { username } });
-  return prisma.account.findUniqueOrThrow({ where: { userId_name: { userId: user.id, name } } });
-}
 
 beforeEach(async () => {
   await resetDb();
@@ -156,6 +152,9 @@ describe("PUT /api/accounts/:id/opening-balance", () => {
     ["a date that does not exist", { openingBalance: 100, openingDate: "2026-02-30" }],
     ["a date in another format", { openingBalance: 100, openingDate: "03/11/2026" }],
     ["a missing date", { openingBalance: 100 }],
+    ["a date before 2000", { openingBalance: 100, openingDate: "1999-12-31" }],
+    ["a date after 2099", { openingBalance: 100, openingDate: "2100-01-01" }],
+    ["a typo year", { openingBalance: 100, openingDate: "0026-11-01" }],
   ])("T-ACC-API-07: rejects %s with VALIDATION_ERROR", async (_case, body) => {
     const bank = await accountOf("alice", "Bank");
     const res = await (await agentAs("alice")).put(`/api/accounts/${bank.id}/opening-balance`).send(body);
