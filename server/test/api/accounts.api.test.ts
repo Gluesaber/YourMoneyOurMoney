@@ -197,9 +197,8 @@ describe("access (BR-04, BR-05)", () => {
 });
 
 describe("summary after an opening balance (BR-08)", () => {
-  // T-ACC-API-10 needs GET /api/summary from S1-13. Until then this test fails, so it is marked
-  // `it.fails` (the run passes while the inner test fails). Remove `.fails` in S1-13.
-  it.fails("T-ACC-API-10: an opening balance is not counted as income or expense", async () => {
+  // Marked `it.fails` in S1-11 until GET /api/summary existed; `.fails` removed in S1-13.
+  it("T-ACC-API-10: an opening balance is not counted as income or expense", async () => {
     const agent = await agentAs("alice");
     const bank = await accountOf("alice", "Bank");
     await agent

@@ -3,12 +3,12 @@ import { z } from "zod";
 import { getPrisma } from "../prisma.js";
 import { AppError, ErrorCode } from "../lib/errors.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
-import { MAX_INT, calendarDate, fromDateOnly, toDateOnly } from "../lib/validation.js";
+import { MAX_INT, calendarDate, fromDateOnly, parseId, toDateOnly } from "../lib/validation.js";
 import { requireRole, requireUser } from "../middleware/auth.js";
 import { validateTransaction } from "../services/ledger.js";
 
-// F-04 Record a transaction — docs/sprints/sprint-1/F-04-transactions.md.
-// S1-13 adds GET / and GET /:id here, reusing toTransactionResponse.
+// F-04 Record a transaction (POST /) — docs/sprints/sprint-1/F-04-transactions.md.
+// F-05 Transaction history (GET /, GET /:id) — docs/sprints/sprint-1/F-05-summary-history.md §3.
 export const transactionsRouter = Router();
 
 transactionsRouter.use(requireUser, requireRole("USER"));
@@ -73,6 +73,29 @@ transactionsRouter.post(
     });
 
     res.status(201).json({ transaction: await loadTransaction(userId, created) });
+  }),
+);
+
+// FR-HST-01: the user's transactions, newest date first, then highest id first. No pagination in Sprint 1.
+transactionsRouter.get(
+  "/",
+  asyncHandler(async (req, res) => {
+    const rows = await getPrisma().transaction.findMany({
+      where: { userId: req.user!.id },
+      orderBy: [{ date: "desc" }, { id: "desc" }],
+      include: transactionInclude,
+    });
+    res.json({ transactions: rows.map(toTransactionResponse) });
+  }),
+);
+
+// FR-HST-02: one transaction. Another user's, a missing and a non-numeric id are the same 404 (BR-04).
+transactionsRouter.get(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const id = parseId(req.params.id);
+    if (id === null) throw new AppError(404, ErrorCode.NOT_FOUND, "Transaction not found.");
+    res.json({ transaction: await loadTransaction(req.user!.id, id) });
   }),
 );
 
