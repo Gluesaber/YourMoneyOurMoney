@@ -2,6 +2,7 @@ import express from "express";
 import { createSessionMiddleware } from "./session.js";
 import { errorHandler, notFoundHandler } from "./lib/errors.js";
 import { testRouter } from "./routes/test.routes.js";
+import { accountsRouter } from "./routes/accounts.routes.js";
 
 // Shared file: keep it to middleware and route mounting. Each track adds its routers below.
 // The app is built here and started in index.ts, so Supertest can use it without opening a port.
@@ -17,8 +18,9 @@ export function createApp(nodeEnv: string | undefined = process.env.NODE_ENV) {
   });
 
   // Track A: app.use("/api/auth", authRouter); app.use("/api/admin", adminRouter);
-  // Track B: app.use("/api/accounts", accountsRouter); app.use("/api/transactions", transactionsRouter);
-  //          app.use("/api/summary", summaryRouter);
+  // Track B:
+  app.use("/api/accounts", accountsRouter);
+  //          app.use("/api/transactions", transactionsRouter); app.use("/api/summary", summaryRouter);
 
   if (nodeEnv === "test") {
     app.use("/api/test", testRouter);
