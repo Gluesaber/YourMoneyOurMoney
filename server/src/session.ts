@@ -4,6 +4,7 @@ import connectPgSimple from "connect-pg-simple";
 const PgSession = connectPgSimple(session);
 
 export const SESSION_COOKIE_NAME = "ymom.sid";
+export const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 // Sessions live in Postgres (connect-pg-simple), so a server restart does not log everyone out.
 // The "session" table is created by the Prisma migrations (model Session), not by the library.
@@ -30,7 +31,7 @@ export function createSessionMiddleware() {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: SESSION_MAX_AGE_MS,
     },
   });
 }

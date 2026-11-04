@@ -2,6 +2,7 @@ import express from "express";
 import { createSessionMiddleware } from "./session.js";
 import { errorHandler, notFoundHandler } from "./lib/errors.js";
 import { testRouter } from "./routes/test.routes.js";
+import { authRouter } from "./routes/auth.routes.js";
 import { accountsRouter } from "./routes/accounts.routes.js";
 import { transactionsRouter } from "./routes/transactions.routes.js";
 import { summaryRouter } from "./routes/summary.routes.js";
@@ -19,7 +20,9 @@ export function createApp(nodeEnv: string | undefined = process.env.NODE_ENV) {
     res.json({ status: "ok" });
   });
 
-  // Track A: app.use("/api/auth", authRouter); app.use("/api/admin", adminRouter);
+  // Track A:
+  app.use("/api/auth", authRouter);
+  //          app.use("/api/admin", adminRouter);
   // Track B:
   app.use("/api/accounts", accountsRouter);
   app.use("/api/transactions", transactionsRouter);
