@@ -37,7 +37,7 @@ Sessions are managed by `express-session` with `connect-pg-simple` (`server/src/
 3. **Absolute 24-hour expiry on both cookie and server (`FR-AUTH-05`, `NFR-SEC-02`):**
    - Cookie config sets `rolling: false` and `maxAge: 24 * 60 * 60 * 1000` (`SESSION_MAX_AGE_MS = 86_400_000` ms = 24 hours).
    - Because `express-session` calls `req.session.touch()` on every request and `connect-pg-simple` pushes the row's `expire` column forward (`rolling: false` only suppresses re-sending `Set-Cookie`), server-side absolute expiry is enforced using `req.session.loginAt`:
-   - At login, `req.session.loginAt = Date.now()` is stored in the session JSON.
+   - At login (`POST /api/auth/login` in S1-05) and in the test-only `POST /api/test/login-as` (`server/src/routes/test.routes.ts`, updated in S1-06 in the same PR as `requireUser` so `agentAs` sessions remain valid), the session is regenerated (`req.session.regenerate(...)`) and both `req.session.userId = user.id` and `req.session.loginAt = Date.now()` are stored in the session JSON.
    - On every protected request, `requireUser` checks `typeof req.session.loginAt === "number"` and `Date.now() - req.session.loginAt <= SESSION_MAX_AGE_MS`. If `loginAt` is missing or more than 24 hours old, `requireUser` destroys the session and throws `401 UNAUTHENTICATED`.
 4. **Per-request verification and disabled-user check (`requireUser` in `server/src/middleware/auth.ts`, `FR-AUTH-04`, `BR-06`):**
    - Reads `req.session.userId` and `req.session.loginAt`. If `userId` is absent or the session has exceeded 24 hours since `loginAt`, throws `401 UNAUTHENTICATED`.
@@ -80,6 +80,7 @@ Checks on protected routes via `requireUser`:
 |---|---|---|
 | Session middleware & cookie config | `server/src/session.ts`, `server/src/types/express.d.ts` | `createSessionMiddleware()`, `SESSION_COOKIE_NAME = "ymom.sid"`, `SessionData { userId: number; loginAt?: number }` |
 | `requireUser` & `requireRole` middleware | `server/src/middleware/auth.ts` | Integration points 2 and 3; `requireUser` enforces `loginAt` <= 24 h and `user.isEnabled === true` on every request in S1-06 |
+| Test-only login helper route | `server/src/routes/test.routes.ts` | Integration point 7 (`POST /api/test/login-as`, used by `agentAs`); updated in S1-06 alongside `requireUser` to call `req.session.regenerate()` and set `req.session.loginAt = Date.now()` |
 | Auth routes (`login`, `logout`, `me`) | `server/src/routes/auth.routes.ts` | Mounted at `/api/auth` in `server/src/app.ts` (S1-05) |
 | Seeded users & bcrypt hashes | `server/prisma/seedData.ts` | Integration point 8 (`DEMO_USERS`, `DEMO_PASSWORD`) |
 | Client auth state, 401 handler & route guard | `client/src/auth/AuthContext.tsx`, `client/src/auth/RequireRole.tsx`, `client/src/api/client.ts` | Integration point 10 (`useAuth()`, `<RequireRole>`, `homePathFor()`); clears `user` on logout failure and on any `401` API response |
