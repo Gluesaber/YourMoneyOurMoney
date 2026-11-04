@@ -4,7 +4,8 @@ import { AuthContext, type AuthState, type CurrentUser } from "../src/auth/AuthC
 import { AppRoutes } from "../src/App.js";
 import { mockApi } from "./renderApp.js";
 
-// The real DashboardPage loads GET /api/summary (S1-14); give it an empty answer so guard tests stay offline.
+// The real DashboardPage loads GET /api/summary (S1-14) and AdminUsersPage loads GET /api/admin/users (S1-08);
+// give them empty answers so guard tests stay offline.
 beforeEach(() => {
   mockApi({
     "GET /api/summary": {
@@ -16,6 +17,9 @@ beforeEach(() => {
         income: [],
         expense: [],
       },
+    },
+    "GET /api/admin/users": {
+      body: { users: [] },
     },
   });
 });
@@ -47,9 +51,10 @@ describe("route guards (RequireRole)", () => {
     await screen.findByText("Money you owe"); // let the dashboard finish loading
   });
 
-  it("sends an ADMIN away from a USER page to the admin home", () => {
+  it("sends an ADMIN away from a USER page to the admin home", async () => {
     renderAt("/dashboard", admin);
     expect(screen.getByRole("heading", { name: "Users" })).toBeInTheDocument();
+    await screen.findByRole("table"); // let AdminUsersPage finish loading
   });
 
   it("sends a USER away from an ADMIN page to the dashboard", async () => {
@@ -63,8 +68,9 @@ describe("route guards (RequireRole)", () => {
     expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument();
   });
 
-  it("sends '/' to the role's home page", () => {
+  it("sends '/' to the role's home page", async () => {
     renderAt("/", admin);
     expect(screen.getByRole("heading", { name: "Users" })).toBeInTheDocument();
+    await screen.findByRole("table"); // let AdminUsersPage finish loading
   });
 });

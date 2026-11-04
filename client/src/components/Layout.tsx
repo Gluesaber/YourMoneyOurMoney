@@ -1,8 +1,21 @@
-import { Link, Outlet } from "react-router-dom";
+import { useState } from "react";
+import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.js";
 
 export function Layout() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      await logout();
+      navigate("/login", { replace: true });
+    } finally {
+      setLoggingOut(false);
+    }
+  }
 
   return (
     <>
@@ -17,7 +30,8 @@ export function Layout() {
               <button
                 type="button"
                 className="btn btn-outline-secondary btn-sm"
-                onClick={() => void logout()}
+                disabled={loggingOut}
+                onClick={() => void handleLogout()}
               >
                 Log out
               </button>

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { api, ApiError } from "../api/client.js";
+import { api, ApiError, onUnauthorized } from "../api/client.js";
 
 export type Role = "USER" | "ADMIN";
 
@@ -21,11 +21,17 @@ export interface AuthState {
 // Exported so component tests can render with a fixed AuthState.
 export const AuthContext = createContext<AuthState | null>(null);
 
-// Integration point 10. Placeholder from S1-01: Track A (S1-05, S1-08) owns the endpoints and the
-// login/logout behaviour. Keep the useAuth() shape stable; Track B's pages depend on it.
+// Integration point 10. Track A (S1-05, S1-08) owns the endpoints and the login/logout behaviour.
+// Keep the useAuth() shape stable; Track B's pages depend on it.
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    return onUnauthorized(() => {
+      setUser(null);
+    });
+  }, []);
 
   useEffect(() => {
     api<CurrentUser>("/api/auth/me")
@@ -47,8 +53,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    await api<void>("/api/auth/logout", { method: "POST" });
-    setUser(null);
+    try {
+      await api<void>("/api/auth/logout", { method: "POST" });
+    } catch (err) {
+      // F-01 §5: if the session already expired or the user was disabled (401), still clear local state.
+      if (!(err instanceof ApiError)) console.error(err);
+    } finally {
+      setUser(null);
+    }
   }, []);
 
   const value = useMemo(() => ({ user, loading, login, logout }), [user, loading, login, logout]);
