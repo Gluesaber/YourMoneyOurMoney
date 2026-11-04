@@ -18,6 +18,17 @@ export class ApiError extends Error {
   }
 }
 
+type UnauthorizedListener = () => void;
+const unauthorizedListeners = new Set<UnauthorizedListener>();
+
+// Lets AuthProvider clear `user` whenever any protected API request receives 401 (F-01 §5).
+export function onUnauthorized(listener: UnauthorizedListener): () => void {
+  unauthorizedListeners.add(listener);
+  return () => {
+    unauthorizedListeners.delete(listener);
+  };
+}
+
 // `path` is the full API path, e.g. api<CurrentUser>("/api/auth/me").
 // A string body is sent as JSON. A 204 response resolves to undefined.
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -34,6 +45,11 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
       body = (await res.json()) as ApiErrorBody;
     } catch {
       // Not a JSON error body, e.g. the dev proxy cannot reach the server.
+    }
+    if (res.status === 401 && path !== "/api/auth/login") {
+      for (const listener of unauthorizedListeners) {
+        listener();
+      }
     }
     if (body?.error?.code) {
       throw new ApiError(res.status, body.error.code, body.error.message, body.error.details);
