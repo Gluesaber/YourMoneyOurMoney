@@ -19,7 +19,11 @@ testRouter.post(
     if (!user) {
       throw new AppError(404, ErrorCode.NOT_FOUND, `No user named "${username}".`);
     }
+    await new Promise<void>((resolve, reject) =>
+      req.session.regenerate((err) => (err ? reject(err) : resolve())),
+    );
     req.session.userId = user.id;
+    req.session.loginAt = Date.now();
     await new Promise<void>((resolve, reject) => req.session.save((err) => (err ? reject(err) : resolve())));
     res.status(204).end();
   }),
