@@ -189,54 +189,48 @@ describe("GET /api/auth/me (T-AUTH-API-03)", () => {
     expect(forgedRes.body.error.code).toBe("UNAUTHENTICATED");
   });
 
-  // Server-side 24h loginAt check in requireUser lands in S1-06. Marked it.fails until S1-06.
-  it.fails(
-    "T-AUTH-API-03: rejects a session whose loginAt is more than 24 hours old (AC-AUTH-07)",
-    async () => {
-      const agent = request.agent(createApp());
-      await agent.post("/api/auth/login").send({ username: "alice", password: DEMO_PASSWORD }).expect(200);
+  // Server-side 24h loginAt check in requireUser (S1-06).
+  it("T-AUTH-API-03: rejects a session whose loginAt is more than 24 hours old (AC-AUTH-07)", async () => {
+    const agent = request.agent(createApp());
+    await agent.post("/api/auth/login").send({ username: "alice", password: DEMO_PASSWORD }).expect(200);
 
-      const sessionRow = await prisma.session.findFirstOrThrow();
-      const sess = sessionRow.sess as Record<string, unknown>;
-      await prisma.session.update({
-        where: { sid: sessionRow.sid },
-        data: {
-          sess: {
-            ...sess,
-            loginAt: Date.now() - 25 * 60 * 60 * 1000,
-          },
+    const sessionRow = await prisma.session.findFirstOrThrow();
+    const sess = sessionRow.sess as Record<string, unknown>;
+    await prisma.session.update({
+      where: { sid: sessionRow.sid },
+      data: {
+        sess: {
+          ...sess,
+          loginAt: Date.now() - 25 * 60 * 60 * 1000,
         },
-      });
+      },
+    });
 
-      const res = await agent.get("/api/auth/me");
-      expect(res.status).toBe(401);
-      expect(res.body.error.code).toBe("UNAUTHENTICATED");
-    },
-  );
+    const res = await agent.get("/api/auth/me");
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe("UNAUTHENTICATED");
+  });
 });
 
 describe("disabled-user session invalidation (T-AUTH-API-04)", () => {
-  // Per-request isEnabled check in requireUser lands in S1-06. Marked it.fails until S1-06.
-  it.fails(
-    "T-AUTH-API-04: rejects an active session on its very next request after user is disabled (BR-06)",
-    async () => {
-      const agent = request.agent(createApp());
-      await agent.post("/api/auth/login").send({ username: "alice", password: DEMO_PASSWORD }).expect(200);
-      await agent.get("/api/auth/me").expect(200);
+  // Per-request isEnabled check in requireUser (S1-06).
+  it("T-AUTH-API-04: rejects an active session on its very next request after user is disabled (BR-06)", async () => {
+    const agent = request.agent(createApp());
+    await agent.post("/api/auth/login").send({ username: "alice", password: DEMO_PASSWORD }).expect(200);
+    await agent.get("/api/auth/me").expect(200);
 
-      await prisma.user.update({
-        where: { username: "alice" },
-        data: { isEnabled: false },
-      });
+    await prisma.user.update({
+      where: { username: "alice" },
+      data: { isEnabled: false },
+    });
 
-      const meRes = await agent.get("/api/auth/me");
-      expect(meRes.status).toBe(401);
-      expect(meRes.body.error.code).toBe("UNAUTHENTICATED");
+    const meRes = await agent.get("/api/auth/me");
+    expect(meRes.status).toBe(401);
+    expect(meRes.body.error.code).toBe("UNAUTHENTICATED");
 
-      const whoamiRes = await agent.get("/api/test/whoami");
-      expect(whoamiRes.status).toBe(401);
-    },
-  );
+    const whoamiRes = await agent.get("/api/test/whoami");
+    expect(whoamiRes.status).toBe(401);
+  });
 });
 
 describe("credential and response field protection (T-AUTH-SEC-01)", () => {
