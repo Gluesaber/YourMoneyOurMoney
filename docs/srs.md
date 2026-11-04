@@ -2,7 +2,7 @@
 
 > **Document Version:** 1.0.0  
 > **Date:** 2026-11-04  
-> **Status:** Approved for Sprint 1  
+> **Status:** Draft  
 > **Project Theme:** Theme 7 — Personal Money and Expense Logging (CPE 334)  
 > **Authors:** Track A (Identity & Administration) & Track B (Ledger & Reporting)
 
@@ -36,13 +36,13 @@ This Software Requirements Specification (SRS) defines the functional, non-funct
 ## 2. Project Scope and Boundaries
 
 ### 2.1 In-Scope Capabilities (Spanning Sprints 1–3)
-1. **User Identity & Security:** Registration, credential-based login, secure HTTP-only cookie sessions, logout, and self-profile query.
+1. **User Identity & Security:** Credential-based login, secure HTTP-only cookie sessions (24-hour absolute duration), logout, and self-profile query. *(Note: User self-registration is excluded; accounts are provisioned via database seed data or administrative user management).*
 2. **System Administration:** Administrator user listing, account activation/deactivation, and access barriers prohibiting administrative viewing of personal finances.
 3. **Account & Balance Management:** Configuration of Cash, Loan Taken, Loan Given, Income, and Expense accounts; initial opening balance setup with opening dates.
 4. **Transaction Logging:** Execution of Payment and Receive operations supporting multi-line allocations, input validation, and transactional atomicity.
 5. **Summaries & Visual Dashboard:** Real-time computed net balances, credit card liabilities, receivables, income/expense totals, and category breakdown.
 6. **History & Navigation:** Chronological transaction history, transaction detail inspection, filtering by dates/categories, and favorite transaction flags.
-7. **Reports & Data Mobility:** Periodic expense/income comparison reports and data export in CSV and JSON formats.
+7. **Reports & Data Mobility [Added by Team]:** Periodic expense/income comparison reports, visual charts, and data export in CSV and JSON formats (see Decision Log DL-09).
 
 ### 2.2 Explicit Exclusions (Out of Scope)
 To ensure system integrity, timely delivery, and clear scope containment, the following capabilities are explicitly excluded from the product:
@@ -60,7 +60,7 @@ To ensure system integrity, timely delivery, and clear scope containment, the fo
 The system recognizes three distinct actors:
 
 ### 3.1 User (Standard Authenticated User)
-A personal user who manages their private accounts, transactions, and budgets.
+A personal user who manages their private financial accounts, transactions, and spending categories.
 - **Permissions:**
   - Authenticate (login, logout, query own identity).
   - Manage own accounts (`CASH`, `LOAN_TAKEN`, `LOAN_GIVEN`, `INCOME`, `EXPENSE`).
@@ -164,8 +164,8 @@ The system enforces 13 immutable business rules across the service layer and dat
 - **Business Rules:** BR-06.
 - **Error Handling:** If the user account was disabled during an active session, the session is rejected with 401 `UNAUTHENTICATED`.
 
-#### FR-AUTH-05: Session Expiry and Inactivity
-- **Description:** Sessions must expire after 24 hours of inactivity. Stored sessions are managed in PostgreSQL via `connect-pg-simple`.
+#### FR-AUTH-05: Fixed Session Expiration (24-Hour Duration)
+- **Description:** User sessions expire exactly 24 hours after login (`rolling: false`, `maxAge: 24 * 60 * 60 * 1000`). Stored sessions are managed in PostgreSQL via `connect-pg-simple`. There is no sliding/rolling inactivity extension; a session remains valid for up to 24 hours from creation unless explicitly destroyed via logout or revoked due to account deactivation.
 - **Actor:** System.
 - **Outputs:** Expired sessions return 401 `UNAUTHENTICATED` upon subsequent requests.
 
@@ -173,7 +173,7 @@ The system enforces 13 immutable business rules across the service layer and dat
 - **Description:** Passwords must be hashed using `bcryptjs` with a cost factor of at least 10 before storage. Plaintext passwords and password hashes must never be returned in any API response or logged in application logs.
 - **Actor:** System.
 
-#### FR-AUTH-07: Password Modification and Account Security (Sprint 3)
+#### FR-AUTH-07: Password Modification and Account Security (Sprint 3) [Added by Team]
 - **Description:** An authenticated user or administrator can update their account password by verifying their current password and providing a new valid password (`POST /api/auth/change-password`).
 - **Actor:** User, Administrator.
 - **Business Rules:** BR-06.
@@ -263,7 +263,7 @@ The system enforces 13 immutable business rules across the service layer and dat
 - **Business Rules:** BR-08.
 
 #### FR-ACC-06: Custom Account Creation and Management (Sprint 2)
-- **Description:** A User can create custom accounts, edit account names/types, and archive accounts with no active transactions.
+- **Description:** A User can create custom accounts, edit account names, and archive accounts with no active transactions. Changing the account type (`type`) is strictly prohibited once transactions exist for that account (returning 400 `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS`), to prevent retroactive ledger corruption.
 - **Actor:** User.
 - **Business Rules:** BR-03, BR-04, BR-12.
 - **Target Sprint:** Sprint 2.
@@ -284,6 +284,7 @@ The system enforces 13 immutable business rules across the service layer and dat
   - Lines sum must equal `totalAmount` exactly (BR-01).
   - Source cannot appear as an allocation line (BR-11).
 - **Outputs:** HTTP 201 `{ transaction: Transaction }`.
+- **Target Sprint:** Sprint 1 (Feature F-04).
 
 #### FR-TX-02: Receive Transaction Recording
 - **Description:** A User can record a `RECEIVE` transaction representing an inflow deposited into liquid funds (`CASH`), allocated across one or more line items.
@@ -297,18 +298,23 @@ The system enforces 13 immutable business rules across the service layer and dat
   - Lines sum must equal `totalAmount` exactly (BR-01).
   - Source cannot appear as an allocation line (BR-11).
 - **Outputs:** HTTP 201 `{ transaction: Transaction }`.
+- **Target Sprint:** Sprint 1 (Feature F-04).
 
-#### FR-TX-03: Internal Transfer Recording
-- **Description:** A User can execute transfers between their own liquid accounts (e.g. Bank to Wallet) via a PAYMENT transaction with a CASH destination line.
+#### FR-TX-03: Internal Account Transfer Recording (Sprint 2)
+- **Description:** A User can execute transfers between their own liquid cash accounts (e.g. Bank to Wallet). An internal transfer moves funds between two `CASH` accounts owned by the user without altering net cash wealth or affecting income/expense summaries (BR-08). A transfer can be logged as either:
+  1. A `PAYMENT` transaction: source account is `CASH` (transferred from, decreases source) and line account is `CASH` (transferred into, increases line balance).
+  2. A `RECEIVE` transaction: source account is `CASH` (transferred into, increases source) and line account is `CASH` (transferred from, decreases line balance).
+  *(Note: Debt repayments involving `LOAN_TAKEN` accounts are categorized under Debt Lifecycle in FR-TX-01 / FR-TX-09, not internal cash transfers).*
 - **Actor:** User.
 - **Business Rules:** BR-01, BR-02, BR-03, BR-04, BR-08, BR-09, BR-10, BR-11, BR-13.
-- **Inputs:** `kind: 'PAYMENT'`, `sourceAccountId` (integer, `CASH`), `date` (`YYYY-MM-DD`), `totalAmount` (integer satang > 0), optional `note` (string), `lines: [{ accountId, amount }]`.
+- **Inputs:** `kind: 'PAYMENT' | 'RECEIVE'`, `sourceAccountId` (integer, `CASH`), `date` (`YYYY-MM-DD`), `totalAmount` (integer satang > 0), optional `note` (string), `lines: [{ accountId, amount }]` (where each line `accountId` is a distinct `CASH` account).
 - **Validation Rules:**
-  - Source must belong to user and have type `CASH` (or `LOAN_TAKEN` for credit card debt repayments) (BR-09).
-  - Allocation line must belong to user and have type `CASH` (or `LOAN_TAKEN` for credit card debt repayments) (BR-10).
+  - Source must belong to user and have type `CASH` (BR-09).
+  - Allocation line must belong to user and have type `CASH` (BR-10).
   - Source account cannot appear as an allocation line (BR-11).
   - Lines sum must equal `totalAmount` exactly (BR-01).
 - **Outputs:** HTTP 201 `{ transaction: Transaction }`.
+- **Target Sprint:** Sprint 2 (Feature F-07).
 
 #### FR-TX-04: Multi-Line Split Allocation
 - **Description:** The system supports splitting any transaction across multiple categories (e.g. a 1,500 THB credit card charge split into 900 THB Dining and 600 THB Groceries).
@@ -325,11 +331,11 @@ The system enforces 13 immutable business rules across the service layer and dat
 - **Actor:** System.
 - **Business Rules:** BR-04.
 
-#### FR-TX-07: Favorite Transaction Toggle (Sprint 2)
-- **Description:** A User can toggle a transaction as a favorite (`isFavorite: boolean`) for quick retrieval.
+#### FR-TX-07: Favorite Transactions Management and Viewing (Sprint 2)
+- **Description:** A User can toggle a transaction as a favorite (`isFavorite: boolean`) for quick retrieval (`PATCH /api/transactions/:id/favorite`), and filter/view all favorite transactions (`GET /api/transactions?favorite=true`).
 - **Actor:** User.
 - **Business Rules:** BR-04.
-- **Target Sprint:** Sprint 2.
+- **Target Sprint:** Sprint 2 (Feature F-10).
 
 #### FR-TX-08: Transaction Duplication (Sprint 2)
 - **Description:** A User can duplicate an existing transaction to pre-populate transaction entry forms.
@@ -393,7 +399,7 @@ The system enforces 13 immutable business rules across the service layer and dat
   - `totals.expense` is strictly computed as `Σ(Payment lines on EXPENSE accounts)`.
   - Fund movements between cash accounts, debt borrowings, loan repayments, and initial equity opening balances are excluded from income and expense summaries.
 
-#### FR-SUM-04: Periodic Financial Analytics & Charts (Sprint 3)
+#### FR-SUM-04: Periodic Financial Analytics & Charts (Sprint 3) [Added by Team]
 - **Description:** Users can view graphical visualizations and monthly comparative expense/income breakdowns.
 - **Actor:** User.
 - **Business Rules:** BR-03, BR-04, BR-08.
@@ -417,12 +423,12 @@ The system enforces 13 immutable business rules across the service layer and dat
 - **Error Handling:** Transaction not found or owned by another user → 404 `NOT_FOUND`.
 
 #### FR-HST-03: Transaction History Filtering and Search (Sprint 2)
-- **Description:** A User can filter transactions by date ranges, account, category, or search keywords within notes.
+- **Description:** A User can filter transactions by date ranges, account, category, or search keywords within notes (`GET /api/transactions?startDate=...&endDate=...&accountId=...&q=...`).
 - **Actor:** User.
 - **Business Rules:** BR-04.
 - **Target Sprint:** Sprint 2.
 
-#### FR-HST-04: Data Export in CSV and JSON Formats (Sprint 3)
+#### FR-HST-04: Data Export in CSV and JSON Formats (Sprint 3) [Added by Team]
 - **Description:** A User can export their transaction records and summary balances in CSV and JSON formats for offline archiving.
 - **Actor:** User.
 - **Business Rules:** BR-03, BR-04.
@@ -449,7 +455,7 @@ The system enforces 13 immutable business rules across the service layer and dat
 ### 6.1 Security Requirements
 
 - **NFR-SEC-01 (Password Hashing):** All user passwords must be hashed using `bcryptjs` with a work factor (salt rounds) >= 10. Passwords must never be stored in plaintext, logged, or returned in any API response.
-- **NFR-SEC-02 (Session Security):** Sessions must be managed server-side in PostgreSQL using `connect-pg-simple`. Session cookies (`ymom.sid`) must be configured with `httpOnly: true`, `sameSite: 'lax'`, and `secure: true` in production environments.
+- **NFR-SEC-02 (Session Security):** Sessions must be managed server-side in PostgreSQL using `connect-pg-simple`. Session cookies (`ymom.sid`) must be configured with `httpOnly: true`, `sameSite: 'lax'`, `rolling: false`, and `secure: true` in production environments. Sessions have an absolute lifespan of 24 hours from login (`maxAge: 24 * 60 * 60 * 1000`) with no sliding inactivity extension.
 - **NFR-SEC-03 (Data Isolation & Anti-Enumeration):** Cross-tenant data access attempts must return 404 `NOT_FOUND` rather than 403 `FORBIDDEN`, ensuring unauthorized actors cannot determine the existence of resources owned by other users.
 - **NFR-SEC-04 (Role-Based Access Enforcement):** Authorization checks must be enforced at the middleware layer before route handlers execute. Financial routes require `role === 'USER'`; administration routes require `role === 'ADMIN'`.
 
@@ -459,7 +465,7 @@ The system enforces 13 immutable business rules across the service layer and dat
   - Read queries (`GET /api/accounts`, `GET /api/transactions`, `GET /api/summary`) must have p95 response times < 200 ms.
   - Transaction creation (`POST /api/transactions`) must have p95 response times < 250 ms.
   - Authentication requests (`POST /api/auth/login`) must complete within 200–500 ms (bounded by intentional bcrypt work factor).
-- **NFR-PERF-02 (Database Query Efficiency):** Composite foreign keys and indexes on `(userId, name)`, `(userId, date)`, and `(transactionId, accountId)` must ensure query execution times remain < 50 ms for datasets up to 100,000 transactions.
+- **NFR-PERF-02 (Database Query Efficiency):** Composite unique `(userId, name)` on Account, `(userId, date)` index on Transaction, and `transactionId` and `accountId` indexes on TransactionLine ensure query execution times remain < 50 ms for datasets up to 100,000 transactions.
 
 ### 6.3 Reliability and Data Persistence
 
@@ -469,7 +475,7 @@ The system enforces 13 immutable business rules across the service layer and dat
 
 ### 6.4 Usability and Compatibility
 
-- **NFR-COMP-01 (Cross-Browser Compatibility):** The client interface must render correctly and operate without functional degradation on modern evergreen browsers: Google Chrome 120+, Mozilla Firefox 120+, Apple Safari 17+, and Microsoft Edge 120+.
+- **NFR-COMP-01 (Cross-Browser Compatibility):** The client interface must render correctly and operate without functional degradation on modern evergreen desktop and mobile browsers: Google Chrome 120+, Mozilla Firefox 120+, and Microsoft Edge 120+ (automated CI testing targets Chromium and Firefox).
 - **NFR-COMP-02 (Responsive Viewport Support):** The client user interface must be fully functional across display viewports from mobile smartphones (minimum width 360px) to standard desktop displays (1920x1080px).
 - **NFR-COMP-03 (Localized Currency Presentation):** Users must input and view amounts in standard Thai Baht format (e.g. `1,500.00 THB`), while client-side utilities convert accurately to/from integer satang (`150000`).
 
@@ -493,7 +499,7 @@ The system enforces 13 immutable business rules across the service layer and dat
 - **Relational Database:** PostgreSQL 16 managed via Docker or managed cloud PostgreSQL.
 - **ORM & Migrations:** Prisma ORM 5.x.
 - **Session Store:** `connect-pg-simple` writing to the `session` table.
-- **Client Bundler:** Vite with React 18, React Router v6, and Bootstrap 5.
+- **Client Bundler:** Vite with React 18, React Router v7, and Bootstrap 5.
 
 ---
 
@@ -514,23 +520,36 @@ The system enforces 13 immutable business rules across the service layer and dat
 
 ## 9. Theme 7 Brief Item Compliance Mapping
 
-Every requirement and guideline from the **Theme 7 (Personal Money and Expense Logging)** project brief is mapped to either a Functional Requirement or an Explicit Exclusion below:
+### 9.1 Theme 7 Brief Item Compliance Mapping
+The table below maps all capabilities and explicit scope requirements from the **Theme 7 (Personal Money and Expense Logging)** course brief to our specification:
 
-| Theme 7 Brief Item | Requirement Summary | Status | Mapped Item / Justification |
+| Theme 7 Brief Item | Requirement Summary | Status | Mapped Specification / Justification |
 |---|---|---|---|
-| **T7-01: User Accounts & Auth** | Personal user login, logout, password security | In Scope | FR-AUTH-01 through FR-AUTH-07, NFR-SEC-01 |
-| **T7-02: Multi-Role Access** | User vs Admin separation; admin governance | In Scope | FR-ADM-01 through FR-ADM-04, BR-05, BR-07 |
-| **T7-03: Financial Accounts** | Cash, Bank, Wallet, Credit Card, Loans, Categories | In Scope | FR-ACC-01 through FR-ACC-03, FR-ACC-06, BR-03, BR-04, BR-09, BR-10, BR-12 |
-| **T7-04: Opening Balances** | Initial account setup with opening dates | In Scope | FR-ACC-04, FR-ACC-05, BR-08, BR-12 |
-| **T7-05: Transaction Logging** | Payment, Receive, and Transfer operations | In Scope | FR-TX-01 through FR-TX-03, FR-TX-05, FR-TX-06, FR-TX-09, FR-TX-10, BR-01, BR-02, BR-03, BR-04, BR-08, BR-09, BR-10, BR-11, BR-13 |
-| **T7-06: Split Allocations** | Split bills across multiple categories/accounts | In Scope | FR-TX-04, BR-01, BR-02 |
-| **T7-07: Real-Time Balances** | Running cash balances, debt tracking, receivables | In Scope | FR-SUM-01 through FR-SUM-03, BR-03, BR-04, BR-05, BR-08 |
-| **T7-08: Transaction History** | Reverse chronological history, transaction inspection | In Scope | FR-HST-01, FR-HST-02 |
-| **T7-09: Filtering & Favorites** | Quick search, category filters, favorite flags | In Scope | FR-HST-03, FR-TX-07, FR-TX-08 (Sprint 2) |
-| **T7-10: Reports & Analytics** | Monthly breakdown, income vs expense comparison | In Scope | FR-SUM-04 (Sprint 3) |
-| **T7-11: Data Export** | CSV / JSON export of transactions and balances | In Scope | FR-HST-04 (Sprint 3) |
-| **T7-12: Envelope / Period Budgets** | Category spending caps and family shared budgets | **Excluded** | Explicit Exclusion §2.2 Item 1 (Personal single-user focus) |
-| **T7-13: Automated Recurring Tx** | Automatic scheduled recurring posting | **Excluded** | Explicit Exclusion §2.2 Item 2 (Manual logging integrity) |
-| **T7-14: Bank Direct Integration** | Open banking sync, automated bank feeds | **Excluded** | Explicit Exclusion §2.2 Item 3 (Self-contained security) |
-| **T7-15: Receipt Photo Upload** | Uploading receipt photos or file attachments | **Excluded** | Explicit Exclusion §2.2 Item 4 (Multer dropped from stack) |
-| **T7-16: Foreign Currencies** | Multi-currency conversions and FX rates | **Excluded** | Explicit Exclusion §2.2 Item 5 (THB satang base currency) |
+| **User Accounts & Authentication** | Secure credential-based login, session management, and logout | In Scope | FR-AUTH-01 through FR-AUTH-06, NFR-SEC-01, NFR-SEC-02 |
+| **Private Multi-User Platform** | User data isolation; each user's financial ledger is strictly private from other users and hidden from administrators | In Scope | FR-ADM-04, NFR-SEC-03, BR-04, BR-05, DL-04, DL-05, DL-06 |
+| **Role-Based Access (User & Admin)** | Separation into User and Administrator roles; administrator governs user access but cannot view finances | In Scope | FR-ADM-01 through FR-ADM-04, BR-05, BR-06, BR-07 |
+| **Financial Accounts & Categories** | Taxonomy of accounts: Cash (Bank, Wallet), Credit Card / Debt (`LOAN_TAKEN`), Receivables (`LOAN_GIVEN`), Income, and Expense | In Scope | FR-ACC-01 through FR-ACC-03, FR-ACC-06, BR-03, BR-09, BR-10, BR-12 |
+| **Opening Balances with Opening Dates** | Initial starting balance and opening date on asset and liability accounts, excluded from income/expense totals | In Scope | FR-ACC-04, FR-ACC-05, BR-08, BR-12 |
+| **Transaction Dates** | Every transaction is logged with a calendar date (`date` column, `YYYY-MM-DD`) | In Scope | FR-TX-01, FR-TX-02, BR-03 |
+| **Transaction Logging (Payment & Receive)** | Recording financial outflows (Payment) and inflows (Receive) with source account, amount, and optional note | In Scope | FR-TX-01, FR-TX-02, BR-01, BR-02, BR-09, BR-10, BR-11, BR-13 |
+| **Split Allocations (Lines = Total)** | Dividing a transaction across multiple categories/accounts where lines sum exactly to total amount | In Scope | FR-TX-04, BR-01, BR-02 |
+| **Outstanding Loans & Card Debt** | Dedicated tracking of debts owed (`LOAN_TAKEN`), credit cards, and receivables (`LOAN_GIVEN`), including repayment logging | In Scope | FR-TX-09, FR-SUM-01, BR-08, BR-10 |
+| **Real-Time Balances & Category Summaries** | Dynamic calculation of net cash balance, debt totals, receivables, and category spending/income totals | In Scope | FR-SUM-01 through FR-SUM-03, BR-03, BR-08, DL-02 |
+| **Transaction History & Details** | Reverse chronological history feed and line-by-line transaction inspection | In Scope | FR-HST-01, FR-HST-02 |
+| **Duplicate Transaction** | Rapid 1-click duplication to pre-fill entry forms for current date | In Scope | FR-TX-08 (Sprint 2, Feature F-10) |
+| **Mark and View Favorites** | Mark frequent transactions as favorites and view/filter them for quick entry | In Scope | FR-TX-07 (Sprint 2, Feature F-10) |
+| **Filter and Search Transactions** | Filter transaction history by date range, account/category, and search terms | In Scope | FR-HST-03 (Sprint 2, Feature F-09) |
+| **Envelope / Period Budgets** | Periodic spending limits (e.g. monthly category budget caps) or shared family budgets | **Excluded** | Explicit Exclusion §2.2 Item 1 (Single-user individual ledger focus) |
+| **Automated Recurring Transactions** | Background scheduled posting or auto-billing engine | **Excluded** | Explicit Exclusion §2.2 Item 2 (Manual entry model guarantees verification) |
+| **Direct Bank Integration / Open Banking** | Automated bank feed sync, screen scraping, or external bank API credentials | **Excluded** | Explicit Exclusion §2.2 Item 3 (Self-contained security, zero third-party dependencies) |
+
+### 9.2 Team-Added Capabilities & Scope Decisions
+The following items represent deliberate team additions and architectural scope boundaries beyond the minimum brief:
+
+| Addition Ref | Capability / Scope Item | Category | Target Sprint / Decision Justification |
+|---|---|---|---|
+| **T7-TEAM-01** | Data Export in CSV and JSON formats (F-13) | **Team Addition** | Sprint 3 (Feature F-13, FR-HST-04, DL-09). Provides user data ownership and portability. |
+| **T7-TEAM-02** | Administrator User Creation & Password Governance (F-14) | **Team Addition** | Sprint 3 (Feature F-14, FR-AUTH-07, DL-09). Required for ongoing platform governance in the absence of self-registration. |
+| **T7-TEAM-03** | Visual Spending Analytics & Charts (F-11) | **Team Addition** | Sprint 3 (Feature F-11, FR-SUM-04, DL-09). Enhances summary usability with category breakdowns and monthly trends. |
+| **T7-TEAM-04** | Receipt Photo Uploads (Dropped from Stack) | **Scope Boundary** | Explicit Exclusion §2.2 Item 4 (DL-08). Multer dependency eliminated to simplify stateless container deployment. |
+| **T7-TEAM-05** | Foreign Currencies & FX (Single-Currency System) | **Scope Boundary** | Explicit Exclusion §2.2 Item 5. Fixed base currency in THB satang eliminates floating-point conversion errors. |

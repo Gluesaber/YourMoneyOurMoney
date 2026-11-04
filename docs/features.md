@@ -2,7 +2,7 @@
 
 > **Document Version:** 1.0.0  
 > **Date:** 2026-11-04  
-> **Status:** Approved for Sprint 1  
+> **Status:** Draft  
 > **Product Scope:** Sprint 1, Sprint 2, and Sprint 3  
 > **Theme:** Theme 7 — Personal Money and Expense Logging (CPE 334)
 
@@ -19,15 +19,15 @@ This document provides a comprehensive inventory of all product features across 
 | **F-03** | Account Setup & Opening Balances | **Sprint 1** | Track B | In Progress | Seeded accounts (Bank, Card, Categories), opening balances |
 | **F-04** | Transaction Recording & Split Allocations | **Sprint 1** | Track B | In Progress | Payment/Receive entry, multi-line splits, balance validation |
 | **F-05** | Financial Summary & Transaction History | **Sprint 1** | Track B | In Progress | Real-time balances, debt tracking, category totals, history list |
-| **F-06** | Custom Account & Category Management | **Sprint 2** | Track B | Planned | Create, edit, and archive custom accounts and categories |
-| **F-07** | Internal Account Transfers | **Sprint 2** | Track B | Planned | Dedicated UI for cash transfers and debt repayments |
-| **F-08** | Debt & Receivable Lifecycle (Lending & Borrowing) | **Sprint 2** | Track B | Planned | Loan given / loan taken tracking, repayments, outstanding debts |
-| **F-09** | Transaction Search, Filtering & Sorting | **Sprint 2** | Track A / B | Planned | Date range filtering, category search, keyword matching |
-| **F-10** | Favorite & Duplicate Transactions | **Sprint 2** | Track A | Planned | Quick re-entry, star favorite transactions, clone past records |
-| **F-11** | Financial Reports & Periodic Spending Analytics | **Sprint 3** | Track B | Planned | Monthly income vs expense charts, category spend trends |
-| **F-12** | Transaction Editing, Voiding & Audit Corrections | **Sprint 3** | Track B | Planned | Revise transaction notes/lines, void transactions with rollback |
-| **F-13** | Data Export (CSV & JSON) | **Sprint 3** | Track A | Planned | Export transaction ledgers and account statements |
-| **F-14** | User Profile & Security Settings | **Sprint 3** | Track A | Planned | Change password, update profile settings, session reviews |
+| **F-06** | Custom Account & Category Management | **Sprint 2** | Decided at sprint planning | Planned | Create, edit, and archive custom accounts and categories |
+| **F-07** | Internal Account Transfers | **Sprint 2** | Decided at sprint planning | Planned | Dedicated UI for inter-account cash transfers |
+| **F-08** | Debt & Receivable Lifecycle (Lending & Borrowing) | **Sprint 2** | Decided at sprint planning | Planned | Loan given / loan taken tracking, repayments, outstanding debts |
+| **F-09** | Transaction Search, Filtering & Sorting | **Sprint 2** | Decided at sprint planning | Planned | Date range filtering, category search, keyword matching (`q`) |
+| **F-10** | Favorite & Duplicate Transactions | **Sprint 2** | Decided at sprint planning | Planned | Quick re-entry, star and view favorite transactions, clone records |
+| **F-11** | Financial Reports & Periodic Spending Analytics [Added by Team] | **Sprint 3** | Decided at sprint planning | Planned | Monthly income vs expense charts, category spend trends (DL-09) |
+| **F-12** | Transaction Editing, Voiding & Audit Corrections | **Sprint 3** | Decided at sprint planning | Planned | Revise transaction notes/lines, void transactions with rollback |
+| **F-13** | Data Export (CSV & JSON) [Added by Team] | **Sprint 3** | Decided at sprint planning | Planned | Export transaction ledgers and account statements (DL-09) |
+| **F-14** | User Profile & Security Settings [Added by Team] | **Sprint 3** | Decided at sprint planning | Planned | Change password, user creation governance (DL-09) |
 
 ---
 
@@ -114,7 +114,7 @@ This document provides a comprehensive inventory of all product features across 
   - Validate that the sum of line amounts exactly equals the total amount (`ALLOCATION_MISMATCH` 400) (BR-01).
   - Atomic persistence in a single database transaction (`prisma.$transaction`) (BR-13).
   - Enforce ownership on all involved accounts (BR-04).
-- **Mapped FRs:** FR-TX-01, FR-TX-02, FR-TX-03, FR-TX-04, FR-TX-05, FR-TX-06.
+- **Mapped FRs:** FR-TX-01, FR-TX-02, FR-TX-04, FR-TX-05, FR-TX-06.
 - **Mapped BRs:** BR-01, BR-02, BR-03, BR-04, BR-09, BR-10, BR-11, BR-13.
 - **API Endpoints:**
   - `POST /api/transactions`
@@ -150,14 +150,14 @@ This document provides a comprehensive inventory of all product features across 
 
 ### F-06: Custom Account & Category Management
 - **Target Sprint:** Sprint 2
-- **Track Owner:** Track B
+- **Track Owner:** Decided at sprint planning
 - **Status:** Planned
 - **User Story:**  
   *As a personal user, I want to create custom bank accounts, e-wallets, and customized income and expense categories, so that the system fits my specific personal spending habits.*
 - **Detailed Capabilities:**
   - Create new accounts specifying name, type, and subtype (`POST /api/accounts`).
   - Validate unique account names per user namespace (`(userId, name)`).
-  - Edit account names and update opening balances.
+  - Edit account names and update opening balances; account type changes are strictly prohibited once transactions exist for the account (`CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS`) to avoid ledger corruption.
   - Archive or delete unused accounts (restricted if transactions reference the account via foreign key constraints).
 - **Mapped FRs:** FR-ACC-02, FR-ACC-03, FR-ACC-04, FR-ACC-06.
 - **Mapped BRs:** BR-03, BR-04, BR-12.
@@ -172,17 +172,19 @@ This document provides a comprehensive inventory of all product features across 
 
 ### F-07: Internal Account Transfers
 - **Target Sprint:** Sprint 2
-- **Track Owner:** Track B
+- **Track Owner:** Decided at sprint planning
 - **Status:** Planned
 - **User Story:**  
-  *As a personal user, I want a dedicated transfer workflow between my liquid accounts (e.g. Bank to Cash Wallet) or from Bank to Credit Card for bill payments, so that inter-account fund shifts are seamless and clearly logged.*
+  *As a personal user, I want a dedicated transfer workflow between my liquid accounts (e.g. Bank to Cash Wallet), so that inter-account fund shifts are seamless, clearly logged, and excluded from income/expense summaries.*
 - **Detailed Capabilities:**
-  - Specialized Transfer UI pre-populating source and destination liquid accounts.
+  - Specialized Transfer UI pre-populating source and destination `CASH` accounts.
+  - Support transfers logged via Payment (source: CASH, line: CASH) or Receive (source: CASH, line: CASH).
   - Automatically enforce non-income/expense classification (BR-08).
-  - Immediate balance updates across both accounts.
+  - Immediate dynamic balance updates across both cash accounts.
+  *(Note: Debt repayments involving `LOAN_TAKEN` accounts are handled in F-08 / FR-TX-09, not internal cash transfers).*
 - **Mapped FRs:** FR-TX-03, FR-SUM-03.
 - **Mapped BRs:** BR-01, BR-02, BR-03, BR-04, BR-08, BR-09, BR-10, BR-11, BR-13.
-- **API Endpoints:** `POST /api/transactions` (kind: PAYMENT, line type: CASH or LOAN_TAKEN).
+- **API Endpoints:** `POST /api/transactions` (kind: PAYMENT | RECEIVE, source: CASH, line: CASH).
 - **UI Components:** `TransferFormPage`.
 - **Dependencies:** F-04, F-05.
 
@@ -190,7 +192,7 @@ This document provides a comprehensive inventory of all product features across 
 
 ### F-08: Debt & Receivable Lifecycle (Lending & Borrowing)
 - **Target Sprint:** Sprint 2
-- **Track Owner:** Track B
+- **Track Owner:** Decided at sprint planning
 - **Status:** Planned
 - **User Story:**  
   *As a personal user, I want to log loans I have extended to friends (receivables) and loans I have borrowed (debts), and log partial or full repayments, so that I can keep track of outstanding personal balances.*
@@ -210,12 +212,12 @@ This document provides a comprehensive inventory of all product features across 
 
 ### F-09: Transaction Search, Filtering & Sorting
 - **Target Sprint:** Sprint 2
-- **Track Owner:** Track A / B
+- **Track Owner:** Decided at sprint planning
 - **Status:** Planned
 - **User Story:**  
   *As a personal user, I want to search and filter my transaction history by date range, account, category, and keyword, so that I can quickly locate specific transactions.*
 - **Detailed Capabilities:**
-  - Query parameters on `GET /api/transactions`: `startDate`, `endDate`, `accountId`, `kind`, `search`.
+  - Query parameters on `GET /api/transactions`: `startDate`, `endDate`, `accountId`, `kind`, `q`.
   - Case-insensitive substring search across transaction notes.
   - Client-side quick filter buttons (This Month, Last Month, This Year).
 - **Mapped FRs:** FR-HST-03.
@@ -228,7 +230,7 @@ This document provides a comprehensive inventory of all product features across 
 
 ### F-10: Favorite & Duplicate Transactions
 - **Target Sprint:** Sprint 2
-- **Track Owner:** Track A
+- **Track Owner:** Decided at sprint planning
 - **Status:** Planned
 - **User Story:**  
   *As a personal user, I want to star frequent transactions as favorites and duplicate past transactions with one click, so that recurring manual entries (like monthly bills) take minimal time to log.*
@@ -248,9 +250,9 @@ This document provides a comprehensive inventory of all product features across 
 
 ## 4. Sprint 3 Features (Analytics, Audit & Maintenance)
 
-### F-11: Financial Reports & Periodic Spending Analytics
+### F-11: Financial Reports & Periodic Spending Analytics [Added by Team]
 - **Target Sprint:** Sprint 3
-- **Track Owner:** Track B
+- **Track Owner:** Decided at sprint planning
 - **Status:** Planned
 - **User Story:**  
   *As a personal user, I want to view monthly expense versus income breakdown charts and category trends, so that I understand my financial habits over time.*
@@ -270,7 +272,7 @@ This document provides a comprehensive inventory of all product features across 
 
 ### F-12: Transaction Editing, Voiding & Audit Corrections
 - **Target Sprint:** Sprint 3
-- **Track Owner:** Track B
+- **Track Owner:** Decided at sprint planning
 - **Status:** Planned
 - **User Story:**  
   *As a personal user, I want to edit mistakes in transaction notes/dates or void a wrongly entered transaction, so that my account balances stay accurate if I make an entry error.*
@@ -288,9 +290,9 @@ This document provides a comprehensive inventory of all product features across 
 
 ---
 
-### F-13: Data Export (CSV & JSON)
+### F-13: Data Export (CSV & JSON) [Added by Team]
 - **Target Sprint:** Sprint 3
-- **Track Owner:** Track A
+- **Track Owner:** Decided at sprint planning
 - **Status:** Planned
 - **User Story:**  
   *As a personal user, I want to export my transaction records and account balances as CSV or JSON files, so that I can backup my data or inspect it in spreadsheet software.*
@@ -308,9 +310,9 @@ This document provides a comprehensive inventory of all product features across 
 
 ---
 
-### F-14: User Profile & Security Settings
+### F-14: User Profile & Security Settings [Added by Team]
 - **Target Sprint:** Sprint 3
-- **Track Owner:** Track A
+- **Track Owner:** Decided at sprint planning
 - **Status:** Planned
 - **User Story:**  
   *As a user or administrator, I want to change my password and view my active session details, so that I can maintain my account security.*
