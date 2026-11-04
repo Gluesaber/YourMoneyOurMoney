@@ -3,6 +3,7 @@ import request from "supertest";
 import { createApp } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
 import { seed } from "../../prisma/seedData.js";
+import { accountOf } from "../helpers/accounts.js";
 import { agentAs } from "../helpers/auth.js";
 import { resetDb } from "../helpers/db.js";
 
@@ -20,11 +21,6 @@ const SEEDED_IN_ORDER = [
   { name: "Groceries", type: "EXPENSE", subtype: null },
   { name: "Telecom", type: "EXPENSE", subtype: null },
 ];
-
-async function accountOf(username: string, name: string) {
-  const user = await prisma.user.findUniqueOrThrow({ where: { username } });
-  return prisma.account.findUniqueOrThrow({ where: { userId_name: { userId: user.id, name } } });
-}
 
 beforeEach(async () => {
   await resetDb();
