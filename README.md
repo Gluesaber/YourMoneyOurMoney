@@ -77,6 +77,11 @@ Open http://localhost:5173. The client proxies `/api` to the API on port 3000.
 Server tests need the Docker database running. They apply migrations to `ymom_test` automatically
 and reset it with `resetDb()` before each test file, so they never touch dev data.
 
+E2E tests also need only the Docker database. `npm run test:e2e` migrates, empties and re-seeds its own
+database (`ymom_e2e`, created automatically) and starts its own API and client on ports **3100** and **5174**,
+so it can run while your dev servers are up and never changes dev data. Override the database with
+`E2E_DATABASE_URL` if needed.
+
 ## 7. Project layout
 
 ```
