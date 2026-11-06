@@ -163,3 +163,11 @@ No schema change. Writes one `Transaction` and its `TransactionLine` rows. The d
 - [ ] Lint, format and type check pass
 - [ ] `docs/traceability.md` rows for FR-TX-01, 02, 04, 05, 06 list these AC and test IDs
 - [ ] PR into `Sprint-1/staging` reviewed and approved by the teammate
+
+## 10. Version history
+
+Times are Asia/Bangkok (UTC+7). Commit IDs are on `Sprint-1/staging`; PR links are in the repository.
+
+| Version | Date | Commit | PR / Issue | Change |
+|---|---|---|---|---|
+| 1.0 | 2026-11-04 21:11 | `989daea` | #21 / S1-10 | First contract, before any S1-12 code (S1-12 first commit `30befe0`, 22:45) |

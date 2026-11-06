@@ -50,7 +50,7 @@ End-to-end tests (`e2e/`):
 
 ## 3. Manual cross-checks (each member runs the other's track)
 
-### 3.1 Track A screens, checked by Gluesaber (Track B) — 2026-11-05, dev servers, dev database
+### 3.1 Track A screens, checked by Harit Chaiyanukit (Track B) — 2026-11-05, dev servers, dev database
 
 | # | Check | Expected | Result |
 |---|---|---|---|
@@ -66,22 +66,26 @@ End-to-end tests (`e2e/`):
 Steps 7 and 8 were checked through the page's own requests because the browser pane stopped drawing; the
 results are the same responses the screens use. All seeded users were left enabled afterwards.
 
-Track B screens were also exercised end to end by Gluesaber during S1-14 at phone width (364 px): the full demo
+Track B screens were also exercised end to end by Harit Chaiyanukit during S1-14 at phone width (364 px): the full demo
 journey, the not-found page, and no sideways scrolling on any page after the layout fix in PR #28.
 
-### 3.2 Track B screens, checked by ArgoJR203 (Track A)
+### 3.2 Track B screens, checked by Jirawat Rachatapramet (Track A)
 
-To be run and recorded by ArgoJR203 on `Sprint-1/staging` after this PR merges: log in as alice, set Bank's
-opening balance, record a Receive and a split Payment, confirm the dashboard totals and History, and confirm an
-allocation mismatch cannot be saved.
+Run by Jirawat Rachatapramet on `Sprint-1/staging` at `516399e` (results received 2026-11-06), through the UI
+on the dev servers: PostgreSQL 16 (Docker), Node.js 24.14 / 25.8, Chromium. Logged in as alice on a freshly seeded
+database, set Bank's opening balance, recorded a Receive and a split Payment, confirmed the dashboard totals and
+History, and confirmed an allocation mismatch cannot be saved.
 
 | # | Check | Expected | Result |
 |---|---|---|---|
-| 1 | Set Bank opening balance 10,000.00 | Dashboard Bank 10,000.00; income still 0.00 | |
-| 2 | Record money received: Bank ← Salary 30,000.00 | Detail page "Money received"; Bank 40,000.00 | |
-| 3 | Record payment: Credit Card → Dining 900.00 + Groceries 600.00 | Remaining 0.00 enables Save; card owes 1,500.00 | |
-| 4 | Record payment: Bank → Credit Card 1,500.00 | Bank 38,500.00; card 0.00; expense 1,500.00 | |
-| 5 | Payment with total 1,500.00 and one line 900.00 | Save disabled; "Remaining to allocate" 600.00 | |
+| 1 | Set Bank opening balance 10,000.00 | Dashboard Bank 10,000.00; income still 0.00 | Pass |
+| 2 | Record money received: Bank ← Salary 30,000.00 | Detail page "Money received"; Bank 40,000.00 | Pass |
+| 3 | Record payment: Credit Card → Dining 900.00 + Groceries 600.00 | Remaining 0.00 enables Save; card owes 1,500.00 | Pass |
+| 4 | Record payment: Bank → Credit Card 1,500.00 | Bank 38,500.00; card 0.00; expense 1,500.00 | Pass |
+| 5 | Payment with total 1,500.00 and one line 900.00 | Save disabled; "Remaining to allocate" 600.00 | Pass |
+
+After check 4, History listed the three transactions newest first (2026-11-04, 2026-11-03, 2026-11-02), and total
+income was 30,000.00: the opening balance and the card repayment were not counted as income or expense (BR-08).
 
 ## 4. Changes made during integration (S1-15)
 

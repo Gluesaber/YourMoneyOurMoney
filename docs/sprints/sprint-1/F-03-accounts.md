@@ -142,3 +142,12 @@ T-ACC-API-10 depends on `GET /api/summary` (S1-13). Until then it is written and
 - [ ] Lint, format and type check pass
 - [ ] `docs/traceability.md` rows for FR-ACC-01…05 list these AC and test IDs
 - [ ] PR into `Sprint-1/staging` reviewed and approved by the teammate
+
+## 9. Version history
+
+Times are Asia/Bangkok (UTC+7). Commit IDs are on `Sprint-1/staging`; PR links are in the repository.
+
+| Version | Date | Commit | PR / Issue | Change |
+|---|---|---|---|---|
+| 1.0 | 2026-11-04 21:11 | `989daea` | #21 / S1-10 | First contract, before any S1-11 code (S1-11 first commit `69eaa22`, 22:09) |
+| 1.1 | 2026-11-04 23:19 | `ebd8077` | #24 / S1-12 | Review fix: R4 limits `openingDate` to 2000-01-01 … 2099-12-31; AC-ACC-07 and T-ACC-API-07 updated |
