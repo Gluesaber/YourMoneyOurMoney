@@ -75,11 +75,11 @@ Set up the repository so both tracks can start in parallel.
 ### S1-02 · Shared contracts: data model, balance rules, API map, role matrix
 **Labels:** `docs` `contract` · **Assignee:** A + B · **Depends on:** S1-01 · **Blocks:** S1-04, S1-10
 
-Freeze what both tracks code against. Write it into `docs/system-sds.md` (draft sections) and the first Prisma migration.
+Freeze what both tracks code against. Write it into `docs/system-sds.md` (draft sections) and the Prisma migration for the financial tables (`Account`, `Transaction`, `TransactionLine`).
 
 **Tasks**
 - [ ] Prisma schema + migration:
-  - `User(id, username unique, passwordHash, role USER|ADMIN, isEnabled)`
+  - `User(id, username unique, passwordHash, role USER|ADMIN, isEnabled)` *(added in S1-01)*
   - `Account(id, userId, name, type CASH|LOAN_GIVEN|LOAN_TAKEN|INCOME|EXPENSE, subtype BANK|WALLET|CREDIT_CARD|null, openingBalance Int, openingDate)`
   - `Transaction(id, userId, kind PAYMENT|RECEIVE, sourceAccountId, date, totalAmount Int, note, isFavorite, createdAt)`
   - `TransactionLine(id, transactionId, accountId, amount Int)`
@@ -130,7 +130,7 @@ Write `docs/sprints/sprint-1/F-01-auth.md` and `F-02-admin.md`. **Merge before a
 **Labels:** `feature` `backend` `security` · **Assignee:** A · **Depends on:** S1-04
 
 **Tasks**
-- [ ] Seed users: at least 2 USERs and 1 ADMIN, passwords hashed with bcryptjs
+- [x] Seed users: at least 2 USERs (`alice`, `bob`) and 1 ADMIN (`admin`), passwords hashed with bcryptjs *(seeded in S1-01 via `server/prisma/seedData.ts`)*
 - [ ] `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
 - [ ] Disabled users rejected at login (BR-06)
 
@@ -149,7 +149,7 @@ Replace the placeholder guards from S1-01 with real ones and prove the access ru
 **Tasks**
 - [ ] `requireUser`: 401 without a valid session; re-checks `isEnabled` each request (BR-06)
 - [ ] `requireRole`: 403 for wrong role
-- [ ] `findOwned(model, id, userId)` helper → 404 when not owned (BR-04); used by B's routes
+- [x] `assertOwned(record, userId)` helper → 404 when not owned (BR-04); used by B's routes *(implemented in S1-01)*
 - [ ] Every route in the S1-02 API map has a guard
 
 **Done when (tests; financial-route tests may stay red until B's routes merge)**
@@ -287,17 +287,6 @@ Write `docs/sprints/sprint-1/F-03-…`, `F-04-…`, `F-05-…`. **Merge before a
 - [ ] AI-use declaration and contribution table
 
 ---
-
-## Suggested timeline
-
-| Day | A | B |
-|---|---|---|
-| Tue 3 Nov | S1-01, S1-02 (pair) | S1-01, S1-02 (pair) |
-| Wed 4 Nov | S1-03, S1-04 | S1-09, S1-10 |
-| Thu 5 Nov | S1-05, S1-06 | S1-11, S1-12 |
-| Fri 6 Nov | S1-07, S1-08 | S1-12, S1-13 |
-| Sat 7 Nov | finish S1-08, review B's PRs | S1-14, review A's PRs |
-| Sun 8 Nov | S1-15, S1-16 (pair) | S1-15, S1-16 (pair) |
 
 **Not in Sprint 1:** creating/managing accounts, loan-given/taken flows beyond the seeds, transfer UI,
 editing/correcting transactions, search and filter, favorites, duplicate, reports.

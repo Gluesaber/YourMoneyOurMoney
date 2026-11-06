@@ -1,0 +1,23 @@
+# Local PostgreSQL for development and tests. Only the database runs in Docker for Sprint 1;
+# containerising the app itself is Lab 5.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ymom
+      POSTGRES_PASSWORD: ymom
+      POSTGRES_DB: ymom
+    ports:
+      - "5434:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      # Creates the separate ymom_test database the first time the volume is initialised.
+      - ./docker/postgres/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ymom -d ymom"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  db-data:

@@ -1,0 +1,116 @@
+// Shared file: change only by a PR reviewed by both members (docs/system-sds.md §3).
+// All money columns are Int holding satang (BR-03). Check constraints that Prisma cannot express
+// live in the migration SQL; docs/system-sds.md §3.3 lists them.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum AccountType {
+  CASH
+  LOAN_GIVEN
+  LOAN_TAKEN
+  INCOME
+  EXPENSE
+}
+
+enum AccountSubtype {
+  BANK
+  WALLET
+  CREDIT_CARD
+}
+
+enum TransactionKind {
+  PAYMENT
+  RECEIVE
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  isEnabled    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  accounts     Account[]
+  transactions Transaction[]
+}
+
+model Account {
+  id             Int             @id @default(autoincrement())
+  userId         Int
+  name           String
+  type           AccountType
+  subtype        AccountSubtype?
+  // Satang. Only CASH, LOAN_TAKEN and LOAN_GIVEN may be non-zero (BR-12). Never counted as income (BR-08).
+  openingBalance Int             @default(0)
+  openingDate    DateTime?       @db.Date
+  createdAt      DateTime        @default(now())
+
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceTransactions Transaction[]
+  lines              TransactionLine[]
+
+  @@unique([userId, name])
+  // Target of the composite foreign keys below, so a transaction or line can only use the owner's accounts.
+  @@unique([id, userId])
+}
+
+model Transaction {
+  id              Int             @id @default(autoincrement())
+  userId          Int
+  kind            TransactionKind
+  sourceAccountId Int
+  date            DateTime        @db.Date
+  // Satang, > 0. Must equal the sum of the lines (BR-01, checked in the service).
+  totalAmount     Int
+  note            String?
+  isFavorite      Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceAccount Account           @relation(fields: [sourceAccountId, userId], references: [id, userId], onDelete: Restrict)
+  lines         TransactionLine[]
+
+  @@unique([id, userId])
+  @@index([userId, date])
+}
+
+// connect-pg-simple's session store (server/src/session.ts). Declared here only so Prisma owns the table:
+// without it, `prisma migrate dev` treats the table as drift and offers to reset the database.
+// Matches node_modules/connect-pg-simple/table.sql exactly; app code never queries it through Prisma.
+model Session {
+  sid    String   @id(map: "session_pkey") @db.VarChar
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire], map: "IDX_session_expire")
+  @@map("session")
+}
+
+model TransactionLine {
+  id            Int @id @default(autoincrement())
+  transactionId Int
+  // Copied from the transaction so the database itself rejects a line on another user's account (BR-04).
+  userId        Int
+  accountId     Int
+  // Satang, > 0 (BR-02).
+  amount        Int
+
+  transaction Transaction @relation(fields: [transactionId, userId], references: [id, userId], onDelete: Cascade)
+  account     Account     @relation(fields: [accountId, userId], references: [id, userId], onDelete: Restrict)
+
+  @@index([transactionId])
+  @@index([accountId])
+}
