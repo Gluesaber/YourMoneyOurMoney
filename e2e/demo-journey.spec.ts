@@ -1,11 +1,15 @@
 import { expect, request, test } from "@playwright/test";
 import { DEMO_PASSWORD, dashboardRow, loginAs, recordTransaction } from "./helpers.js";
+import { resetE2eDatabase } from "./db.js";
 
 // S1-15 integration: the Sprint 1 demo journey through the real UI and API, plus one rejected case and
 // one access case. F-03 §7 T-ACC-E2E-01, F-04 §7 T-TX-E2E-01, F-05 §7 T-SUM-E2E-01; numbers from
-// docs/system-sds.md §4.3. The E2E database is reset and seeded before the run (e2e/globalSetup.ts).
+// docs/system-sds.md §4.3. The E2E database is reset and seeded before this file runs (e2e/db.ts).
 
 test.describe("Sprint 1 demo journey (S1-15)", () => {
+  // Fresh seeded data for this file; the tests inside depend on running in order.
+  test.beforeAll(resetE2eDatabase);
+
   test("T-ACC-E2E-01 / T-TX-E2E-01 / T-SUM-E2E-01: alice records the demo journey and sees the documented numbers", async ({
     page,
   }) => {

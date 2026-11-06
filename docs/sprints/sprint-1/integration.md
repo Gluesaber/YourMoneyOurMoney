@@ -31,7 +31,7 @@ was open.
 |---|---|---|
 | Server unit + API/DB (Vitest + Supertest) | `npm --prefix server test` | **183 / 183 passed** (16 files) |
 | Client component (Vitest + RTL) | `npm --prefix client test` | **69 / 69 passed** (9 files) |
-| End-to-end (Playwright, Chromium) | `npm run test:e2e` | **7 / 7 passed**, repeated on 5 consecutive runs (17.6 – 22.1 s) |
+| End-to-end (Playwright, Chromium) | `npm run test:e2e` | **7 / 7 passed**, repeated on 5 consecutive runs (17.6 – 22.1 s); after the review fixes (§4), 3 more runs including one from a dropped `ymom_e2e` (17.8 – 22.0 s) |
 | Lint | `npm run lint` | no problems |
 | Format | `npm run format:check` | all files formatted |
 | Types | `npm --prefix server run typecheck`, `npm --prefix client run typecheck` | no errors |
@@ -87,20 +87,23 @@ allocation mismatch cannot be saved.
 
 | Change | Why |
 |---|---|
-| E2E runs against its own database (`ymom_e2e`), reset and seeded before every run (`e2e/globalSetup.ts`, `server/test/helpers/reset-db.cli.ts`), on its own ports 3100 / 5174 (`playwright.config.ts`, `client/vite.config.ts` `API_PROXY_TARGET`) | The S1-08 E2E specs ran against the dev database and reused any running dev servers, so results depended on whatever was in dev data (a demo-journey test needs a known starting state) |
+| E2E runs against its own database (`ymom_e2e`), created if missing and migrated once (`e2e/globalSetup.ts`, `server/test/helpers/ensure-db.cli.ts`, `docker/postgres/init-test-db.sql`) and reset and seeded before each spec file (`e2e/db.ts`, `server/test/helpers/reset-db.cli.ts`), on its own ports 3100 / 5174 (`playwright.config.ts`, `client/vite.config.ts` `API_PROXY_TARGET`) | The S1-08 E2E specs ran against the dev database and reused any running dev servers, so results depended on whatever was in dev data (a demo-journey test needs a known starting state) |
 | `workers: 1` in `playwright.config.ts` | Spec files share one database; T-ADM-E2E-02 disables alice while another file could log in as her |
 | New `e2e/demo-journey.spec.ts` and `e2e/helpers.ts` | T-ACC-E2E-01, T-TX-E2E-01, T-SUM-E2E-01, the rejected case and the access case required by S1-15 |
+| `requireUser` destroys the session of a deleted or disabled user (`server/src/middleware/auth.ts`); T-AUTH-UNIT-01 (c, d) and T-AUTH-API-04 assert it | PR #31 review: the session was only rejected, so re-enabling the user within 24 h made the old cookie valid again |
+| Logout clears the cookie with the same attributes it was set with (`sessionCookieOptions()` in `server/src/session.ts`); T-AUTH-API-02 asserts it | PR #31 review: a clearing Set-Cookie without matching attributes may not remove the cookie in production |
 | `docs/traceability.md` v1.3.0 | Every Sprint 1 row now names real, passing tests; AC ranges match the F-0x contracts; future-sprint IDs renumbered where they clashed with Sprint 1 IDs; test index added |
 | `docs/sprints/plan.md` §3 | Feature list reconciled with `docs/features.md`; each difference logged in §6 |
 | README §6 | Documents the separate E2E database and ports |
 
 ## 5. Defects and known limitations
 
-No defect was found in the integrated Sprint 1 behaviour.
+Two defects were found in review of this PR and fixed in it (below, and §4).
 
 | Item | Status |
 |---|---|
 | E2E tests depended on dev data and dev servers | Fixed in S1-15 (§4) |
+| A disabled user's rejected session stayed in the store; logout cleared the cookie without its attributes | Fixed in S1-15 after PR #31 review (§4) |
 | Playwright needs its browser build installed once per machine (`npx playwright install chromium`) | Documented in README §6 |
 | Browser coverage: E2E runs on Chromium only (NFR-COMP-01 also lists Firefox and Edge) | Open — planned with the Lab 5 CI setup |
 | Responsive layout checked manually at 364 px (NFR-COMP-02), not automated | Open — Sprint 3 hardening |

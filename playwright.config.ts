@@ -2,7 +2,8 @@ import { defineConfig } from "@playwright/test";
 import { E2E_API_PORT, E2E_CLIENT_PORT, E2E_DATABASE_URL } from "./e2e/env.js";
 
 // E2E specs live in e2e/. Prerequisite: the Docker database is running (`docker compose up -d`).
-// The run uses its own database (ymom_e2e, reset and seeded by e2e/globalSetup.ts) and starts its own
+// The run uses its own database (ymom_e2e, created and migrated by e2e/globalSetup.ts, reset and seeded
+// before each spec file by e2e/db.ts) and starts its own
 // API and client on ports 3100 / 5174, so it never reuses the dev servers or touches dev data.
 export default defineConfig({
   testDir: "./e2e",

@@ -1,9 +1,13 @@
 import { expect, test } from "@playwright/test";
+import { resetE2eDatabase } from "./db.js";
 
 // F-01 §7 (T-AUTH-E2E-01, T-AUTH-E2E-02) & F-02 §7 (T-ADM-E2E-01, T-ADM-E2E-02)
 const DEMO_PASSWORD = "demo-password-123";
 
 test.describe("Auth and Admin E2E journeys (S1-08)", () => {
+  // Fresh seeded data for this file; the tests inside depend on running in order.
+  test.beforeAll(resetE2eDatabase);
+
   test("T-AUTH-E2E-01: invalid password shows alert; valid login as alice lands on /dashboard with username in navbar", async ({
     page,
   }) => {

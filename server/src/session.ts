@@ -6,6 +6,17 @@ const PgSession = connectPgSimple(session);
 export const SESSION_COOKIE_NAME = "ymom.sid";
 export const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
+// Shared by the session cookie and logout's clearCookie: a browser only removes a cookie when the clearing
+// Set-Cookie has the same name, path and attributes.
+export function sessionCookieOptions() {
+  return {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+  };
+}
+
 // Sessions live in Postgres (connect-pg-simple), so a server restart does not log everyone out.
 // The "session" table is created by the Prisma migrations (model Session), not by the library.
 // HTTP-only, SameSite=Lax cookie; Secure only in production. The client is same-origin in dev
@@ -27,11 +38,6 @@ export function createSessionMiddleware() {
     resave: false,
     saveUninitialized: false,
     rolling: false,
-    cookie: {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: SESSION_MAX_AGE_MS,
-    },
+    cookie: { ...sessionCookieOptions(), maxAge: SESSION_MAX_AGE_MS },
   });
 }

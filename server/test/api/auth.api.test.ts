@@ -147,6 +147,14 @@ describe("POST /api/auth/logout (T-AUTH-API-02)", () => {
     const logoutRes = await agent.post("/api/auth/logout");
     expect(logoutRes.status).toBe(204);
     expect(await prisma.session.count()).toBe(0);
+    // The clearing cookie carries the same attributes as the session cookie, or browsers may keep it.
+    const cleared = (logoutRes.headers["set-cookie"] as unknown as string[]).find((c) =>
+      c.startsWith(`${SESSION_COOKIE_NAME}=;`),
+    );
+    expect(cleared).toBeDefined();
+    expect(cleared).toMatch(/Path=\//);
+    expect(cleared).toMatch(/HttpOnly/);
+    expect(cleared).toMatch(/SameSite=Lax/);
 
     const meAfter = await agent.get("/api/auth/me");
     expect(meAfter.status).toBe(401);
@@ -230,6 +238,11 @@ describe("disabled-user session invalidation (T-AUTH-API-04)", () => {
 
     const whoamiRes = await agent.get("/api/test/whoami");
     expect(whoamiRes.status).toBe(401);
+
+    // The rejected session is destroyed, so re-enabling alice does not bring the old cookie back.
+    expect(await prisma.session.count()).toBe(0);
+    await prisma.user.update({ where: { username: "alice" }, data: { isEnabled: true } });
+    expect((await agent.get("/api/auth/me")).status).toBe(401);
   });
 });
 
