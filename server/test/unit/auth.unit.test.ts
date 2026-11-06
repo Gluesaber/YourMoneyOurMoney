@@ -73,15 +73,21 @@ describe("requireUser middleware (T-AUTH-UNIT-01)", () => {
     expect(findUniqueSpy).not.toHaveBeenCalled();
   });
 
-  it("T-AUTH-UNIT-01 (c): rejects non-existent userId with 401 UNAUTHENTICATED", async () => {
+  it("T-AUTH-UNIT-01 (c): rejects non-existent userId with 401 UNAUTHENTICATED and destroys the session", async () => {
     vi.spyOn(getPrisma().user, "findUnique").mockResolvedValueOnce(null);
 
-    const res = await request(appWithMockSession({ userId: 999, loginAt: Date.now() })).get("/protected");
+    let destroyed = false;
+    const res = await request(
+      appWithMockSession({ userId: 999, loginAt: Date.now() }, () => {
+        destroyed = true;
+      }),
+    ).get("/protected");
     expect(res.status).toBe(401);
     expect(res.body.error.code).toBe("UNAUTHENTICATED");
+    expect(destroyed).toBe(true);
   });
 
-  it("T-AUTH-UNIT-01 (d): rejects disabled user (isEnabled: false) with 401 UNAUTHENTICATED (BR-06)", async () => {
+  it("T-AUTH-UNIT-01 (d): rejects disabled user (isEnabled: false) with 401 UNAUTHENTICATED and destroys the session (BR-06)", async () => {
     vi.spyOn(getPrisma().user, "findUnique").mockResolvedValueOnce({
       id: 1,
       username: "alice",
@@ -91,9 +97,15 @@ describe("requireUser middleware (T-AUTH-UNIT-01)", () => {
       createdAt: new Date(),
     });
 
-    const res = await request(appWithMockSession({ userId: 1, loginAt: Date.now() })).get("/protected");
+    let destroyed = false;
+    const res = await request(
+      appWithMockSession({ userId: 1, loginAt: Date.now() }, () => {
+        destroyed = true;
+      }),
+    ).get("/protected");
     expect(res.status).toBe(401);
     expect(res.body.error.code).toBe("UNAUTHENTICATED");
+    expect(destroyed).toBe(true);
   });
 
   it("T-AUTH-UNIT-01 (e): populates req.user = { id, username, role } and calls next() for an enabled user with a valid loginAt", async () => {

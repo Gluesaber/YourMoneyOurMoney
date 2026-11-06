@@ -16,20 +16,26 @@ export const requireUser = asyncHandler(async (req: Request, _res: Response, nex
 
   const loginAt = req.session.loginAt;
   if (typeof loginAt !== "number" || !Number.isFinite(loginAt) || Date.now() - loginAt > SESSION_MAX_AGE_MS) {
-    if (typeof req.session.destroy === "function") {
-      await new Promise<void>((resolve) => req.session.destroy(() => resolve()));
-    }
+    await destroySession(req);
     throw new AppError(401, ErrorCode.UNAUTHENTICATED, "Please log in.");
   }
 
   const user = await getPrisma().user.findUnique({ where: { id: userId } });
   if (!user || !user.isEnabled) {
+    // Destroyed, not just rejected: re-enabling the user must not bring this old cookie back.
+    await destroySession(req);
     throw new AppError(401, ErrorCode.UNAUTHENTICATED, "Please log in.");
   }
 
   req.user = { id: user.id, username: user.username, role: user.role };
   next();
 });
+
+async function destroySession(req: Request): Promise<void> {
+  if (typeof req.session.destroy === "function") {
+    await new Promise<void>((resolve) => req.session.destroy(() => resolve()));
+  }
+}
 
 // Integration point 3. Use after requireUser: `router.get("/", requireUser, requireRole("USER"), ...)`.
 export function requireRole(role: Role) {

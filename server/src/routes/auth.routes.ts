@@ -5,7 +5,7 @@ import { getPrisma } from "../prisma.js";
 import { AppError, ErrorCode } from "../lib/errors.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { requireUser } from "../middleware/auth.js";
-import { SESSION_COOKIE_NAME } from "../session.js";
+import { SESSION_COOKIE_NAME, sessionCookieOptions } from "../session.js";
 
 // F-01 Authentication and session management — docs/sprints/sprint-1/F-01-auth.md.
 export const authRouter = Router();
@@ -63,7 +63,7 @@ authRouter.post(
     await new Promise<void>((resolve, reject) =>
       req.session.destroy((err) => (err ? reject(err) : resolve())),
     );
-    res.clearCookie(SESSION_COOKIE_NAME);
+    res.clearCookie(SESSION_COOKIE_NAME, sessionCookieOptions());
     res.status(204).end();
   }),
 );

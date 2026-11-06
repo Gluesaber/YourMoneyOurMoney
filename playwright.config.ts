@@ -1,15 +1,21 @@
 import { defineConfig } from "@playwright/test";
+import { E2E_API_PORT, E2E_CLIENT_PORT, E2E_DATABASE_URL } from "./e2e/env.js";
 
-// E2E specs live in e2e/ (first ones arrive in S1-08 and S1-14).
-// Prerequisite: the dev database is running, migrated and seeded (README §3–4).
-// Both dev servers are started automatically unless they are already running.
+// E2E specs live in e2e/. Prerequisite: the Docker database is running (`docker compose up -d`).
+// The run uses its own database (ymom_e2e, created and migrated by e2e/globalSetup.ts, reset and seeded
+// before each spec file by e2e/db.ts) and starts its own
+// API and client on ports 3100 / 5174, so it never reuses the dev servers or touches dev data.
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: false, // journeys share one seeded database, so run them in order
+  globalSetup: "./e2e/globalSetup.ts",
+  // All specs share one seeded database (e.g. one disables alice while another logs in as her), so
+  // files and tests run one at a time, in file-name order.
+  fullyParallel: false,
+  workers: 1,
   retries: 0,
   reporter: "list",
   use: {
-    baseURL: "http://localhost:5173",
+    baseURL: `http://localhost:${E2E_CLIENT_PORT}`,
     viewport: { width: 1280, height: 800 },
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
@@ -18,15 +24,18 @@ export default defineConfig({
     {
       command: "npm run dev",
       cwd: "./server",
-      url: "http://localhost:3000/api/health",
-      reuseExistingServer: true,
+      // Environment variables win over server/.env (Node's --env-file never overrides them).
+      env: { DATABASE_URL: E2E_DATABASE_URL, PORT: String(E2E_API_PORT), NODE_ENV: "development" },
+      url: `http://localhost:${E2E_API_PORT}/api/health`,
+      reuseExistingServer: false,
       timeout: 30_000,
     },
     {
-      command: "npm run dev",
+      command: `npm run dev -- --port ${E2E_CLIENT_PORT} --strictPort`,
       cwd: "./client",
-      url: "http://localhost:5173",
-      reuseExistingServer: true,
+      env: { API_PROXY_TARGET: `http://localhost:${E2E_API_PORT}` },
+      url: `http://localhost:${E2E_CLIENT_PORT}`,
+      reuseExistingServer: false,
       timeout: 30_000,
     },
   ],
