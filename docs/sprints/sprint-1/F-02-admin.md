@@ -170,3 +170,12 @@ No schema change: reads and updates `User` in `server/prisma/schema.prisma`. Que
 - [ ] Lint, format and type check pass (`npm run lint`, `npm run format:check`)
 - [ ] `docs/traceability.md` rows for `FR-ADM-01`…`FR-ADM-04` match these AC and test IDs
 - [ ] PR into `Sprint-1/staging` reviewed and approved by the teammate
+
+## 9. Version history
+
+Times are Asia/Bangkok (UTC+7). Commit IDs are on `Sprint-1/staging`; PR links are in the repository.
+
+| Version | Date | Commit | PR / Issue | Change |
+|---|---|---|---|---|
+| 1.0 | 2026-11-04 22:25 | `55d86e0` | #23 / S1-04 | First contract, before any S1-06 / S1-07 code |
+| 1.1 | 2026-11-04 22:47 | `61e3a53` | #23 / S1-04 | Review fix: T-ADM-UNIT-01 now tests the self-disable guard (role and ownership checks cite the existing S1-01 unit tests); not-yet-mounted Track B routes use `it.fails` so staging never goes red; exact test-suite files named |

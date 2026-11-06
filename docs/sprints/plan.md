@@ -122,6 +122,26 @@ remaining-work list. **Lab 7** applies one approved change to an existing rule w
 - Contract before code: a feature's contract PR merges before its first implementation PR.
 - Release: reviewed PR from sprint staging to `main`, then a tag (`v0.1.0`, `v0.2.0`, `v1.0.0`).
 
+### 5.1 Product Definition of Done
+
+Every feature contract's own Definition of Done (F-0x §8 or §9) adds feature-specific items to this list. A
+feature, and a sprint release, is done only when all of these hold, each backed by evidence (test output, a
+reviewed PR, a document) rather than an AI agent's or an author's claim:
+
+1. **Behaviour:** every acceptance criterion in the feature contract is implemented, including its negative,
+   boundary and role-restriction cases.
+2. **Verification executed:** every test planned in the contract's test specification exists under its test
+   ID and was run; for rule work, the test was seen failing before the implementation and passing after.
+3. **Tests passing:** `npm --prefix server test`, `npm --prefix client test` and `npm run test:e2e` pass, and
+   `npm run lint`, `npm run format:check` and both type checks are clean. No required test is skipped,
+   weakened or removed to make the result pass.
+4. **Reviewed and integrated:** the PR into sprint staging is approved by the teammate (never self-approved)
+   with a specific check or finding recorded, and the integrated staging branch passes the full suite.
+5. **Documents current:** the contract, `docs/traceability.md` rows (AC → test → result) and the README setup
+   and test commands match the merged code; contract changes are versioned in the contract's change log.
+6. **Disclosed:** incomplete work, known limitations and any failed or skipped test are listed in the sprint
+   record (for Sprint 1, `docs/sprints/sprint-1/integration.md` §5).
+
 ## 6. Remaining work and change log
 
 **Remaining after Sprint 1:** F-06 to F-14, Sprint 3 hardening, Lab 5–7 deliverables, Docker/CI/GCP pipeline.

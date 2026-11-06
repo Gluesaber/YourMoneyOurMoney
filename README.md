@@ -63,6 +63,29 @@ npm --prefix client run dev
 
 Open http://localhost:5173. The client proxies `/api` to the API on port 3000.
 
+### Demo sequence (Sprint 1)
+
+Start from a freshly seeded database (`npx prisma migrate reset` in `server/` empties and re-seeds the dev
+database). Log in at http://localhost:5173 with the seed password (`DEMO_PASSWORD` in `server/prisma/seedData.ts`).
+
+1. Log in as `alice` with a wrong password: "Invalid username or password." Then log in correctly: the
+   dashboard shows every amount at 0.00.
+2. **Set opening balance** for Bank: 10,000.00 on 2026-11-01. Bank shows 10,000.00; income stays 0.00.
+3. **Record money received** into Bank: Salary 30,000.00 on 2026-11-02.
+4. **Record payment** from Credit Card on 2026-11-03, total 1,500.00: Dining 900 and Groceries 600 (use
+   **Add line**). Save is enabled only when "Remaining to allocate" is 0.00.
+5. **Record payment** from Bank on 2026-11-04: Credit Card 1,500.00 (the card repayment).
+6. The dashboard shows **Bank 38,500.00, Credit Card 0.00, income 30,000.00, expense 1,500.00**. **History**
+   lists the three transactions, newest first; **Details** opens each one.
+7. Rule rejection: start a payment of 1,500.00 with one Dining line of 900.00. "Remaining to allocate" shows
+   600.00 and Save stays disabled (the API also refuses it with 400 `ALLOCATION_MISMATCH`).
+8. **Log out**: you return to the login page and `/dashboard` sends you back to it.
+9. Log in as `admin`: the user list shows admin, alice and bob. Opening `/dashboard` sends the admin back to
+   `/admin/users`, and `/api/summary` returns 403. Disabling `bob` makes his next login fail with "This account
+   has been disabled."
+
+The same journey runs automatically in `e2e/demo-journey.spec.ts`.
+
 ## 6. Test
 
 | What | Command |

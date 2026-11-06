@@ -46,7 +46,7 @@ Sessions are managed by `express-session` with `connect-pg-simple` (`server/src/
    - Otherwise sets `req.user = { id: user.id, username: user.username, role: user.role }` and calls `next()`.
 5. **Destruction on logout (`POST /api/auth/logout`, `FR-AUTH-02`):**
    - Guarded by `requireUser` (an anonymous, expired, or invalidated session receives `401 UNAUTHENTICATED`).
-   - Calls `req.session.destroy(...)` to delete the session record from the PostgreSQL `session` table, clears the cookie via `res.clearCookie(SESSION_COOKIE_NAME)`, and responds with `204 No Content`.
+   - Calls `req.session.destroy(...)` to delete the session record from the PostgreSQL `session` table, clears the cookie via `res.clearCookie(SESSION_COOKIE_NAME, sessionCookieOptions())` (the same path and attributes it was set with, so the browser removes it), and responds with `204 No Content`.
 
 ### 1.3 Anti-enumeration and credential check order
 
@@ -72,7 +72,7 @@ Checks on protected routes via `requireUser`:
 |---|---|---|---|
 | 1 | `req.session.userId` is present | FR-AUTH-03 | 401 `UNAUTHENTICATED` (`"Please log in."`) |
 | 2 | `req.session.loginAt` is present and `Date.now() - req.session.loginAt <= 24 * 60 * 60 * 1000` | FR-AUTH-05, NFR-SEC-02 | Destroy session and return 401 `UNAUTHENTICATED` (`"Please log in."`) |
-| 3 | `User` row exists in DB and `user.isEnabled === true` | FR-AUTH-04, BR-06 | 401 `UNAUTHENTICATED` (`"Please log in."`) |
+| 3 | `User` row exists in DB and `user.isEnabled === true` | FR-AUTH-04, BR-06 | Destroy session and return 401 `UNAUTHENTICATED` (`"Please log in."`); re-enabling the user does not revive the old cookie |
 
 ### 2.1 Where the logic lives
 
@@ -204,3 +204,14 @@ No schema migration is needed: uses `model User` (created in migration `20261103
 - [ ] Lint, format and type check pass (`npm run lint`, `npm run format:check`)
 - [ ] `docs/traceability.md` rows for `FR-AUTH-01`…`FR-AUTH-06` match these AC and test IDs
 - [ ] PR into `Sprint-1/staging` reviewed and approved by the teammate
+
+## 9. Version history
+
+Times are Asia/Bangkok (UTC+7). Commit IDs are on `Sprint-1/staging`; PR links are in the repository.
+
+| Version | Date | Commit | PR / Issue | Change |
+|---|---|---|---|---|
+| 1.0 | 2026-11-04 22:25 | `55d86e0` | #23 / S1-04 | First contract, before any S1-05 code |
+| 1.1 | 2026-11-04 22:47 | `61e3a53` | #23 / S1-04 | Review fix: absolute 24-hour expiry enforced by `loginAt` in `requireUser` (express-session `touch()` slides the store expiry even with `rolling: false`); session regenerated at login; seed password referenced by `DEMO_PASSWORD`, not printed |
+| 1.2 | 2026-11-04 22:56 | `fc26fcc` | #23 / S1-04 | Test-only `login-as` route also regenerates the session and sets `loginAt` |
+| 1.3 | 2026-11-06 10:31 | `89bfa00` | #31 / S1-15 | Review fix: rule 3 destroys the session of a deleted or disabled user; logout clears the cookie with matching attributes. Asserted by T-AUTH-UNIT-01 (c, d), T-AUTH-API-02, T-AUTH-API-04 |
