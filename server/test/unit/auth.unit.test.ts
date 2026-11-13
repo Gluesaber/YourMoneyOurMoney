@@ -263,13 +263,19 @@ describe("cloud-readiness: /api/ready, trust proxy, and production seed", () => 
 
     upsertedUsers.length = 0;
     upsertedAccounts.length = 0;
-    await seed(mockPrisma, {
+    const prodSeedEnv = {
       NODE_ENV: "production",
       ADMIN_PASSWORD: "prod-admin-secret-password",
       SEED_DEMO_DATA: "true",
       DEMO_USER_PASSWORD: "prod-demo-secret-password",
-    });
+    };
+    await seed(mockPrisma, prodSeedEnv);
     expect(upsertedUsers).toEqual(["alice", "bob", "admin"]);
     expect(upsertedAccounts).toHaveLength(16);
+
+    // Running seed() a second time in a row must remain idempotent (upserts without failing).
+    await expect(seed(mockPrisma, prodSeedEnv)).resolves.toBeUndefined();
+    expect(upsertedUsers).toEqual(["alice", "bob", "admin", "alice", "bob", "admin"]);
+    expect(upsertedAccounts).toHaveLength(32);
   });
 });
