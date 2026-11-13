@@ -1,0 +1,156 @@
+# ##############################################################################
+# CI — "CI & Docker Build"
+# ##############################################################################
+# WHAT THIS WORKFLOW DOES
+#   Runs the project's checks and is used in two ways:
+#     1) directly on every pull request to `main` and `Sprint-2/staging`
+#        (and manually), and
+#     2) as a REUSABLE workflow called by deploy.yml (`workflow_call`) so the
+#        deploy only starts after these checks pass.
+#   Steps: offline deploy-script tests -> backend tests (real PostgreSQL service)
+#          -> frontend tests + build -> lint, format & typecheck
+#          -> verify the production Dockerfile builds.
+#   It does NOT deploy anything.
+#
+# ⚠️ DO NOT RENAME (the lab guide refers to these names):
+#   - job id : test-and-docker
+#   - deploy.yml uses `environment: demo` and the 4 variables GCP_PROJECT_ID,
+#     GCP_REGION, WIF_PROVIDER, WIF_SERVICE_ACCOUNT — keep those names too.
+#
+# REFERENCES
+#   - Workflow syntax      : https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions
+#   - Reusable workflows   : https://docs.github.com/en/actions/sharing-automations/reusing-workflows
+#   - Service containers   : https://docs.github.com/en/actions/using-containerized-services/about-service-containers
+#   - Concurrency          : https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/control-the-concurrency-of-workflows-and-jobs
+#   - Pin actions to a SHA : https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions
+# ##############################################################################
+
+name: CI & Docker Build
+
+# ------------------------------------------------------------------------------
+# Triggers
+#   workflow_call     : lets deploy.yml reuse this workflow (do not remove).
+#   pull_request      : checks every PR into main or Sprint-2/staging before merge.
+#   workflow_dispatch : manual "Run workflow" button.
+# ------------------------------------------------------------------------------
+on:
+  workflow_call:
+  pull_request:
+    branches: [main, "Sprint-2/staging"]
+  workflow_dispatch:
+
+# Least privilege: this workflow only needs to read the repository.
+permissions:
+  contents: read
+
+# A newer run on the same ref cancels the older one (saves minutes).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ⚠️ Job id must stay `test-and-docker`.
+  test-and-docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # --------------------------------------------------------------------------
+    # Temporary PostgreSQL used only by the tests. Throw-away CI values, not
+    # real secrets.
+    # --------------------------------------------------------------------------
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ymom
+          POSTGRES_PASSWORD: ymom
+          POSTGRES_DB: ymom
+        ports:
+          - 5432:5432
+        # Wait until the DB is healthy before the steps start.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      # ------------------------------------------------------------------------
+      # 1. Get the source code
+      #    (third-party actions are pinned to a commit SHA; the comment shows the
+      #     version. Dependabot keeps them updated — see .github/dependabot.yml)
+      # ------------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # ------------------------------------------------------------------------
+      # 2. Language runtimes
+      # ------------------------------------------------------------------------
+      - name: Setup Node.js 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+
+      # Python is only needed for the deploy smoke-test unit tests below.
+      - name: Setup Python 3.14
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14"
+
+      # ------------------------------------------------------------------------
+      # 3. Deploy scripts: syntax check + offline tests (NO access to GCP)
+      #    ⭐ IMPORTANT: guards deploy.sh / release.sh / smoke_test.py so a broken
+      #    script is caught before it can break a deployment.
+      # ------------------------------------------------------------------------
+      - name: Check deployment scripts without accessing GCP
+        run: |
+          bash -n deploy/deploy.sh deploy/teardown.sh deploy/release.sh
+          bash deploy/tests/test_deploy_stub.sh
+          bash deploy/tests/test_release_stub.sh
+          python3 -m unittest discover -s deploy/tests -p 'test_smoke.py'
+
+      # ------------------------------------------------------------------------
+      # 4. Backend: install -> migrate -> seed -> test
+      #    ⭐ IMPORTANT: a failing test fails the job (and therefore the deploy).
+      # ------------------------------------------------------------------------
+      - name: Install & Test Backend (Prisma Migrate + Seed + Vitest)
+        working-directory: ./server
+        env:
+          DATABASE_URL: postgresql://ymom:ymom@localhost:5432/ymom?schema=public
+          TEST_DATABASE_URL: postgresql://ymom:ymom@localhost:5432/ymom?schema=public
+          SESSION_SECRET: ci-only-session-secret
+        run: |
+          npm ci
+          npx prisma migrate deploy
+          npm run prisma:seed
+          npm test
+
+      # ------------------------------------------------------------------------
+      # 5. Frontend: install -> test -> production build
+      # ------------------------------------------------------------------------
+      - name: Install, Test & Build Frontend (Vitest + Production Build)
+        working-directory: ./client
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      # ------------------------------------------------------------------------
+      # 6. Lint, format check & TypeScript typecheck
+      # ------------------------------------------------------------------------
+      - name: Lint, Format Check & Typecheck
+        run: |
+          npm ci
+          npm run lint
+          npm run format:check
+          npm --prefix server run typecheck
+          npm --prefix client run typecheck
+
+      # ------------------------------------------------------------------------
+      # 7. Make sure the production image still builds (image is not pushed here)
+      # ------------------------------------------------------------------------
+      - name: Verify Unified Production Dockerfile Build
+        run: |
+          docker build -t ymom:ci .
