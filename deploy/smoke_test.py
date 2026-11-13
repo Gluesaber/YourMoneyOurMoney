@@ -38,12 +38,10 @@ _OPENER = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(_COOKIE
 
 # --- HTTP helper --------------------------------------------------------------
 # Returns the response body (bytes). Raises on HTTP errors / timeouts.
-def request(base, path, data=None, token=None):
+def request(base, path, data=None):
     headers = {}
     if data is not None:
         headers['Content-Type'] = 'application/json'
-    if token:
-        headers['Cookie'] = token if '=' in token else f'ymom.sid={token}'
     req = urllib.request.Request(
         base + path,
         headers=headers,
@@ -80,21 +78,19 @@ def check(base):
         print('SKIP login: optional smoke credentials not configured')
         return
     logged_in = False
-    token = None
     try:
         login = json.loads(request(base, '/api/auth/login', {'username': username, 'password': password}))
-        if not isinstance(login, dict) or ('id' not in login and 'token' not in login):
+        if not isinstance(login, dict) or 'id' not in login:
             raise KeyError('Missing login identity')
-        token = login.get('token') or str(login.get('id'))
         logged_in = True
-        request(base, '/api/auth/me', token=token)
+        request(base, '/api/auth/me')
         print('PASS login and authenticated /api/auth/me')
     except (urllib.error.URLError, TimeoutError, ValueError, KeyError):
         raise RuntimeError('Login smoke check failed') from None
     finally:
         # Always end the session, even when a check above failed.
         if logged_in:
-            request(base, '/api/auth/logout', data={}, token=token)
+            request(base, '/api/auth/logout', data={})
             print('PASS logout')
 
 

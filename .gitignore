@@ -11,6 +11,8 @@ coverage/
 # logs & OS
 *.log
 .DS_Store
+__pycache__/
+*.py[cod]
 # Playwright local run artifacts
 /test-results/
 /playwright-report/

@@ -17,7 +17,7 @@ spec.loader.exec_module(smoke)
 
 
 class SmokeTests(unittest.TestCase):
-    def response(self, base, path, data=None, token=None):
+    def response(self, base, path, data=None):
         return {
             '/api/health': b'{"status":"ok"}',
             '/api/ready': b'{"status":"ready","db":"connected"}',
@@ -43,10 +43,10 @@ class SmokeTests(unittest.TestCase):
 
     @patch.dict('os.environ', {'SMOKE_EMAIL': 'smoke', 'SMOKE_PASSWORD': 'test-only'}, clear=True)
     def test_session_is_logged_out_even_if_me_fails(self):
-        def broken_me(base, path, data=None, token=None):
+        def broken_me(base, path, data=None):
             if path == '/api/auth/me':
                 raise ValueError('Broken response')
-            return self.response(base, path, data, token)
+            return self.response(base, path, data)
         with patch.object(smoke, 'request', side_effect=broken_me) as req:
             with self.assertRaisesRegex(RuntimeError, 'Login smoke'):
                 smoke.check('https://demo.test')

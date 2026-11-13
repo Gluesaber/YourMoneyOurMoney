@@ -36,7 +36,7 @@ name: CI & Docker Build
 on:
   workflow_call:
   pull_request:
-    branches: [main, "Sprint-2/staging"]
+    branches: [main, "Sprint-*/staging"]
   workflow_dispatch:
 
 # Least privilege: this workflow only needs to read the repository.
