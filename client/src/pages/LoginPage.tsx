@@ -45,7 +45,8 @@ export function LoginPage() {
 
   return (
     <section className="mx-auto" style={{ maxWidth: 400 }}>
-      <h1 className="h3 mb-3">Log in</h1>
+      <h1 className="h3 mb-2">Log in</h1>
+      <p className="text-muted mb-3">Sign in to YourMoneyOurMoney to manage your balances.</p>
       <ErrorAlert error={error} />
       <form onSubmit={(e) => void onSubmit(e)} noValidate>
         <div className="mb-3">
