@@ -63,6 +63,21 @@ npm --prefix client run dev
 
 Open http://localhost:5173. The client proxies `/api` to the API on port 3000.
 
+### Run the production image with Docker
+
+The root `Dockerfile` builds one image with the built client and the API; CI builds it and Cloud Run runs
+it. To run that image locally with its database (stop `npm run dev` first, both use port 3000):
+
+```bash
+docker compose --profile app up --build -d
+docker compose --profile app ps -a
+```
+
+`migrate` applies the migrations and the seed, then shows `Exited (0)`; `app` serves http://localhost:3000.
+Check `curl http://localhost:3000/api/health` and `/api/ready`. Data is kept in the `db-data` volume, so
+`docker compose --profile app down` followed by `up -d` keeps it; `down -v` deletes it. Locally the
+containers run with `NODE_ENV=development`, because in production the session cookie is HTTPS-only.
+
 ### Demo sequence (Sprint 1)
 
 Start from a freshly seeded database (`npx prisma migrate reset` in `server/` empties and re-seeds the dev
