@@ -16,6 +16,12 @@ describe("S1-01 harness", () => {
     expect(res.body).toEqual({ status: "ok" });
   });
 
+  it("GET /api/ready responds 200 with db connected without a session", async () => {
+    const res = await request(createApp()).get("/api/ready");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ status: "ready", db: "connected" });
+  });
+
   it("unknown /api routes return the shared 404 error shape", async () => {
     const res = await request(createApp()).get("/api/does-not-exist");
     expect(res.status).toBe(404);

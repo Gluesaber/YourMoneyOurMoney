@@ -300,6 +300,7 @@ New codes are added to `server/src/lib/errors.ts` **and** this table in the same
 | GET | `/api/transactions/:id` | USER | B | S1-13 |
 | GET | `/api/summary` | USER | B | S1-13 |
 | GET | `/api/health` | anonymous | shared | S1-01 |
+| GET | `/api/ready` | anonymous | shared | L5-02 |
 | POST | `/api/test/login-as` | **test only** (`NODE_ENV=test`) | shared | S1-01 |
 
 ### 5.3 Request and response shapes
@@ -437,21 +438,29 @@ docs/system-sds.md                       shared — this document
 ### 8.1 Configuration
 
 All configuration comes from environment variables; nothing environment-specific is hard-coded.
-Real values are never committed — `.env` files are git-ignored and `server/.env.example` lists every variable.
+Real values are never committed — `.env` files are git-ignored, while `server/.env.example` and `client/.env.example` list every variable.
 
 | Variable | Used by | Dev / test value | Production (planned) |
 |---|---|---|---|
 | `DATABASE_URL` | Prisma, session store | `ymom` on `localhost:5434` (Docker) | Cloud SQL connection string, from Secret Manager |
 | `SESSION_SECRET` | Session cookie signing | any long random string; tests use a fixed test-only value | random secret from Secret Manager |
-| `PORT` | API listen port | `3000` | set by Cloud Run |
-| `NODE_ENV` | Cookie `Secure` flag, test-only routes | `development`; `test` under Vitest | `production` |
+| `PORT` | API listen port (`0.0.0.0`) | `3000` | set by Cloud Run |
+| `NODE_ENV` | Cookie `Secure` flag, `trust proxy`, static SPA serving, seed guards, test-only routes | `development`; `test` under Vitest | `production` |
+| `ADMIN_PASSWORD` | Seed script (`admin` password) | optional (defaults to `DEMO_PASSWORD` outside production) | required in production, from Secret Manager |
+| `SEED_DEMO_DATA` | Seed script (`alice`, `bob` + accounts) | optional (`true` by default outside production) | `false` by default (`true` when seeding demo data) |
+| `DEMO_USER_PASSWORD` | Seed script (`alice`, `bob` password) | optional (defaults to `DEMO_PASSWORD` outside production) | required when `SEED_DEMO_DATA=true`, from Secret Manager |
+| `CLIENT_DIST_DIR` | Express static SPA serving (optional) | defaults to `client/dist` when built | defaults to `client/dist` inside the container |
 | `TEST_DATABASE_URL` | Vitest only (optional) | defaults to `ymom_test` on `localhost:5434` | not used |
+| `E2E_DATABASE_URL` | Playwright E2E only (optional) | defaults to `ymom` on `localhost:5434` | not used |
+| `API_PROXY_TARGET` | Vite dev server `/api` proxy (`client/`) | defaults to `http://localhost:3000` | not used (Express serves the built client) |
 
 Rules:
 - The server **refuses to start** without `DATABASE_URL` or `SESSION_SECRET` (`server/src/session.ts`).
-- `NODE_ENV=production` turns on the `Secure` cookie flag, so production must be served over HTTPS.
+- `NODE_ENV=production` turns on `app.set("trust proxy", 1)` and the `Secure` cookie flag, so production must be served over HTTPS.
+- Outside `NODE_ENV=test`, Express serves `client/dist` (or `CLIENT_DIST_DIR`) and falls back to `index.html` for non-`/api` GET requests when the built client is present.
+- Health & readiness probes: `GET /api/health` returns `200 { status: "ok" }` (liveness); `GET /api/ready` runs `SELECT 1` via Prisma and returns `200 { status: "ready", db: "connected" }` or `503 { status: "not_ready" }` (database readiness).
 - Test-only routes (`/api/test/*`) exist only when `NODE_ENV=test`; a test proves they are absent otherwise.
-- Database changes ship only as Prisma migrations; demo data comes from the seed script, so any environment
+- Database changes ship only as Prisma migrations; demo data comes from the idempotent seed script (`ADMIN_PASSWORD` required in production; demo users gated behind `SEED_DEMO_DATA=true` and `DEMO_USER_PASSWORD`), so any environment
   can be rebuilt reproducibly (`prisma migrate deploy` then `prisma db seed`).
 
 ### 8.2 Environments
