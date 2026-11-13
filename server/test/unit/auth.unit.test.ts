@@ -2,12 +2,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import express from "express";
 import request from "supertest";
 import bcrypt from "bcryptjs";
+import type { PrismaClient } from "@prisma/client";
 import { getPrisma } from "../../src/prisma.js";
+import { createApp } from "../../src/app.js";
 import { requireUser } from "../../src/middleware/auth.js";
 import { errorHandler } from "../../src/lib/errors.js";
 import { createSessionMiddleware, SESSION_COOKIE_NAME, SESSION_MAX_AGE_MS } from "../../src/session.js";
 import { DUMMY_BCRYPT_HASH } from "../../src/routes/auth.routes.js";
-import { DEMO_PASSWORD } from "../../prisma/seedData.js";
+import { DEMO_PASSWORD, seed } from "../../prisma/seedData.js";
 
 // F-01 Authentication and session management — docs/sprints/sprint-1/F-01-auth.md §7.
 describe("requireUser middleware (T-AUTH-UNIT-01)", () => {
@@ -188,5 +190,86 @@ describe("bcrypt dummy hash (T-AUTH-UNIT-03)", () => {
     expect(DUMMY_BCRYPT_HASH).toMatch(/^\$2[aby]\$10\$.{53}$/);
     expect(bcrypt.getRounds(DUMMY_BCRYPT_HASH)).toBeGreaterThanOrEqual(10);
     await expect(bcrypt.compare(DEMO_PASSWORD, DUMMY_BCRYPT_HASH)).resolves.toBe(false);
+  });
+});
+
+describe("cloud-readiness: /api/ready, trust proxy, and production seed", () => {
+  const originalEnv = { ...process.env };
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    process.env = { ...originalEnv };
+  });
+
+  it("enables trust proxy in production so Secure cookies work behind Cloud Run TLS termination", () => {
+    process.env.SESSION_SECRET = "test-secret";
+    process.env.DATABASE_URL = "postgresql://ymom:ymom@localhost:5434/ymom_test?schema=public";
+
+    const prodApp = createApp("production");
+    expect(prodApp.get("trust proxy")).toBe(1);
+
+    const testApp = createApp("test");
+    expect(testApp.get("trust proxy")).toBeFalsy();
+  });
+
+  it("GET /api/ready returns 200 { status: 'ready', db: 'connected' } when DB query succeeds and 503 when it fails", async () => {
+    process.env.SESSION_SECRET = "test-secret";
+    process.env.DATABASE_URL = "postgresql://ymom:ymom@localhost:5434/ymom_test?schema=public";
+
+    vi.spyOn(getPrisma(), "$queryRaw").mockResolvedValueOnce([{ "?column?": 1 }]);
+    const okRes = await request(createApp("test")).get("/api/ready");
+    expect(okRes.status).toBe(200);
+    expect(okRes.body).toEqual({ status: "ready", db: "connected" });
+
+    vi.spyOn(getPrisma(), "$queryRaw").mockRejectedValueOnce(new Error("DB down"));
+    const failRes = await request(createApp("test")).get("/api/ready");
+    expect(failRes.status).toBe(503);
+    expect(failRes.body).toEqual({ status: "not_ready" });
+  });
+
+  it("seed() in production requires ADMIN_PASSWORD and skips demo users unless SEED_DEMO_DATA=true", async () => {
+    const upsertedUsers: string[] = [];
+    const upsertedAccounts: string[] = [];
+    const mockPrisma = {
+      user: {
+        upsert: vi.fn(
+          async ({ where, create }: { where: { username: string }; create: { role: string } }) => {
+            upsertedUsers.push(where.username);
+            return { id: upsertedUsers.length, username: where.username, role: create.role };
+          },
+        ),
+      },
+      account: {
+        upsert: vi.fn(async ({ where }: { where: { userId_name: { userId: number; name: string } } }) => {
+          upsertedAccounts.push(`${where.userId_name.userId}:${where.userId_name.name}`);
+          return { id: upsertedAccounts.length };
+        }),
+      },
+    } as unknown as PrismaClient;
+
+    await expect(seed(mockPrisma, { NODE_ENV: "production" })).rejects.toThrow(/ADMIN_PASSWORD/);
+
+    await seed(mockPrisma, { NODE_ENV: "production", ADMIN_PASSWORD: "prod-admin-secret-password" });
+    expect(upsertedUsers).toEqual(["admin"]);
+    expect(upsertedAccounts).toEqual([]);
+
+    await expect(
+      seed(mockPrisma, {
+        NODE_ENV: "production",
+        ADMIN_PASSWORD: "prod-admin-secret-password",
+        SEED_DEMO_DATA: "true",
+      }),
+    ).rejects.toThrow(/DEMO_USER_PASSWORD/);
+
+    upsertedUsers.length = 0;
+    upsertedAccounts.length = 0;
+    await seed(mockPrisma, {
+      NODE_ENV: "production",
+      ADMIN_PASSWORD: "prod-admin-secret-password",
+      SEED_DEMO_DATA: "true",
+      DEMO_USER_PASSWORD: "prod-demo-secret-password",
+    });
+    expect(upsertedUsers).toEqual(["alice", "bob", "admin"]);
+    expect(upsertedAccounts).toHaveLength(16);
   });
 });
