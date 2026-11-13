@@ -451,7 +451,7 @@ Real values are never committed — `.env` files are git-ignored, while `server/
 | `DEMO_USER_PASSWORD` | Seed script (`alice`, `bob` password) | optional (defaults to `DEMO_PASSWORD` outside production) | required when `SEED_DEMO_DATA=true`, from Secret Manager |
 | `CLIENT_DIST_DIR` | Express static SPA serving (optional) | defaults to `client/dist` when built | defaults to `client/dist` inside the container |
 | `TEST_DATABASE_URL` | Vitest only (optional) | defaults to `ymom_test` on `localhost:5434` | not used |
-| `E2E_DATABASE_URL` | Playwright E2E only (optional) | defaults to `ymom` on `localhost:5434` | not used |
+| `E2E_DATABASE_URL` | Playwright E2E only (optional) | defaults to `ymom_e2e` on `localhost:5434` | not used |
 | `API_PROXY_TARGET` | Vite dev server `/api` proxy (`client/`) | defaults to `http://localhost:3000` | not used (Express serves the built client) |
 
 Rules:
@@ -469,6 +469,7 @@ Rules:
 |---|---|---|---|
 | Local dev | `npm run dev` in `server/` and `client/`; Vite proxies `/api` | Docker `ymom` | Development, manual checks, Playwright |
 | Local test | `npm test` | Docker `ymom_test` | Automated unit and API/database tests |
+| Local container (Lab 5) | `docker compose --profile app up --build -d`: the root `Dockerfile` image on port 3000 | Docker `ymom` | Check the production image and persistence before CI and GCP |
 | CI (Lab 5) | GitHub Actions | PostgreSQL service container | Lint, type check, tests on every PR |
 | Production (Lab 5) | One container on GCP | Managed PostgreSQL | Deployed releases from `main` |
 

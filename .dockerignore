@@ -1,0 +1,17 @@
+# Keeps local installs, build output, secrets and test artifacts out of the build context.
+**/node_modules
+**/dist
+**/build
+**/coverage
+**/.env
+**/*.env
+!**/.env.example
+*.log
+.git
+.github
+.gitignore
+test-results
+playwright-report
+blob-report
+docs
+e2e
