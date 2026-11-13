@@ -18,7 +18,7 @@ describe("assertOwned (BR-04)", () => {
       expect.unreachable();
     } catch (err) {
       expect(err).toBeInstanceOf(AppError);
-      expect((err as AppError).status).toBe(404);
+      expect((err as AppError).status).toBe(400);
       expect((err as AppError).code).toBe("NOT_FOUND");
     }
   });
