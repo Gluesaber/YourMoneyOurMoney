@@ -31,7 +31,7 @@ Recorded changes from the Lab 5 Starter Kit (not required, documented per handou
   it too.
 - **Smoke test has no `/api/categories` check** (the kit's TokTickIT-specific endpoint); it
   checks `/api/health`, `/api/ready`, `/` and, optionally, a login/me/logout cycle guarded by
-  `SMOKE_EMAIL` + `SMOKE_PASSWORD`. Not set here — see §6.
+  `SMOKE_EMAIL` + `SMOKE_PASSWORD`. Not set here — see §5, step 5.
 
 ## 2. Build, test, run, migrate and seed
 
@@ -55,11 +55,23 @@ docker compose --profile app down            # keeps data (named volume db-data)
 docker compose --profile app down -v         # deletes it
 ```
 
-Migrate and seed (what `migrate` and the Cloud Run job both run):
+Migrate and seed (what `migrate` and the Cloud Run job both run; run from `server/`, same as
+`ci-docker.yml`'s `working-directory: ./server`):
 
 ```bash
+cd server
 npx prisma migrate deploy
 npm run prisma:seed
+```
+
+Lint, format and typecheck, run from the repo root (what `ci-docker.yml` also runs):
+
+```bash
+npm run lint
+npm run format:check
+npm --prefix server run typecheck
+npm --prefix client run typecheck
+npm --prefix client run build
 ```
 
 The seed (`server/prisma/seedData.ts`) is idempotent and production-safe: outside production it
@@ -81,7 +93,7 @@ Summary:
 | `PORT` | no | set by Cloud Run |
 | `NODE_ENV` | no | `production`, plain Cloud Run env var |
 | `TZ` | no | `Asia/Bangkok`, plain Cloud Run env var |
-| `SEED_DEMO_DATA` | no | `true` (migration job only — see §6) |
+| `SEED_DEMO_DATA` | no | `false` by default; `true` only when `deploy/deploy.sh` is run with `--demo` (migration job only — see §2) |
 | `CLIENT_DIST_DIR` | no | defaults to `/app/client/dist` in the image |
 
 No real value for any of these is committed; `.env` is git-ignored and `server/.env.example` /
@@ -103,7 +115,7 @@ No real value for any of these is committed; `.env` is git-ignored and `server/.
 | Secrets | `ymom-database-url`, `ymom-session-secret`, `ymom-admin-password`, `ymom-demo-password` |
 | Workload Identity pool / provider | `github-actions` / `github-main` |
 | GitHub environment | `demo` (deploys allowed only from `main`; variables `GCP_PROJECT_ID`, `GCP_REGION`, `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`) |
-| Public URL | `https://ymom-98465542651.asia-southeast1.run.app` |
+| Public URL | `https://ymom-ck76twbqbq-as.a.run.app` (the `run.app` alias; an equivalent URL also contains the project number) |
 
 ## 5. Release procedure
 
@@ -134,9 +146,12 @@ Actions → Deploy demo → Run workflow → branch: main → image_tag: <full 4
 ```
 
 With `image_tag` set, `test` and the build step are skipped (`ROLLBACK=true` in
-`deploy/release.sh`): the named image is resolved by digest, `ymom-migrate` runs again
-(migrations are additive, so this is safe against an older image), and the service is pointed
-at that digest. Leaving `image_tag` empty tests, rebuilds and deploys current `main`.
+`deploy/release.sh`): the named image is resolved by digest, **the migration job is skipped
+entirely** (no new migration to run; `release.sh` only logs "reuse existing image; skip tests,
+build, migration and seed"), and the service is pointed at that digest. This is safe only
+because migrations are additive — the older image still works against the schema a later
+migration already applied, since nothing it reads or writes was removed or renamed. Leaving
+`image_tag` empty tests, rebuilds, migrates and deploys current `main`.
 
 Known-good releases on this branch's history:
 
@@ -157,8 +172,10 @@ not in the container.
   its container image digest with the one in the run summary.
 - **CLI:**
   ```bash
-  gcloud run services describe ymom --region asia-southeast1 --format='value(status.traffic)'
+  gcloud run services describe ymom --region asia-southeast1 \
+    --format='value(spec.template.spec.containers[0].image)'
   ```
+  (`status.traffic` only names the revision and its traffic share, not the image digest.)
 
 ## 8. Not required / out of scope
 
