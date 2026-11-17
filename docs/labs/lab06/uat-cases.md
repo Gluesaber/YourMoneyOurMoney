@@ -1,6 +1,7 @@
 # Lab 6 — Sprint 1 UAT cases (YourMoneyOurMoney)
 
-> **Status:** draft, not yet dry-run on the live URL.
+> **Status:** ready for handoff — every case dry-run by the Product Team on the live URL (revision `a09855f`).
+> The dry-run is a check of the case text only; it is not the independent UAT.
 > **Sources:** `docs/sprints/sprint-1/F-01-auth.md`, `F-02-admin.md`, `F-03-accounts.md`, `F-04-transactions.md`,
 > `F-05-summary-history.md`. Screen text taken from `client/src/pages/*`.
 
@@ -39,7 +40,7 @@ equal the contract's demo figures.
 | 1 | Log in as `alice`. | Lands on `/dashboard`; navbar shows `alice`. |
 | 2 | Record from the dashboard: Bank **B0**, Credit Card **C0**, Total income **I0**, Total expense **E0**, Salary **S0**, Dining **D0**, Groceries **G0**. | (recording only) |
 | 3 | **Set opening balance** under Bank. Record the pre-filled Amount as **O0**. Enter Amount `10,000.00`, Date `2026-11-01`, **Save**. | Back on `/dashboard`. Bank = **B0 − O0 + 10,000.00** (call it **B1**). Total income = I0, Total expense = E0 (opening balance is not income). |
-| 4 | **Record money received**: Source `Bank`, Date `2026-11-02`, Total `30,000.00`, Note `UAT-01 salary`, line 1 `Salary` `30,000.00`. **Save**. | Detail page: Receive, 2026-11-02, Bank, note "UAT-01 salary", Salary 30,000.00, Total 30,000.00. |
+| 4 | **Record money received**: Source `Bank`, Date `2026-11-02`, Total `30,000.00`, Note `UAT-01 salary`, line 1 `Salary` `30,000.00`. **Save**. | Detail page: Money received, 2026-11-02, Bank, note "UAT-01 salary", Salary 30,000.00, Total 30,000.00. |
 | 5 | Dashboard → **Record payment**: Source `Credit Card`, Date `2026-11-03`, Total `1,500.00`, line 1 `Dining` `900.00`, **Add line**, line 2 `Groceries` `600.00`. **Save**. | Detail page: Payment, Credit Card, Dining 900.00 then Groceries 600.00, Total 1,500.00. |
 | 6 | Dashboard → **Record payment**: Source `Bank`, Date `2026-11-04`, Total `1,500.00`, line 1 `Credit Card` `1,500.00`. **Save**. | Detail page: Payment, Bank, Credit Card 1,500.00. |
 | 7 | Open `/dashboard`. | As in the table below. |
@@ -113,9 +114,9 @@ see any financial data; protected state is neither changed nor disclosed.
 
 | # | Action | Expected result |
 |---|---|---|
-| 1 | **Record money received**: Source `Bank`, Date `2026-11-10`, Total `250.00`, Note `UAT-04 older`, line `Interest` `250.00`. **Save**. | Detail: Receive, 2026-11-10, Interest 250.00. |
+| 1 | **Record money received**: Source `Bank`, Date `2026-11-10`, Total `250.00`, Note `UAT-04 older`, line `Interest` `250.00`. **Save**. | Detail: Money received, 2026-11-10, Interest 250.00. |
 | 2 | **Record payment**: Source `Bank`, Date `2026-11-12`, Total `400.00`, Note `UAT-04 newer`, line `Electricity` `400.00`. **Save**. | Detail: Payment, 2026-11-12, Electricity 400.00. |
-| 3 | Open **History**. | Row (2026-11-12, Payment, Bank, Electricity, 400.00) is **above** row (2026-11-10, Receive, Bank, Interest, 250.00). |
+| 3 | Open **History**. | Row (2026-11-12, Payment, Bank, Electricity, 400.00) is **above** row (2026-11-10, Money received, Bank, Interest, 250.00). |
 | 4 | Click the 2026-11-12 row. | Detail: Payment, 2026-11-12, source Bank, note "UAT-04 newer", line Electricity 400.00, Total 400.00. |
 | 5 | Open `/dashboard`. | Bank = **B0 + 250.00 − 400.00 = B0 − 150.00**; Total income **I0 + 250.00**; Total expense **E0 + 400.00**; Interest **N0 + 250.00**; Electricity **L0 + 400.00**. Record as **V1**. |
 | 6 | **Log out**, then open `/dashboard` in the address bar. | On `/login`; `/dashboard` redirects to `/login`. |
@@ -180,7 +181,11 @@ two tabs or two private windows of the same browser — they share one login, so
   covers cross-user reads. Writes are covered by automated tests T-ACC-API-08 and T-TX-API-09.
 - The 24-hour absolute session expiry (AC-AUTH-07) is not practical manually; covered by T-AUTH-API-03.
 
-## Before handoff
+## Dry-run record (Product Team)
 
-- Dry-run every case on the live URL; confirm the JSON error wording in UAT-03 steps 6–10 and the History
-  "Account" column text.
+- All six cases were followed step by step on the live URL (revision `a09855f`) before handoff.
+- UAT-05: the first attempt used two windows that shared cookies, so `admin`'s login replaced `bob`'s session and
+  Window 2 went to `/admin/users`. Not a defect; the precondition and step 2a now require separate cookie jars, and
+  the re-run passed.
+- Confirmed against the client and server code: History columns are Date, Kind, Account (source), Allocated to,
+  Total; kind labels are "Payment" and "Money received"; UAT-03 API errors use codes `NOT_FOUND` and `FORBIDDEN`.
