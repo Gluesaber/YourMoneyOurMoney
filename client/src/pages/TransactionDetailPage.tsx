@@ -32,7 +32,7 @@ export function TransactionDetailPage() {
         {t.note && (
           <>
             <dt className="col-sm-4">Note</dt>
-            <dd className="col-sm-8">{t.note}</dd>
+            <dd className="col-sm-8 text-break">{t.note}</dd>
           </>
         )}
       </dl>

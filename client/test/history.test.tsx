@@ -83,6 +83,16 @@ describe("TransactionDetailPage", () => {
     expect(screen.getByRole("row", { name: /^Total\b/ })).toHaveTextContent("1,500.00");
   });
 
+  // Issue #59 — F-04 §8 (note ≤ 200 chars), F-05 §5 (detail view), NFR-COMP-02 (no horizontal overflow ≥ 360px).
+  it("T-HST-UI-03 (#59): wraps a 200-character unbroken note inside the detail container", async () => {
+    const longNote = `UAT-ADD-02-${"n".repeat(189)}`;
+    mockApi({ "GET /api/transactions/18": { body: { transaction: { ...CARD, id: 18, note: longNote } } } });
+    renderAt("/transactions/18");
+
+    const noteEl = await screen.findByText(longNote);
+    expect(noteEl).toHaveClass("text-break");
+  });
+
   it("a missing or someone else's transaction shows 'Transaction not found' with a way back", async () => {
     mockApi({
       "GET /api/transactions/99": {

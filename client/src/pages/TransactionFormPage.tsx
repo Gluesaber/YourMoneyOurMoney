@@ -9,7 +9,7 @@ import {
   type AccountType,
   type TransactionKind,
 } from "../api/finance.js";
-import { ErrorAlert, Loading, todayLocal, useLoad } from "../components/Feedback.js";
+import { ErrorAlert, Loading, fieldErrorsOf, todayLocal, useLoad } from "../components/Feedback.js";
 import { formatBaht, toSatang } from "../lib/money.js";
 
 // F-04 §5 Payment / Receive form — docs/sprints/sprint-1/F-04-transactions.md.
@@ -62,6 +62,9 @@ function TransactionForm({ kind, accounts }: { kind: TransactionKind; accounts: 
 
   const sources = accounts.filter((a) => SOURCE_TYPES[kind].includes(a.type));
   const lineAccounts = accounts.filter((a) => LINE_TYPES[kind].includes(a.type) && String(a.id) !== sourceId);
+
+  // The server checks the 2000–2099 range; its field message is shown under the Date input (#60).
+  const dateError = fieldErrorsOf(error).date?.[0];
 
   const totalSatang = toSatang(total);
   const lineSatang = lines.map((l) => toSatang(l.amount));
@@ -136,12 +139,19 @@ function TransactionForm({ kind, accounts }: { kind: TransactionKind; accounts: 
             <input
               id="tx-date"
               type="date"
-              className="form-control"
+              className={`form-control ${dateError ? "is-invalid" : ""}`}
               min="2000-01-01"
               max="2099-12-31"
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              aria-invalid={Boolean(dateError)}
+              aria-describedby="tx-date-error"
             />
+            {dateError && (
+              <div id="tx-date-error" className="invalid-feedback">
+                {dateError}
+              </div>
+            )}
           </div>
           <div className="col-sm-6">
             <MoneyInput id="tx-total" label="Total (THB)" value={total} onChange={setTotal} />

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { OPENING_BALANCE_TYPES, getAccounts, setOpeningBalance, type Account } from "../api/finance.js";
-import { ErrorAlert, Loading, todayLocal, useLoad } from "../components/Feedback.js";
+import { ErrorAlert, Loading, fieldErrorsOf, todayLocal, useLoad } from "../components/Feedback.js";
 import { formatBaht, toSatang } from "../lib/money.js";
 
 // F-03 §5 Opening balance form — docs/sprints/sprint-1/F-03-accounts.md.
@@ -34,7 +34,10 @@ function OpeningBalanceForm({ account }: { account: Account }) {
 
   const satang = toSatang(amount);
   const amountInvalid = showErrors && satang === null;
-  const dateInvalid = showErrors && !date;
+  // The server checks the 2000–2099 range; its field message is shown under the Date input (#60).
+  const serverDateError = fieldErrorsOf(error).openingDate?.[0];
+  const dateMessage = showErrors && !date ? "Choose a date." : serverDateError;
+  const dateInvalid = Boolean(dateMessage);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -91,8 +94,13 @@ function OpeningBalanceForm({ account }: { account: Account }) {
             value={date}
             onChange={(e) => setDate(e.target.value)}
             aria-invalid={dateInvalid}
+            aria-describedby="ob-date-error"
           />
-          {dateInvalid && <div className="invalid-feedback">Choose a date.</div>}
+          {dateInvalid && (
+            <div id="ob-date-error" className="invalid-feedback">
+              {dateMessage}
+            </div>
+          )}
         </div>
         <div className="d-flex gap-2">
           <button type="submit" className="btn btn-primary" disabled={saving}>
