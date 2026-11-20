@@ -1,8 +1,8 @@
 # YourMoneyOurMoney — Requirements Traceability Matrix
 
-> **Document Version:** 1.4.0  
+> **Document Version:** 1.4.1  
 > **Date:** 2026-11-20  
-> **Status:** Sprint 1 verified (S1-15); Lab 6 UAT fix #60 added  
+> **Status:** Sprint 1 verified (S1-15); Lab 6 UAT fixes #60, #59 added  
 > **Theme:** Theme 7 — Personal Money and Expense Logging (CPE 334)
 
 This document traces requirements → features → sprints → acceptance criteria → tests → results. Acceptance criteria
@@ -23,6 +23,11 @@ specifications (§7). Every Sprint 1 test ID below exists in the code; §6 lists
 and payment/receive forms now highlight the Date field with the server's `VALIDATION_ERROR` field message
 (`docs/system-sds.md` §1.4). New tests T-ACC-UI-03 and T-TX-UI-03. Full run: server 187 / 187, client 71 / 71,
 E2E 7 / 7, lint · format · types clean.
+
+**Lab 6 UAT fix (#59, 2026-11-20)** on `Issue-59` @ `543afeb` (RED test first at `a10947f`): the transaction detail
+note (`client/src/pages/TransactionDetailPage.tsx`) now uses `text-break` so 200-character unbroken notes wrap inside
+the `640px` container without horizontal overflow (`NFR-COMP-02`). New test T-HST-UI-03 (`T-HST-UI-02` remains
+reserved for Sprint 2 F-09). Client 72 / 72, lint · format · types clean.
 
 **ID rule:** an ID means one thing only. IDs reserved for Sprint 2–3 were renumbered in S1-15 where Sprint 1
 contracts had already used the same number (e.g. F-06 planned `AC-ACC-07..09` → `AC-ACC-12..14`).
@@ -66,7 +71,7 @@ Result column: **Pass** = automated tests passing in the run above; **Planned** 
 | **FR-SUM-03** | Exclusion of non-income/expense movements | BR-08 | F-05, F-07 | 1 / 2 | AC-SUM-04, AC-ACC-10 | T-SUM-UNIT-04, T-ACC-API-10, T-SUM-API-02, T-SUM-E2E-01 | **Pass** |
 | **FR-SUM-04** | Periodic financial reports & summaries (charts [Added by Team]) | BR-03, BR-04, BR-08 | F-11 | 3 | AC-REP-01..04 | T-REP-API-01..02, T-REP-UI-01 | Planned |
 | **FR-HST-01** | Transaction history feed (newest first) | BR-04 | F-05 | 1 | AC-HST-01 | T-HST-API-01, T-HST-UI-01, T-SUM-E2E-01 | **Pass** |
-| **FR-HST-02** | Transaction detail retrieval by ID | BR-04 | F-05 | 1 | AC-HST-02 | T-HST-API-02, T-HST-UI-01, S1-15 access E2E | **Pass** |
+| **FR-HST-02** | Transaction detail retrieval by ID | BR-04 | F-05 | 1 | AC-HST-02 | T-HST-API-02, T-HST-UI-01, T-HST-UI-03 (#59), S1-15 access E2E | **Pass** |
 | **FR-HST-03** | Transaction search and date filtering | BR-04 | F-09 | 2 | AC-HST-04..06 | T-HST-API-04, T-HST-UI-02 | Planned |
 | **FR-HST-04** | Data export in CSV and JSON formats [Added by Team] | BR-03, BR-04 | F-13 | 3 | AC-EXP-01..03 | T-EXP-API-01..02 | Planned |
 | **FR-SYS-01** | Standardized error envelope `{ error: ... }` | — | Platform | 1 | AC-SYS-01 | errors unit tests, client `api()` tests | **Pass** |
@@ -82,7 +87,7 @@ Result column: **Pass** = automated tests passing in the run above; **Planned** 
 | **F-02** | Administrator User Management | **1** | Track A | FR-ADM-01 .. FR-ADM-04 | BR-05, BR-06, BR-07 | AC-ADM-01 .. AC-ADM-05 | T-ADM-UNIT-01, T-ADM-API-01..04, T-ADM-UI-01, T-ADM-E2E-01..02 | **Pass** (S1-04, S1-06 .. S1-08) |
 | **F-03** | Account Setup & Opening Balances | **1** | Track B | FR-ACC-01 .. FR-ACC-05 | BR-03, BR-04, BR-08, BR-12 | AC-ACC-01 .. AC-ACC-11 | T-ACC-API-01..10, T-ACC-SEED-01, T-ACC-UI-01..03, T-ACC-E2E-01 | **Pass** (S1-10, S1-11, S1-14; #60) |
 | **F-04** | Transaction Recording & Split Allocations | **1** | Track B | FR-TX-01, FR-TX-02, FR-TX-04, FR-TX-05, FR-TX-06 | BR-01, BR-02, BR-03, BR-04, BR-09, BR-10, BR-11, BR-13 | AC-TX-01 .. AC-TX-12 | T-TX-UNIT-01..06, T-TX-API-01..10, T-MONEY-UNIT-01..02, T-TX-UI-01..03, T-TX-E2E-01 | **Pass** (S1-10, S1-12, S1-14; #60) |
-| **F-05** | Financial Summary & Transaction History | **1** | Track B | FR-SUM-01 .. FR-SUM-03, FR-HST-01, FR-HST-02 | BR-03, BR-04, BR-05, BR-08 | AC-SUM-01 .. AC-SUM-07, AC-HST-01 .. AC-HST-03 | T-SUM-UNIT-01..04, T-SUM-API-01..05, T-HST-API-01..03, T-SUM-UI-01, T-HST-UI-01, T-SUM-E2E-01 | **Pass** (S1-10, S1-13, S1-14) |
+| **F-05** | Financial Summary & Transaction History | **1** | Track B | FR-SUM-01 .. FR-SUM-03, FR-HST-01, FR-HST-02 | BR-03, BR-04, BR-05, BR-08 | AC-SUM-01 .. AC-SUM-07, AC-HST-01 .. AC-HST-03 | T-SUM-UNIT-01..04, T-SUM-API-01..05, T-HST-API-01..03, T-SUM-UI-01, T-HST-UI-01, T-HST-UI-03 (#59), T-SUM-E2E-01 | **Pass** (S1-10, S1-13, S1-14; #59) |
 | **F-06** | Custom Account & Category Management | 2 | Decided at sprint planning | FR-ACC-02, FR-ACC-03, FR-ACC-06 | BR-03, BR-04, BR-12 | AC-ACC-12..14 | T-ACC-API-11..12 | Planned |
 | **F-07** | Internal Account Transfers | 2 | Decided at sprint planning | FR-TX-03, FR-SUM-03 | BR-01 .. BR-04, BR-08 .. BR-11, BR-13 | AC-TX-13..14 | T-TX-API-11..12 | Planned |
 | **F-08** | Debt & Receivable Lifecycle (Lending & Borrowing) | 2 | Decided at sprint planning | FR-TX-09, FR-ACC-02, FR-TX-01, FR-TX-02, FR-SUM-01 | BR-01 .. BR-04, BR-08 .. BR-10, BR-12, BR-13 | AC-DEBT-01..04 | T-DEBT-API-01..03 | Planned |
@@ -131,7 +136,7 @@ Result column: **Pass** = automated tests passing in the run above; **Planned** 
 | **T7-SPLIT** | Split allocations; lines equal total | In | FR-TX-04, BR-01, BR-02, F-04 | 1 | T-TX-UNIT-02, T-TX-API-02, T-TX-API-04, T-TX-UI-01, S1-15 rejected-case E2E | **Pass** |
 | **T7-DEBT** | Outstanding loans and credit-card debt | In | Card debt: FR-SUM-02, F-05 (Sprint 1); loans: FR-TX-09, F-08 (Sprint 2) | 1 / 2 | T-SUM-API-03, T-SUM-E2E-01; T-DEBT-API-01..03 Planned | **Pass** (card debt) |
 | **T7-BAL** | Balances & category summaries | In | FR-SUM-01 .. FR-SUM-03, BR-08, F-05 | 1 | T-SUM-UNIT-01..04, T-SUM-API-01..05, T-SUM-UI-01, T-SUM-E2E-01 | **Pass** |
-| **T7-HIST** | Transaction history and detail | In | FR-HST-01, FR-HST-02, F-05 | 1 | T-HST-API-01..03, T-HST-UI-01 | **Pass** |
+| **T7-HIST** | Transaction history and detail | In | FR-HST-01, FR-HST-02, F-05 | 1 | T-HST-API-01..03, T-HST-UI-01, T-HST-UI-03 (note wrapping, #59) | **Pass** |
 | **T7-XFER** | Transfers between own accounts *(Later sprints)* | In | FR-TX-03, F-07 | 2 | T-TX-API-11..12 | Planned |
 | **T7-DUP** | Duplicate transaction *(Later sprints)* | In | FR-TX-08, F-10 | 2 | T-FAV-UI-01 | Planned |
 | **T7-FAV** | Mark and view favorites *(Later sprints)* | In | FR-TX-07, F-10 | 2 | T-FAV-API-01..02 | Planned |
@@ -168,7 +173,7 @@ Result column: **Pass** = automated tests passing in the run above; **Planned** 
 | **NFR-REL-02** | Transactional atomicity | 0 partial writes | `prisma.$transaction` | T-TX-API-04 .. T-TX-API-09 | **Pass** |
 | **NFR-REL-03** | Satang accuracy | 0 satang error | integer satang; text-based `toSatang` | T-MONEY-UNIT-01, T-MONEY-UNIT-02, T-SUM-UNIT-02, T-SUM-API-02 | **Pass** |
 | **NFR-COMP-01** | Browser compatibility | Chrome, Firefox, Edge | Playwright projects | Chromium: all E2E (7 / 7); Firefox / Edge: Planned | **Partial** |
-| **NFR-COMP-02** | Viewport responsiveness | 360 px – 1920 px without sideways scroll | Bootstrap grid, two-column tables | Manual check at 364 px (S1-14, `integration.md`); automated T-E2E-RESPONSIVE-01 Planned | **Partial** |
+| **NFR-COMP-02** | Viewport responsiveness | 360 px – 1920 px without sideways scroll | Bootstrap grid, two-column tables | Manual check at 364 px (S1-14, `integration.md`), T-HST-UI-03 (detail note wrapping, #59); automated T-E2E-RESPONSIVE-01 Planned | **Partial** |
 | **NFR-COMP-03** | Currency presentation | THB with two decimals; exact satang conversion | `client/src/lib/money.ts` | T-MONEY-UNIT-01, T-MONEY-UNIT-02, T-SUM-UI-01 | **Pass** |
 | **NFR-MAINT-01** | Code quality & static typing | 0 TS / ESLint / Prettier errors | strict TS, ESLint, Prettier | `npm run lint`, `npm run format:check`, `typecheck` | **Pass** |
 | **NFR-MAINT-02** | Automated test coverage | 100% pass; BR-01 .. BR-13 covered | Vitest + Playwright | §3 (every BR has passing tests); `npm test`, `npm run test:e2e` | **Pass** |
@@ -198,7 +203,7 @@ Result column: **Pass** = automated tests passing in the run above; **Planned** 
 | T-MONEY-UNIT-01..02 | `client/test/money.test.ts` |
 | T-TX-UI-01..03, form component tests | `client/test/transactionForm.test.tsx` |
 | T-SUM-UI-01 | `client/test/dashboard.test.tsx` |
-| T-HST-UI-01 | `client/test/history.test.tsx` |
+| T-HST-UI-01, T-HST-UI-03 | `client/test/history.test.tsx` |
 | client `api()` tests, route-guard tests | `client/test/apiClient.test.ts`, `client/test/RequireRole.test.tsx` |
 | T-AUTH-E2E-01..02, T-ADM-E2E-01..02 | `e2e/auth-admin.spec.ts` |
 | T-ACC-E2E-01, T-TX-E2E-01, T-SUM-E2E-01, rejected-case E2E, access E2E | `e2e/demo-journey.spec.ts` |
