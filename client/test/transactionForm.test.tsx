@@ -150,6 +150,39 @@ describe("TransactionFormPage", () => {
     expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
   });
 
+  // Issue #60 — docs/system-sds.md §1.4: field-level details from VALIDATION_ERROR highlight the matching input.
+  it("T-TX-UI-03 (#60): a server date error highlights the Date field with the server's message", async () => {
+    mockApi({
+      "GET /api/accounts": { body: { accounts: SEEDED_ACCOUNTS } },
+      "POST /api/transactions": {
+        status: 400,
+        body: {
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Invalid request.",
+            details: { formErrors: [], fieldErrors: { date: ["Use a date from 2000 to 2099."] } },
+          },
+        },
+      },
+    });
+    const user = userEvent.setup();
+    renderAt("/transactions/new?kind=PAYMENT");
+
+    await user.selectOptions(await screen.findByLabelText("Paid from"), "Bank");
+    const date = screen.getByLabelText("Date");
+    await user.clear(date);
+    await user.type(date, "1999-12-31");
+    await user.type(screen.getByLabelText("Total (THB)"), "10");
+    await user.selectOptions(screen.getByLabelText("Account for line 1"), "Dining");
+    await user.type(screen.getByLabelText("Amount for line 1"), "10");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Invalid request.");
+    expect(date).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByText("Use a date from 2000 to 2099.")).toBeInTheDocument();
+    expect(date).toHaveValue("1999-12-31");
+  });
+
   it("shows an inline error for an amount that is not valid baht", async () => {
     mockApi({ "GET /api/accounts": { body: { accounts: SEEDED_ACCOUNTS } } });
     const user = userEvent.setup();

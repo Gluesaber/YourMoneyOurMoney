@@ -88,6 +88,37 @@ describe("OpeningBalancePage", () => {
     expect(amount).toHaveValue("100");
   });
 
+  // Issue #60 — docs/system-sds.md §1.4: field-level details from VALIDATION_ERROR highlight the matching input.
+  it("T-ACC-UI-03 (#60): a server date error highlights the Date field with the server's message", async () => {
+    mockApi({
+      "GET /api/accounts": { body: { accounts: SEEDED_ACCOUNTS } },
+      "PUT /api/accounts/1/opening-balance": {
+        status: 400,
+        body: {
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Invalid request.",
+            details: { formErrors: [], fieldErrors: { openingDate: ["Use a date from 2000 to 2099."] } },
+          },
+        },
+      },
+    });
+    const user = userEvent.setup();
+    renderAt("/accounts/1/opening-balance");
+    const amount = await screen.findByLabelText("Amount (THB)");
+    await user.clear(amount);
+    await user.type(amount, "10,000.00");
+    const date = screen.getByLabelText("Date");
+    await user.clear(date);
+    await user.type(date, "1999-12-31");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Invalid request.");
+    expect(date).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByText("Use a date from 2000 to 2099.")).toBeInTheDocument();
+    expect(amount).toHaveAttribute("aria-invalid", "false");
+  });
+
   it("refuses accounts that cannot have an opening balance, or are not the user's", async () => {
     mockApi({ "GET /api/accounts": { body: { accounts: SEEDED_ACCOUNTS } } });
     renderAt("/accounts/5/opening-balance"); // Dining (EXPENSE)
