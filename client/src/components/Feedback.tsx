@@ -25,6 +25,14 @@ export function messageOf(error: unknown): string {
   return error instanceof ApiError ? error.message : "Something went wrong. Please try again.";
 }
 
+// Field-level messages from a VALIDATION_ERROR (zod `fieldErrors`), keyed by request field name, so a form can
+// highlight the matching input (docs/system-sds.md §1.4). Any other error gives an empty object.
+export function fieldErrorsOf(error: unknown): Record<string, string[] | undefined> {
+  if (!(error instanceof ApiError) || error.code !== "VALIDATION_ERROR") return {};
+  const details = error.details as { fieldErrors?: Record<string, string[] | undefined> } | undefined;
+  return details?.fieldErrors ?? {};
+}
+
 // Loads data once for a page. `data` is undefined while loading; `error` is set if the request fails.
 export function useLoad<T>(load: () => Promise<T>, deps: unknown[] = []) {
   const [data, setData] = useState<T>();
