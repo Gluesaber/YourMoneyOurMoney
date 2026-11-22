@@ -61,8 +61,8 @@ T-ACC-API-01, 03, 11, which now also expect `inUse`), client 2 failed / 83 passe
 @ `f01b355`): `server/src/lib/transactionQuery.ts` (Zod query parser + `toWhere` + `toOrderBy`, literal `%`/`_`/`\` escape,
 500-row cap + `truncated`), `GET /api/transactions`, `TransactionFilterBar`, `dateRanges`, URL-synced filters on
 `/transactions`, and History links on `/loans`. RED: server unit 1 failed / 87 passed, client 2 failed / 88 passed. GREEN
-(local offline checks): server unit 106 / 106 passed (9 files), client 101 / 101 passed (16 files), lint · format ·
-client build · server types clean (server DB/API `T-HST-API-04..09` and E2E `T-HST-E2E-01` verified via CI).
+(verified on `19754e4`): server 259 / 259 passed (incl. `T-HST-UNIT-01` and `T-HST-API-04..09`), client 101 / 101 passed,
+E2E 11 / 11 passed (local run, incl. `T-HST-E2E-01`), lint · format · typecheck · client build clean.
 
 **ID rule:** an ID means one thing only. IDs reserved for Sprint 2–3 were renumbered in S1-15 where Sprint 1
 contracts had already used the same number (e.g. F-06 planned `AC-ACC-07..09` → `AC-ACC-12..14`).
@@ -107,7 +107,7 @@ Result column: **Pass** = automated tests passing in the run above; **Planned** 
 | **FR-SUM-04** | Periodic financial reports & summaries (charts [Added by Team]) | BR-03, BR-04, BR-08 | F-11 | 3 | AC-REP-01..04 | T-REP-API-01..02, T-REP-UI-01 | Planned |
 | **FR-HST-01** | Transaction history feed (newest first) | BR-04 | F-05 | 1 | AC-HST-01 | T-HST-API-01, T-HST-UI-01, T-SUM-E2E-01 | **Pass** |
 | **FR-HST-02** | Transaction detail retrieval by ID | BR-04 | F-05 | 1 | AC-HST-02 | T-HST-API-02, T-HST-UI-01, T-HST-UI-03 (#59), S1-15 access E2E | **Pass** |
-| **FR-HST-03** | Transaction search and date filtering | BR-04, BR-05 | F-09 | 2 | AC-HST-04..08 | T-HST-UNIT-01, T-HST-UNIT-02, T-HST-API-04..09, T-HST-UI-02, T-HST-E2E-01 | Implemented (S2-05, #70; client/unit Pass; DB/E2E via CI) |
+| **FR-HST-03** | Transaction search and date filtering | BR-04, BR-05 | F-09 | 2 | AC-HST-04..08 | T-HST-UNIT-01, T-HST-UNIT-02, T-HST-API-04..09, T-HST-UI-02, T-HST-E2E-01 | **Pass** (S2-05, #70) |
 | **FR-HST-04** | Data export in CSV and JSON formats [Added by Team] | BR-03, BR-04 | F-13 | 3 | AC-EXP-01..03 | T-EXP-API-01..02 | Planned |
 | **FR-SYS-01** | Standardized error envelope `{ error: ... }` | — | Platform | 1 | AC-SYS-01 | errors unit tests, client `api()` tests | **Pass** |
 | **FR-SYS-02** | System health probe endpoint (`/api/health`) | — | Platform | 1 | AC-SYS-02 | harness API tests (health) | **Pass** |
@@ -126,7 +126,7 @@ Result column: **Pass** = automated tests passing in the run above; **Planned** 
 | **F-06** | Custom Account & Category Management | 2 | Track B (Harit) | FR-ACC-02, FR-ACC-03, FR-ACC-06 | BR-03, BR-04, BR-12, BR-15, BR-16 | AC-ACC-12..23 | T-ACC-UNIT-01, T-ACC-API-11..21, T-ACC-DB-01, T-ACC-UI-04, T-ACC-UI-05, T-ACC-E2E-02 | **Pass** (S2-02, #67; AC-ACC-23 in the #73 follow-up) |
 | **F-07** | Internal Account Transfers | 2 | Track B (Harit) | FR-TX-03, FR-SUM-03 | BR-01 .. BR-04, BR-08 .. BR-11, BR-13, BR-16 | AC-TX-13, AC-TX-14, AC-TX-16..19 (AC-TX-15 → L7-01) | T-TX-API-11, T-TX-API-12, T-TX-API-14, T-TRF-UNIT-01, T-TRF-UI-01, T-TRF-UI-02, T-TRF-UI-03, T-HST-UI-04, T-TX-E2E-02 | **Pass** (S2-03, #68) |
 | **F-08** | Debt & Receivable Lifecycle (Lending & Borrowing) | 2 | Track A (Jirawat) | FR-TX-09, FR-ACC-02, FR-TX-01, FR-TX-02, FR-SUM-01 | BR-01 .. BR-04, BR-08 .. BR-10, BR-12, BR-13, BR-16 | AC-DEBT-01, AC-DEBT-02, AC-DEBT-04..07 (AC-DEBT-03 → L7-01) | T-DEBT-API-01, T-DEBT-API-02, T-DEBT-API-04, T-DEBT-UNIT-01, T-DEBT-UI-01, T-DEBT-UI-02, T-DEBT-E2E-01 | Implemented (S2-04, #69; client/unit Pass; DB/E2E pending Docker) |
-| **F-09** | Transaction Search, Filtering & Sorting | 2 | Track A (Jirawat) | FR-HST-03 | BR-04, BR-05 | AC-HST-04..08 | T-HST-UNIT-01, T-HST-UNIT-02, T-HST-API-04..09, T-HST-UI-02, T-HST-E2E-01 | Implemented (S2-05, #70; client/unit Pass; DB/E2E via CI) |
+| **F-09** | Transaction Search, Filtering & Sorting | 2 | Track A (Jirawat) | FR-HST-03 | BR-04, BR-05 | AC-HST-04..08 | T-HST-UNIT-01, T-HST-UNIT-02, T-HST-API-04..09, T-HST-UI-02, T-HST-E2E-01 | **Pass** (S2-05, #70) |
 | **F-10** | Favorite & Duplicate Transactions | 2 | Decided at sprint planning | FR-TX-07, FR-TX-08 | BR-04 | AC-FAV-01..03 | T-FAV-API-01..02, T-FAV-UI-01 | Planned |
 | **F-11** | Financial Reports & Periodic Spending Summaries | 3 | Decided at sprint planning | FR-SUM-04 | BR-03, BR-04, BR-08 | AC-REP-01..04 | T-REP-API-01..02, T-REP-UI-01 | Planned |
 | **F-12** | Transaction Editing, Voiding & Audit Corrections | 3 | Decided at sprint planning | FR-TX-10, FR-TX-01, FR-TX-02, FR-TX-05 | BR-01, BR-02, BR-04, BR-11, BR-13 | AC-VOID-01..03 | T-VOID-API-01..02 | Planned |
