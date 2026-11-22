@@ -1,8 +1,8 @@
 # YourMoneyOurMoney — Whole-Product Feature Inventory
 
-> **Document Version:** 1.0.0  
-> **Date:** 2026-11-04  
-> **Status:** Draft  
+> **Document Version:** 1.2.0  
+> **Date:** 2026-11-22  
+> **Status:** Sprint 1 accepted (`v0.1.0`; Lab 6 UAT on `0731479`); Sprint 2 F-06…F-10 implemented and verified on `Sprint-2/staging` @ `a8d6b06` (S2-07); Sprint 3 planned  
 > **Product Scope:** Sprint 1, Sprint 2, and Sprint 3  
 > **Theme:** Theme 7 — Personal Money and Expense Logging (CPE 334)
 
@@ -14,14 +14,14 @@ This document provides a comprehensive inventory of all product features across 
 
 | Feature ID | Feature Name | Target Sprint | Track / Owner | Status | Core Capability |
 |---|---|---|---|---|---|
-| **F-01** | User Authentication & Session Management | **Sprint 1** | Track A | In Progress | Secure login, session persistence, logout, auth context |
-| **F-02** | Administrator User Management | **Sprint 1** | Track A | In Progress | User listing, enable/disable accounts, self-disable protection |
-| **F-03** | Account Setup & Opening Balances | **Sprint 1** | Track B | In Progress | Seeded accounts (Bank, Card, Categories), opening balances |
-| **F-04** | Transaction Recording & Split Allocations | **Sprint 1** | Track B | In Progress | Payment/Receive entry, multi-line splits, balance validation |
-| **F-05** | Financial Summary & Transaction History | **Sprint 1** | Track B | In Progress | Real-time balances, debt tracking, category totals, history list |
+| **F-01** | User Authentication & Session Management | **Sprint 1** | Track A | Accepted (`v0.1.0`) | Secure login, session persistence, logout, auth context |
+| **F-02** | Administrator User Management | **Sprint 1** | Track A | Accepted (`v0.1.0`) | User listing, enable/disable accounts, self-disable protection |
+| **F-03** | Account Setup & Opening Balances | **Sprint 1** | Track B | Accepted (`v0.1.0`) | Seeded accounts (Bank, Card, Categories), opening balances |
+| **F-04** | Transaction Recording & Split Allocations | **Sprint 1** | Track B | Accepted (`v0.1.0`) | Payment/Receive entry, multi-line splits, balance validation |
+| **F-05** | Financial Summary & Transaction History | **Sprint 1** | Track B | Accepted (`v0.1.0`) | Real-time balances, debt tracking, category totals, history list |
 | **F-06** | Custom Account & Category Management | **Sprint 2** | Track B (Harit) | Implemented (S2-02, #67) | Create, edit, archive and delete custom accounts and categories |
 | **F-07** | Internal Account Transfers | **Sprint 2** | Track B (Harit) | Implemented (S2-03, #68) | Dedicated UI for inter-account cash transfers |
-| **F-08** | Debt & Receivable Lifecycle (Lending & Borrowing) | **Sprint 2** | Track A (Jirawat) | Implemented (S2-04, #69); overdraft case verified with L7-01 (#64) | Loan given / loan taken tracking, repayments, outstanding debts |
+| **F-08** | Debt & Receivable Lifecycle (Lending & Borrowing) | **Sprint 2** | Track A (Jirawat) | Implemented (S2-04, #69); overdraft case (AC-DEBT-03) deferred to L7-01 (#64), pending TA approval | Loan given / loan taken tracking, repayments, outstanding debts |
 | **F-09** | Transaction Search, Filtering & Sorting | **Sprint 2** | Track A (Jirawat) | Implemented (S2-05, #70) | Date range filtering, account & kind filters, literal `q` search, sorting, URL state |
 | **F-10** | Favorite & Duplicate Transactions | **Sprint 2** | Track A (Jirawat) | Implemented (S2-06, #71) | Quick re-entry, star and view favorite transactions, duplicate draft dated today |
 | **F-11** | Financial Reports & Periodic Spending Summaries | **Sprint 3** | Decided at sprint planning | Planned | Monthly income vs expense & category reports (brief), plus visual charts `[Added by Team]` (DL-09) |
@@ -36,7 +36,7 @@ This document provides a comprehensive inventory of all product features across 
 ### F-01: User Authentication & Session Management
 - **Target Sprint:** Sprint 1
 - **Track Owner:** Track A (Identity & Administration)
-- **Status:** In Progress (S1-04 contract, S1-05/S1-06 backend, S1-08 frontend)
+- **Status:** Accepted in `v0.1.0` (S1-04 contract, S1-05/S1-06 backend, S1-08 frontend); re-accepted in Lab 6 UAT on `0731479`
 - **User Story:**  
   *As a personal user or administrator, I want to securely log in with my username and password, maintain an active session, and log out when finished, so that my account and private data are protected.*
 - **Detailed Capabilities:**
@@ -59,7 +59,7 @@ This document provides a comprehensive inventory of all product features across 
 ### F-02: Administrator User Management
 - **Target Sprint:** Sprint 1
 - **Track Owner:** Track A (Identity & Administration)
-- **Status:** In Progress (S1-04 contract, S1-07 backend, S1-08 frontend)
+- **Status:** Accepted in `v0.1.0` (S1-04 contract, S1-07 backend, S1-08 frontend); re-accepted in Lab 6 UAT on `0731479`
 - **User Story:**  
   *As an administrator, I want to view all registered users and toggle their active/disabled status, so that I can govern platform access while maintaining complete separation from users' private financial data.*
 - **Detailed Capabilities:**
@@ -80,7 +80,7 @@ This document provides a comprehensive inventory of all product features across 
 ### F-03: Account Setup & Opening Balances
 - **Target Sprint:** Sprint 1
 - **Track Owner:** Track B (Ledger & Reporting)
-- **Status:** In Progress (S1-10 contract, S1-11 backend, S1-14 frontend)
+- **Status:** Accepted in `v0.1.0` (S1-10 contract, S1-11 backend, S1-14 frontend); re-accepted in Lab 6 UAT on `0731479`
 - **User Story:**  
   *As a personal user, I want to view my pre-seeded financial accounts and configure opening balances and dates for my bank and credit card, so that my ledger accurately reflects my starting financial position.*
 - **Detailed Capabilities:**
@@ -102,7 +102,7 @@ This document provides a comprehensive inventory of all product features across 
 ### F-04: Transaction Recording & Split Allocations
 - **Target Sprint:** Sprint 1
 - **Track Owner:** Track B (Ledger & Reporting)
-- **Status:** In Progress (S1-10 contract, S1-12 backend, S1-14 frontend)
+- **Status:** Accepted in `v0.1.0` (S1-10 contract, S1-12 backend, S1-14 frontend); re-accepted in Lab 6 UAT on `0731479`
 - **User Story:**  
   *As a personal user, I want to record Payment and Receive transactions split across one or more allocation lines with automatic balance validation, so that my expenditures and incomes are accurately categorized.*
 - **Detailed Capabilities:**
@@ -126,7 +126,7 @@ This document provides a comprehensive inventory of all product features across 
 ### F-05: Financial Summary & Transaction History
 - **Target Sprint:** Sprint 1
 - **Track Owner:** Track B (Ledger & Reporting)
-- **Status:** In Progress (S1-10 contract, S1-13 backend, S1-14 frontend)
+- **Status:** Accepted in `v0.1.0` (S1-10 contract, S1-13 backend, S1-14 frontend); re-accepted in Lab 6 UAT on `0731479`
 - **User Story:**  
   *As a personal user, I want to see a consolidated dashboard with my bank balance, credit card debt, total income/expense, and a chronological history of my transactions, so that I have a clear view of my finances.*
 - **Detailed Capabilities:**
@@ -173,7 +173,7 @@ This document provides a comprehensive inventory of all product features across 
 ### F-07: Internal Account Transfers
 - **Target Sprint:** Sprint 2
 - **Track Owner:** Track B (Harit)
-- **Status:** Implemented (S2-03, #68); overdraft case verified with L7-01 (#64)
+- **Status:** Implemented (S2-03, #68); overdraft case (AC-TX-15) deferred to L7-01 (#64), pending TA approval
 - **User Story:**  
   *As a personal user, I want a dedicated transfer workflow between my liquid accounts (e.g. Bank to Cash Wallet), so that inter-account fund shifts are seamless, clearly logged, and excluded from income/expense summaries.*
 - **Detailed Capabilities:**
@@ -193,7 +193,7 @@ This document provides a comprehensive inventory of all product features across 
 ### F-08: Debt & Receivable Lifecycle (Lending & Borrowing)
 - **Target Sprint:** Sprint 2
 - **Track Owner:** Track A (Jirawat)
-- **Status:** Implemented (S2-04, #69); overdraft case verified with L7-01 (#64)
+- **Status:** Implemented (S2-04, #69); overdraft case (AC-DEBT-03) deferred to L7-01 (#64), pending TA approval
 - **User Story:**  
   *As a personal user, I want to log loans I have extended to friends (receivables) and loans I have borrowed (debts), and log partial or full repayments, so that I can keep track of outstanding personal balances.*
 - **Detailed Capabilities:**

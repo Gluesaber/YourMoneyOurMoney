@@ -1,8 +1,8 @@
 # YourMoneyOurMoney — Software Requirements Specification (SRS)
 
-> **Document Version:** 1.0.0  
-> **Date:** 2026-11-04  
-> **Status:** Draft  
+> **Document Version:** 1.2.0  
+> **Date:** 2026-11-22  
+> **Status:** Baseline with approved revisions: Sprint 1 accepted (`v0.1.0`); Sprint 2 FRs (FR-ACC-06, FR-TX-03, FR-TX-07…09, FR-HST-03) and BR-15/16 implemented (S2-07); BR-14 pending TA approval (L7-01, #64)  
 > **Project Theme:** Theme 7 — Personal Money and Expense Logging (CPE 334)  
 > **Authors:** Track A (Identity & Administration) & Track B (Ledger & Reporting)
 

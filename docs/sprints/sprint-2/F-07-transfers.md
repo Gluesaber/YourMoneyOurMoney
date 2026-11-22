@@ -137,4 +137,4 @@ T-TX-E2E-02, which need the new form and labels.
 | 0.1 | 2026-11-21 | `b6e700a` | #66 / S2-01 (#65) | First draft for review |
 | 0.2 | 2026-11-22 | `14571a7` | #66 review (Jirawat) | Transfer label follows the money for RECEIVE (line → source); AC-TX-16 / T-TX-API-14 add ADMIN 403 and anonymous 401; T-TRF-UNIT-01 adds the RECEIVE case |
 | 0.3 | 2026-11-22 | `ca95736` | #74 / S2-03 (#68), before code | AC-TX-15 / T-TX-API-13 moved to L7-01 (#64) because BR-14 is not yet approved; T-TRF-UI-02 uses an existing server error (`ACCOUNT_ARCHIVED`) and maps to AC-TX-18; §7 note that the server tests pass before F-07 code; DoD updated |
-| 0.4 | 2026-11-22 | — | #74 review follow-up (S2-03) | §5 and AC-TX-18: a server `date` field error marks the Date field invalid (#60 pattern); T-TRF-UI-03 added |
+| 0.4 | 2026-11-22 | `dc93515` | #76 / #74 review follow-up (S2-03) | §5 and AC-TX-18: a server `date` field error marks the Date field invalid (#60 pattern); T-TRF-UI-03 added |
