@@ -39,6 +39,7 @@ describe("T-ADM-API-04 (a): unauthenticated requests to protected routes return 
       }),
       await anon.get("/api/transactions"),
       await anon.get("/api/transactions/1"),
+      await anon.patch("/api/transactions/1/favorite").send({ isFavorite: true }),
       await anon.get("/api/summary"),
     ];
 
@@ -97,6 +98,7 @@ describe("T-ADM-API-04 (c): ADMIN calling any financial route returns 403 FORBID
       }),
       await adminAgent.get("/api/transactions"),
       await adminAgent.get("/api/transactions/1"),
+      await adminAgent.patch("/api/transactions/1/favorite").send({ isFavorite: true }),
       await adminAgent.get("/api/summary"),
     ];
 
@@ -183,11 +185,21 @@ describe("T-ADM-API-04 (d): cross-user financial isolation returns 404 NOT_FOUND
     const aliceTxList = await aliceAgent.get("/api/transactions").expect(200);
     expect(aliceTxList.body.transactions).toEqual([]);
 
-    // 5. Alice reading Bob's transaction by id gets 404 NOT_FOUND (same as missing id).
+    // 5. Alice reading or starring Bob's transaction by id gets 404 NOT_FOUND (same as missing id).
     const getBobTx = await aliceAgent.get(`/api/transactions/${bobTxId}`);
     const getMissingTx = await aliceAgent.get("/api/transactions/999999");
     expect(getBobTx.status).toBe(404);
     expect(getBobTx.body).toEqual(getMissingTx.body);
+
+    const favBobTx = await aliceAgent
+      .patch(`/api/transactions/${bobTxId}/favorite`)
+      .send({ isFavorite: true });
+    const favMissingTx = await aliceAgent
+      .patch("/api/transactions/999999/favorite")
+      .send({ isFavorite: true });
+    expect(favBobTx.status).toBe(404);
+    expect(favBobTx.body).toEqual(favMissingTx.body);
+    expect((await prisma.transaction.findUniqueOrThrow({ where: { id: bobTxId } })).isFavorite).toBe(false);
 
     // 6. Alice's summary is all zeros, unaffected by Bob's data.
     const aliceSummary = await aliceAgent.get("/api/summary").expect(200);
@@ -228,6 +240,7 @@ describe("disabled-user and deleted-user session enforcement across routes (BR-0
       }),
       await aliceAgent.get("/api/transactions"),
       await aliceAgent.get("/api/transactions/1"),
+      await aliceAgent.patch("/api/transactions/1/favorite").send({ isFavorite: true }),
       await aliceAgent.get("/api/summary"),
       await aliceAgent.post("/api/auth/logout"),
     ];
