@@ -1,17 +1,48 @@
-import { Link } from "react-router-dom";
-import { getAccounts, getTransactions } from "../api/finance.js";
+import { Link, useSearchParams } from "react-router-dom";
+import {
+  buildTransactionQueryString,
+  getAccounts,
+  getTransactionList,
+  type TransactionFilters,
+  type TransactionKind,
+  type TransactionSort,
+} from "../api/finance.js";
 import { Amount, ErrorAlert, Loading, useLoad } from "../components/Feedback.js";
+import { TransactionFilterBar } from "../components/TransactionFilterBar.js";
 import { accountTypesOf, transferLabel } from "../lib/transactions.js";
 
 export const KIND_LABEL = { PAYMENT: "Payment", RECEIVE: "Money received" } as const;
 
-// F-05 §5 History — docs/sprints/sprint-1/F-05-summary-history.md. Shown in the server's order
-// (newest date first, then most recently entered).
+// F-05 §5 & F-09 §5 History — docs/sprints/sprint-2/F-09-search-filter.md.
+// Filters stay synced with URL query params so reload/back preserves them.
 export function TransactionsPage() {
-  const { data: transactions, error } = useLoad(getTransactions);
-  // F-07: account types label transfers. If they fail to load the list still shows, just without labels.
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const filters: TransactionFilters = {
+    startDate: searchParams.get("startDate") ?? "",
+    endDate: searchParams.get("endDate") ?? "",
+    accountId: searchParams.get("accountId") ?? "",
+    kind: (searchParams.get("kind") as TransactionKind | null) ?? "",
+    q: searchParams.get("q") ?? "",
+    sort: (searchParams.get("sort") as TransactionSort | null) ?? "date_desc",
+  };
+
+  const queryString = buildTransactionQueryString(filters);
+  const { data, error } = useLoad(() => getTransactionList(filters), [queryString]);
+  // F-07 / F-09: account types label transfers and populate Account filter options.
   const { data: accounts } = useLoad(getAccounts);
   const types = accountTypesOf(accounts);
+
+  const transactions = data?.transactions;
+  const hasActiveFilters = queryString.length > 0;
+
+  function updateFilters(next: TransactionFilters) {
+    setSearchParams(new URLSearchParams(buildTransactionQueryString(next)));
+  }
+
+  function clearFilters() {
+    setSearchParams(new URLSearchParams());
+  }
 
   return (
     <section>
@@ -21,9 +52,30 @@ export function TransactionsPage() {
           Back to the dashboard
         </Link>
       </div>
+      <TransactionFilterBar
+        filters={filters}
+        accounts={accounts}
+        onChange={updateFilters}
+        onClear={clearFilters}
+      />
       <ErrorAlert error={error} />
       {!transactions && !error && <Loading />}
-      {transactions?.length === 0 && <p className="text-body-secondary">No transactions yet.</p>}
+      {data?.truncated && (
+        <div className="alert alert-info">
+          Showing the first 500 matching transactions. Narrow the filters to see more.
+        </div>
+      )}
+      {transactions?.length === 0 && !hasActiveFilters && (
+        <p className="text-body-secondary">No transactions yet.</p>
+      )}
+      {transactions?.length === 0 && hasActiveFilters && (
+        <p className="text-body-secondary">
+          No transactions match these filters.{" "}
+          <button type="button" className="btn btn-link p-0 align-baseline" onClick={clearFilters}>
+            Clear
+          </button>
+        </p>
+      )}
       {transactions && transactions.length > 0 && (
         // position-relative keeps the visually-hidden header inside the scroll box, so only the table
         // scrolls sideways on a phone, never the whole page.

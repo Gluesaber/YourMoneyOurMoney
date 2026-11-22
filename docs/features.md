@@ -22,7 +22,7 @@ This document provides a comprehensive inventory of all product features across 
 | **F-06** | Custom Account & Category Management | **Sprint 2** | Track B (Harit) | Implemented (S2-02, #67) | Create, edit, archive and delete custom accounts and categories |
 | **F-07** | Internal Account Transfers | **Sprint 2** | Track B (Harit) | Implemented (S2-03, #68) | Dedicated UI for inter-account cash transfers |
 | **F-08** | Debt & Receivable Lifecycle (Lending & Borrowing) | **Sprint 2** | Track A (Jirawat) | Implemented (S2-04, #69); overdraft case verified with L7-01 (#64) | Loan given / loan taken tracking, repayments, outstanding debts |
-| **F-09** | Transaction Search, Filtering & Sorting | **Sprint 2** | Decided at sprint planning | Planned | Date range filtering, category search, keyword matching (`q`) |
+| **F-09** | Transaction Search, Filtering & Sorting | **Sprint 2** | Track A (Jirawat) | Implemented (S2-05, #70) | Date range filtering, account & kind filters, literal `q` search, sorting, URL state |
 | **F-10** | Favorite & Duplicate Transactions | **Sprint 2** | Decided at sprint planning | Planned | Quick re-entry, star and view favorite transactions, clone records |
 | **F-11** | Financial Reports & Periodic Spending Summaries | **Sprint 3** | Decided at sprint planning | Planned | Monthly income vs expense & category reports (brief), plus visual charts `[Added by Team]` (DL-09) |
 | **F-12** | Transaction Editing, Voiding & Audit Corrections | **Sprint 3** | Decided at sprint planning | Planned | Revise transaction notes/lines, void transactions with rollback |
@@ -212,18 +212,18 @@ This document provides a comprehensive inventory of all product features across 
 
 ### F-09: Transaction Search, Filtering & Sorting
 - **Target Sprint:** Sprint 2
-- **Track Owner:** Decided at sprint planning
-- **Status:** Planned
+- **Track Owner:** Track A (Jirawat)
+- **Status:** Implemented (S2-05, #70)
 - **User Story:**  
   *As a personal user, I want to search and filter my transaction history by date range, account, category, and keyword, so that I can quickly locate specific transactions.*
 - **Detailed Capabilities:**
-  - Query parameters on `GET /api/transactions`: `startDate`, `endDate`, `accountId`, `kind`, `q`.
-  - Case-insensitive substring search across transaction notes.
-  - Client-side quick filter buttons (This Month, Last Month, This Year).
+  - Query parameters on `GET /api/transactions`: `startDate`, `endDate`, `accountId` (matches source or line), `kind`, `q` (literal case-insensitive substring search across transaction notes with `%`/`_`/`\` escaped), `sort` (`date_desc`, `date_asc`, `amount_desc`, `amount_asc`).
+  - Returns at most 500 rows per request with `truncated: boolean` (F-09 R6).
+  - Client filter bar synced with URL search params, debounced keyword search, quick date range buttons (This month, Last month, This year), Clear button, and History links per loan account on `/loans`.
 - **Mapped FRs:** FR-HST-03.
-- **Mapped BRs:** BR-04.
-- **API Endpoints:** `GET /api/transactions?startDate=...&endDate=...&accountId=...&q=...`.
-- **UI Components:** `TransactionFilterBar`, `DateRangePicker`.
+- **Mapped BRs:** BR-04, BR-05.
+- **API Endpoints:** `GET /api/transactions?startDate=...&endDate=...&accountId=...&kind=...&q=...&sort=...`.
+- **UI Components:** `TransactionFilterBar`, `TransactionsPage`, `dateRanges` (`client/src/lib/dateRanges.ts`).
 - **Dependencies:** F-05.
 
 ---

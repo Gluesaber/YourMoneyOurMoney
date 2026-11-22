@@ -1,6 +1,6 @@
 # F-09 — Transaction Search, Filtering & Sorting (Sprint 2 contract)
 
-> **Status:** v0.1 draft for review. Merged before any F-09 code.
+> **Status:** v0.2 — reviewed in #66; implemented in S2-05 (#70).
 > **Requirements:** FR-HST-03 (extends FR-HST-01) · BR-04, BR-05 · NFR-SEC-03
 > **Depends on:** F-05 (`GET /api/transactions`). F-10 adds `favorite=true` to the same query parser.
 > **IDs:** `AC-HST-04…`, `T-HST-API-04…` as reserved in `docs/traceability.md`; the filter-bar UI test uses
@@ -115,4 +115,4 @@ Regression kept: T-HST-API-01…03, T-HST-UI-01, T-HST-UI-03, access suite (`GET
 | Version | Date | Commit | PR / Issue | Change |
 |---|---|---|---|---|
 | 0.1 | 2026-11-21 | `b6e700a` | #66 / S2-01 (#65) | First draft for review |
-| 0.2 | 2026-11-22 | — | #66 review (Jirawat) | Filter-bar test uses the reserved T-HST-UI-02 (not -05) and the ID note is corrected; R6 states the 500-row cut exactly; new T-HST-API-09 covers `truncated: true` and the 500 boundary; AC-HST-07 updated |
+| 0.2 | 2026-11-22 | `14571a7` | #66 review (Jirawat) | Filter-bar test uses the reserved T-HST-UI-02 (not -05) and the ID note is corrected; R6 states the 500-row cut exactly; new T-HST-API-09 covers `truncated: true` and the 500 boundary; AC-HST-07 updated |

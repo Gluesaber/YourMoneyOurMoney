@@ -1,6 +1,11 @@
-import { screen, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach } from "vitest";
-import { mockApi, renderAt } from "./renderApp.js";
+import { MemoryRouter, useLocation } from "react-router-dom";
+import { AppRoutes } from "../src/App.js";
+import { AuthContext, type AuthState } from "../src/auth/AuthContext.js";
+import { thisMonthRange } from "../src/lib/dateRanges.js";
+import { alice, mockApi, renderAt } from "./renderApp.js";
 
 // F-05 §5 History and detail — docs/sprints/sprint-1/F-05-summary-history.md.
 afterEach(() => vi.unstubAllGlobals());
@@ -185,5 +190,123 @@ describe("Transfer labels (F-07)", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "Transfer: Bank → Wallet" }),
     ).toBeInTheDocument();
+  });
+});
+
+// F-09 §5 & §7 T-HST-UI-02 — docs/sprints/sprint-2/F-09-search-filter.md.
+describe("History filter bar (F-09, T-HST-UI-02)", () => {
+  function LocationProbe() {
+    const { search } = useLocation();
+    return <div data-testid="url-search">{search}</div>;
+  }
+
+  function renderHistoryWithUrl(initialPath = "/transactions") {
+    const auth: AuthState = { user: alice, loading: false, login: vi.fn(), logout: vi.fn() };
+    return render(
+      <AuthContext.Provider value={auth}>
+        <MemoryRouter initialEntries={[initialPath]}>
+          <LocationProbe />
+          <AppRoutes />
+        </MemoryRouter>
+      </AuthContext.Provider>,
+    );
+  }
+
+  const ACCOUNTS = [
+    { id: 1, name: "Bank", type: "CASH", subtype: "BANK", openingBalance: 0, openingDate: null, balance: 0 },
+    {
+      id: 3,
+      name: "Salary",
+      type: "INCOME",
+      subtype: null,
+      openingBalance: 0,
+      openingDate: null,
+      balance: 0,
+    },
+    {
+      id: 9,
+      name: "Old Wallet",
+      type: "CASH",
+      subtype: "WALLET",
+      openingBalance: 0,
+      openingDate: null,
+      balance: 0,
+      archived: true,
+    },
+  ];
+
+  it("T-HST-UI-02: setting Kind, Search, and This month updates requests and URL, and Clear restores full list", async () => {
+    const range = thisMonthRange();
+    const calls = mockApi({
+      "GET /api/accounts": { body: { accounts: ACCOUNTS } },
+      "GET /api/transactions": { body: { transactions: [REPAY, CARD, SALARY], truncated: false } },
+      "GET /api/transactions?kind=RECEIVE": { body: { transactions: [SALARY], truncated: false } },
+      "GET /api/transactions?kind=RECEIVE&q=dinner": { body: { transactions: [], truncated: false } },
+      [`GET /api/transactions?startDate=${range.startDate}&endDate=${range.endDate}&kind=RECEIVE&q=dinner`]: {
+        body: { transactions: [], truncated: false },
+      },
+    });
+    const user = userEvent.setup();
+    renderHistoryWithUrl();
+
+    expect(await screen.findByLabelText("Kind")).toBeInTheDocument();
+    // Archived accounts remain selectable in Account filter (F-09 §5)
+    expect(screen.getByRole("option", { name: /Old Wallet \(Archived\)/ })).toBeInTheDocument();
+
+    // 1. Select Kind = Receive
+    await user.selectOptions(screen.getByLabelText("Kind"), "RECEIVE");
+    expect(await screen.findByTestId("url-search")).toHaveTextContent("kind=RECEIVE");
+    expect(calls.some((c) => c.path === "/api/transactions?kind=RECEIVE")).toBe(true);
+
+    // 2. Type Search "dinner" (debounced) -> empty filtered message with Clear
+    await user.type(screen.getByLabelText("Search"), "dinner");
+    expect(await screen.findByText("No transactions match these filters.")).toBeInTheDocument();
+    expect(screen.getByTestId("url-search")).toHaveTextContent("kind=RECEIVE");
+    expect(screen.getByTestId("url-search")).toHaveTextContent("q=dinner");
+    expect(calls.some((c) => c.path === "/api/transactions?kind=RECEIVE&q=dinner")).toBe(true);
+
+    // 3. Click This month
+    await user.click(screen.getByRole("button", { name: "This month" }));
+    expect(await screen.findByTestId("url-search")).toHaveTextContent(`startDate=${range.startDate}`);
+    expect(screen.getByTestId("url-search")).toHaveTextContent(`endDate=${range.endDate}`);
+    expect(
+      calls.some(
+        (c) =>
+          c.path ===
+          `/api/transactions?startDate=${range.startDate}&endDate=${range.endDate}&kind=RECEIVE&q=dinner`,
+      ),
+    ).toBe(true);
+
+    // 4. Click Clear -> URL cleared, inputs reset, full list restored
+    const clearButtons = screen.getAllByRole("button", { name: "Clear" });
+    await user.click(clearButtons[0]);
+    expect(await screen.findByRole("table")).toBeInTheDocument();
+    expect(screen.getByTestId("url-search")).toHaveTextContent("");
+    expect(screen.getByLabelText("Kind")).toHaveValue("");
+    expect(screen.getByLabelText("Search")).toHaveValue("");
+    expect(calls.filter((c) => c.path === "/api/transactions").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("shows server 400 validation alert while keeping filters", async () => {
+    mockApi({
+      "GET /api/accounts": { body: { accounts: ACCOUNTS } },
+      "GET /api/transactions?startDate=2026-11-30&endDate=2026-11-01": {
+        status: 400,
+        body: { error: { code: "VALIDATION_ERROR", message: "Start date cannot be after end date." } },
+      },
+    });
+    renderHistoryWithUrl("/transactions?startDate=2026-11-30&endDate=2026-11-01");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Start date cannot be after end date.");
+    expect(screen.getByLabelText("From")).toHaveValue("2026-11-30");
+    expect(screen.getByLabelText("To")).toHaveValue("2026-11-01");
+  });
+
+  it("shows truncated notice when truncated is true", async () => {
+    mockApi({
+      "GET /api/accounts": { body: { accounts: ACCOUNTS } },
+      "GET /api/transactions": { body: { transactions: [REPAY], truncated: true } },
+    });
+    renderHistoryWithUrl();
+    expect(await screen.findByText(/first 500 matching transactions/i)).toBeInTheDocument();
   });
 });

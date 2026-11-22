@@ -1,8 +1,8 @@
 # YourMoneyOurMoney — Requirements Traceability Matrix
 
-> **Document Version:** 1.6.0  
+> **Document Version:** 1.7.0  
 > **Date:** 2026-11-22  
-> **Status:** Sprint 1 verified (S1-15); Lab 6 UAT fixes #60, #59 added; Sprint 2 F-06 (#67), F-07 (#68), F-08 (#69) implemented; review follow-ups from #73 / #74  
+> **Status:** Sprint 1 verified (S1-15); Lab 6 UAT fixes #60, #59 added; Sprint 2 F-06 (#67), F-07 (#68), F-08 (#69), F-09 (#70) implemented; review follow-ups from #73 / #74  
 > **Theme:** Theme 7 — Personal Money and Expense Logging (CPE 334)
 
 This document traces requirements → features → sprints → acceptance criteria → tests → results. Acceptance criteria
@@ -57,6 +57,13 @@ T-TRF-UI-03. RED: server 4 failed / 227 passed (T-ACC-API-21 and the three stric
 T-ACC-API-01, 03, 11, which now also expect `inUse`), client 2 failed / 83 passed. GREEN: server 231 / 231, client
 85 / 85, E2E 9 / 9, lint · format · types clean.
 
+**Sprint 2 F-09 (S2-05 #70, 2026-11-22)** on `Issue-S2-05` (RED tests `cb94f7c`, GREEN `74ee1dd`, base `Sprint-2/staging`
+@ `f01b355`): `server/src/lib/transactionQuery.ts` (Zod query parser + `toWhere` + `toOrderBy`, literal `%`/`_`/`\` escape,
+500-row cap + `truncated`), `GET /api/transactions`, `TransactionFilterBar`, `dateRanges`, URL-synced filters on
+`/transactions`, and History links on `/loans`. RED: server unit 1 failed / 87 passed, client 2 failed / 88 passed. GREEN
+(verified on `19754e4`): server 259 / 259 passed (incl. `T-HST-UNIT-01` and `T-HST-API-04..09`), client 101 / 101 passed,
+E2E 11 / 11 passed (local run, incl. `T-HST-E2E-01`), lint · format · typecheck · client build clean.
+
 **ID rule:** an ID means one thing only. IDs reserved for Sprint 2–3 were renumbered in S1-15 where Sprint 1
 contracts had already used the same number (e.g. F-06 planned `AC-ACC-07..09` → `AC-ACC-12..14`).
 Result column: **Pass** = automated tests passing in the run above; **Planned** = not yet implemented.
@@ -100,7 +107,7 @@ Result column: **Pass** = automated tests passing in the run above; **Planned** 
 | **FR-SUM-04** | Periodic financial reports & summaries (charts [Added by Team]) | BR-03, BR-04, BR-08 | F-11 | 3 | AC-REP-01..04 | T-REP-API-01..02, T-REP-UI-01 | Planned |
 | **FR-HST-01** | Transaction history feed (newest first) | BR-04 | F-05 | 1 | AC-HST-01 | T-HST-API-01, T-HST-UI-01, T-SUM-E2E-01 | **Pass** |
 | **FR-HST-02** | Transaction detail retrieval by ID | BR-04 | F-05 | 1 | AC-HST-02 | T-HST-API-02, T-HST-UI-01, T-HST-UI-03 (#59), S1-15 access E2E | **Pass** |
-| **FR-HST-03** | Transaction search and date filtering | BR-04 | F-09 | 2 | AC-HST-04..06 | T-HST-API-04, T-HST-UI-02 | Planned |
+| **FR-HST-03** | Transaction search and date filtering | BR-04, BR-05 | F-09 | 2 | AC-HST-04..08 | T-HST-UNIT-01, T-HST-UNIT-02, T-HST-API-04..09, T-HST-UI-02, T-HST-E2E-01 | **Pass** (S2-05, #70) |
 | **FR-HST-04** | Data export in CSV and JSON formats [Added by Team] | BR-03, BR-04 | F-13 | 3 | AC-EXP-01..03 | T-EXP-API-01..02 | Planned |
 | **FR-SYS-01** | Standardized error envelope `{ error: ... }` | — | Platform | 1 | AC-SYS-01 | errors unit tests, client `api()` tests | **Pass** |
 | **FR-SYS-02** | System health probe endpoint (`/api/health`) | — | Platform | 1 | AC-SYS-02 | harness API tests (health) | **Pass** |
@@ -119,7 +126,7 @@ Result column: **Pass** = automated tests passing in the run above; **Planned** 
 | **F-06** | Custom Account & Category Management | 2 | Track B (Harit) | FR-ACC-02, FR-ACC-03, FR-ACC-06 | BR-03, BR-04, BR-12, BR-15, BR-16 | AC-ACC-12..23 | T-ACC-UNIT-01, T-ACC-API-11..21, T-ACC-DB-01, T-ACC-UI-04, T-ACC-UI-05, T-ACC-E2E-02 | **Pass** (S2-02, #67; AC-ACC-23 in the #73 follow-up) |
 | **F-07** | Internal Account Transfers | 2 | Track B (Harit) | FR-TX-03, FR-SUM-03 | BR-01 .. BR-04, BR-08 .. BR-11, BR-13, BR-16 | AC-TX-13, AC-TX-14, AC-TX-16..19 (AC-TX-15 → L7-01) | T-TX-API-11, T-TX-API-12, T-TX-API-14, T-TRF-UNIT-01, T-TRF-UI-01, T-TRF-UI-02, T-TRF-UI-03, T-HST-UI-04, T-TX-E2E-02 | **Pass** (S2-03, #68) |
 | **F-08** | Debt & Receivable Lifecycle (Lending & Borrowing) | 2 | Track A (Jirawat) | FR-TX-09, FR-ACC-02, FR-TX-01, FR-TX-02, FR-SUM-01 | BR-01 .. BR-04, BR-08 .. BR-10, BR-12, BR-13, BR-16 | AC-DEBT-01, AC-DEBT-02, AC-DEBT-04..07 (AC-DEBT-03 → L7-01) | T-DEBT-API-01, T-DEBT-API-02, T-DEBT-API-04, T-DEBT-UNIT-01, T-DEBT-UI-01, T-DEBT-UI-02, T-DEBT-E2E-01 | Implemented (S2-04, #69; client/unit Pass; DB/E2E pending Docker) |
-| **F-09** | Transaction Search, Filtering & Sorting | 2 | Decided at sprint planning | FR-HST-03 | BR-04 | AC-HST-04..06 | T-HST-API-04, T-HST-UI-02 | Planned |
+| **F-09** | Transaction Search, Filtering & Sorting | 2 | Track A (Jirawat) | FR-HST-03 | BR-04, BR-05 | AC-HST-04..08 | T-HST-UNIT-01, T-HST-UNIT-02, T-HST-API-04..09, T-HST-UI-02, T-HST-E2E-01 | **Pass** (S2-05, #70) |
 | **F-10** | Favorite & Duplicate Transactions | 2 | Decided at sprint planning | FR-TX-07, FR-TX-08 | BR-04 | AC-FAV-01..03 | T-FAV-API-01..02, T-FAV-UI-01 | Planned |
 | **F-11** | Financial Reports & Periodic Spending Summaries | 3 | Decided at sprint planning | FR-SUM-04 | BR-03, BR-04, BR-08 | AC-REP-01..04 | T-REP-API-01..02, T-REP-UI-01 | Planned |
 | **F-12** | Transaction Editing, Voiding & Audit Corrections | 3 | Decided at sprint planning | FR-TX-10, FR-TX-01, FR-TX-02, FR-TX-05 | BR-01, BR-02, BR-04, BR-11, BR-13 | AC-VOID-01..03 | T-VOID-API-01..02 | Planned |
@@ -227,6 +234,8 @@ Result column: **Pass** = automated tests passing in the run above; **Planned** 
 | T-SUM-UNIT-01..04 | `server/test/unit/ledger.unit.test.ts` |
 | T-SUM-API-01..05 | `server/test/api/summary.api.test.ts` |
 | T-HST-API-01..03 | `server/test/api/history.api.test.ts` |
+| T-HST-UNIT-01 (F-09) | `server/test/unit/transactionQuery.unit.test.ts` |
+| T-HST-API-04..09 (F-09) | `server/test/api/historySearch.api.test.ts` |
 | schema DB tests (amounts, ownership, accounts, unique names) | `server/test/api/schema.db.test.ts` |
 | harness / errors / ownership / requireRole tests | `server/test/api/harness.api.test.ts`, `server/test/unit/{errors,ownership,requireRole}.unit.test.ts` |
 | T-AUTH-UI-01 | `client/test/auth.test.tsx` |
@@ -237,7 +246,8 @@ Result column: **Pass** = automated tests passing in the run above; **Planned** 
 | T-MONEY-UNIT-01..02 | `client/test/money.test.ts` |
 | T-TX-UI-01..03, form component tests | `client/test/transactionForm.test.tsx` |
 | T-SUM-UI-01 | `client/test/dashboard.test.tsx` |
-| T-HST-UI-01, T-HST-UI-03, T-HST-UI-04 (F-07) | `client/test/history.test.tsx` |
+| T-HST-UI-01, T-HST-UI-02 (F-09), T-HST-UI-03, T-HST-UI-04 (F-07) | `client/test/history.test.tsx` |
+| T-HST-UNIT-02 (F-09) | `client/test/dateRanges.test.ts` |
 | T-TX-API-11, 12, 14 (F-07) | `server/test/api/transfers.api.test.ts` |
 | T-TRF-UNIT-01 (F-07) | `client/test/transfers.test.ts` |
 | T-TRF-UI-01..03 (F-07) | `client/test/transferForm.test.tsx` |
@@ -250,3 +260,4 @@ Result column: **Pass** = automated tests passing in the run above; **Planned** 
 | T-ACC-E2E-02 (F-06) | `e2e/account-management.spec.ts` |
 | T-TX-E2E-02 (F-07) | `e2e/transfers.spec.ts` |
 | T-DEBT-E2E-01 (F-08) | `e2e/loans.spec.ts` |
+| T-HST-E2E-01 (F-09) | `e2e/history-search.spec.ts` |

@@ -4,6 +4,7 @@ import { getPrisma } from "../prisma.js";
 import { AppError, ErrorCode } from "../lib/errors.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { MAX_INT, calendarDate, fromDateOnly, parseId, toDateOnly } from "../lib/validation.js";
+import { MAX_TRANSACTION_ROWS, parseTransactionQuery, toOrderBy, toWhere } from "../lib/transactionQuery.js";
 import { requireRole, requireUser } from "../middleware/auth.js";
 import { validateTransaction } from "../services/ledger.js";
 
@@ -103,16 +104,20 @@ function assertNotArchived(
   }
 }
 
-// FR-HST-01: the user's transactions, newest date first, then highest id first. No pagination in Sprint 1.
+// FR-HST-01 / FR-HST-03: filtered & sorted user transactions, capped at MAX_TRANSACTION_ROWS (F-09 R6).
 transactionsRouter.get(
   "/",
   asyncHandler(async (req, res) => {
+    const query = parseTransactionQuery(req.query);
     const rows = await getPrisma().transaction.findMany({
-      where: { userId: req.user!.id },
-      orderBy: [{ date: "desc" }, { id: "desc" }],
+      where: toWhere(query, req.user!.id),
+      orderBy: toOrderBy(query.sort),
+      take: MAX_TRANSACTION_ROWS + 1,
       include: transactionInclude,
     });
-    res.json({ transactions: rows.map(toTransactionResponse) });
+    const truncated = rows.length > MAX_TRANSACTION_ROWS;
+    const shown = truncated ? rows.slice(0, MAX_TRANSACTION_ROWS) : rows;
+    res.json({ transactions: shown.map(toTransactionResponse), truncated });
   }),
 );
 

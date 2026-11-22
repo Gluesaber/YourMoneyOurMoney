@@ -95,9 +95,9 @@ function LoanSection(props: {
                       <Amount satang={r.outstanding} />
                     </td>
                     <td>
-                      {!archived && (
-                        <div className="d-flex flex-wrap gap-2">
-                          {props.kind === "GIVEN" ? (
+                      <div className="d-flex flex-wrap gap-2">
+                        {!archived &&
+                          (props.kind === "GIVEN" ? (
                             <>
                               <Link
                                 className="btn btn-sm btn-outline-primary"
@@ -127,9 +127,14 @@ function LoanSection(props: {
                                 Repay
                               </Link>
                             </>
-                          )}
-                        </div>
-                      )}
+                          ))}
+                        <Link
+                          className="btn btn-sm btn-outline-secondary"
+                          to={`/transactions?accountId=${r.accountId}`}
+                        >
+                          History
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 );
