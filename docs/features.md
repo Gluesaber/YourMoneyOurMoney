@@ -20,7 +20,7 @@ This document provides a comprehensive inventory of all product features across 
 | **F-04** | Transaction Recording & Split Allocations | **Sprint 1** | Track B | In Progress | Payment/Receive entry, multi-line splits, balance validation |
 | **F-05** | Financial Summary & Transaction History | **Sprint 1** | Track B | In Progress | Real-time balances, debt tracking, category totals, history list |
 | **F-06** | Custom Account & Category Management | **Sprint 2** | Track B (Harit) | Implemented (S2-02, #67) | Create, edit, archive and delete custom accounts and categories |
-| **F-07** | Internal Account Transfers | **Sprint 2** | Decided at sprint planning | Planned | Dedicated UI for inter-account cash transfers |
+| **F-07** | Internal Account Transfers | **Sprint 2** | Track B (Harit) | Implemented (S2-03, #68) | Dedicated UI for inter-account cash transfers |
 | **F-08** | Debt & Receivable Lifecycle (Lending & Borrowing) | **Sprint 2** | Decided at sprint planning | Planned | Loan given / loan taken tracking, repayments, outstanding debts |
 | **F-09** | Transaction Search, Filtering & Sorting | **Sprint 2** | Decided at sprint planning | Planned | Date range filtering, category search, keyword matching (`q`) |
 | **F-10** | Favorite & Duplicate Transactions | **Sprint 2** | Decided at sprint planning | Planned | Quick re-entry, star and view favorite transactions, clone records |
@@ -172,8 +172,8 @@ This document provides a comprehensive inventory of all product features across 
 
 ### F-07: Internal Account Transfers
 - **Target Sprint:** Sprint 2
-- **Track Owner:** Decided at sprint planning
-- **Status:** Planned
+- **Track Owner:** Track B (Harit)
+- **Status:** Implemented (S2-03, #68); overdraft case verified with L7-01 (#64)
 - **User Story:**  
   *As a personal user, I want a dedicated transfer workflow between my liquid accounts (e.g. Bank to Cash Wallet), so that inter-account fund shifts are seamless, clearly logged, and excluded from income/expense summaries.*
 - **Detailed Capabilities:**

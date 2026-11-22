@@ -317,8 +317,10 @@ Sprint 1; BR-15 and BR-16 were added by F-06 in Sprint 2 (#67). BR-14 is reserve
   - Allocation line must belong to user and have type `CASH` (BR-10).
   - Source account cannot appear as an allocation line (BR-11).
   - Lines sum must equal `totalAmount` exactly (BR-01).
+  - Archived accounts cannot be used (BR-16, F-06).
+- **User interface (F-07):** the Transfer form (`/transfers/new`) always records a transfer as form 1 (`PAYMENT` from → one `CASH` line to). History and detail label any transaction whose source and every line are `CASH` as "Transfer: <from> → <to>", the arrow following the money. Contract: `docs/sprints/sprint-2/F-07-transfers.md`.
 - **Outputs:** HTTP 201 `{ transaction: Transaction }`.
-- **Target Sprint:** Sprint 2 (Feature F-07).
+- **Target Sprint:** Sprint 2 (Feature F-07). The overdraft case (a transfer may not take the From account below 0) belongs to BR-14 and is verified by L7-01 (#64).
 
 #### FR-TX-04: Multi-Line Split Allocation
 - **Description:** The system supports splitting any transaction across multiple categories (e.g. a 1,500 THB credit card charge split into 900 THB Dining and 600 THB Groceries).
