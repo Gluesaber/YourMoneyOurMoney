@@ -146,6 +146,9 @@ reviewed PR, a document) rather than an AI agent's or an author's claim:
 
 **Remaining after Sprint 1:** F-06 to F-14, Sprint 3 hardening, Lab 5–7 deliverables, Docker/CI/GCP pipeline.
 
+**Remaining after Sprint 2 (S2-07, 22 Nov 2026):** F-11 to F-14 and Sprint 3 hardening; the Lab 7 change L7-01 (#64,
+awaiting TA approval), which also carries AC-TX-15 (F-07) and AC-DEBT-03 (F-08); Lab 7 and Deliverable 2 reports.
+
 | Date | Change | Reason |
 |---|---|---|
 | 4 Nov 2026 | Baseline plan | S1-09 |
@@ -154,3 +157,6 @@ reviewed PR, a document) rather than an AI agent's or an author's claim:
 | 5 Nov 2026 | Admin account administration (create users, reset passwords) dropped; replaced by F-14 self-service password change | As defined in `features.md` (PR #20); seeded accounts meet the spec and the brief does not require it |
 | 5 Nov 2026 | F-13 data export added as a team addition | As defined in `features.md` (PR #20) and SRS DL-09 |
 | 5 Nov 2026 | Hardening moved from a feature (old F-13) to Sprint 3 work | It is a quality activity, not a user-facing feature |
+| 22 Nov 2026 | Sprint 2 assignment: F-06, F-07 Harit (Track B); F-08, F-09, F-10 Jirawat (Track A); contracts F-06…F-10 merged before any Sprint 2 code (PR #66) | Sprint 2 planning; Track A had no Sprint 2 feature of its own |
+| 22 Nov 2026 | AC-TX-15 (F-07) and AC-DEBT-03 (F-08), the overdraft cases, moved to the Lab 7 change L7-01 (#64) | They depend on BR-14, which awaits TA approval; contracts F-07 v0.3 (`ca95736`) and F-08 v0.3 (`7bf378c`), committed before code |
+| 22 Nov 2026 | Review follow-ups for F-06 / F-07 shipped in their own PR (#76) without a separate Issue | Small, non-blocking review notes from #73 / #74; the PR links both |

@@ -134,4 +134,4 @@ Regression kept: T-TX-*, T-ACC-* (F-06), T-SUM-* (loans sections), access suite,
 |---|---|---|---|---|
 | 0.1 | 2026-11-21 | `b6e700a` | #66 / S2-01 (#65) | First draft for review |
 | 0.2 | 2026-11-22 | `14571a7` | #66 review (Jirawat) | Credit-card label uses `subtype` from `GET /api/accounts` (summary has none); AC-DEBT-05 and T-DEBT-UI-01 updated; T-DEBT-UI-02 uses the "Get repaid" action for Ben (LOAN_GIVEN) |
-| 0.3 | 2026-11-22 | — | S2-04 (#69), before code | AC-DEBT-03 / T-DEBT-API-03 moved to L7-01 (#64) because BR-14 is awaiting TA approval; §7 note that server API tests pass before F-08 code; DoD updated |
+| 0.3 | 2026-11-22 | `7bf378c` | #75 / S2-04 (#69), before code | AC-DEBT-03 / T-DEBT-API-03 moved to L7-01 (#64) because BR-14 is awaiting TA approval; §7 note that server API tests pass before F-08 code; DoD updated |
