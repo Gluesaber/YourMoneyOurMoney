@@ -40,6 +40,7 @@ Every route in `docs/system-sds.md` §5.2 is guarded on the server:
 | `POST /api/transactions` | `requireUser, requireRole("USER")` + ownership check | **401** | 201 / 400 | **404** `NOT_FOUND` (BR-04) | **403** `FORBIDDEN` (BR-05) |
 | `GET /api/transactions` | `requireUser, requireRole("USER")` | **401** | 200 (own only) | *(filtered out)* | **403** `FORBIDDEN` (BR-05) |
 | `GET /api/transactions/:id` | `requireUser, requireRole("USER")` + `assertOwned` | **401** | 200 | **404** `NOT_FOUND` (BR-04) | **403** `FORBIDDEN` (BR-05) |
+| `PATCH /api/transactions/:id/favorite` | `requireUser, requireRole("USER")` + `userId` check | **401** | 200 | **404** `NOT_FOUND` (BR-04) | **403** `FORBIDDEN` (BR-05) |
 | `GET /api/summary` | `requireUser, requireRole("USER")` | **401** | 200 (own only) | *(filtered out)* | **403** `FORBIDDEN` (BR-05) |
 
 ## 2. Rules and validation

@@ -23,7 +23,7 @@ This document provides a comprehensive inventory of all product features across 
 | **F-07** | Internal Account Transfers | **Sprint 2** | Track B (Harit) | Implemented (S2-03, #68) | Dedicated UI for inter-account cash transfers |
 | **F-08** | Debt & Receivable Lifecycle (Lending & Borrowing) | **Sprint 2** | Track A (Jirawat) | Implemented (S2-04, #69); overdraft case verified with L7-01 (#64) | Loan given / loan taken tracking, repayments, outstanding debts |
 | **F-09** | Transaction Search, Filtering & Sorting | **Sprint 2** | Track A (Jirawat) | Implemented (S2-05, #70) | Date range filtering, account & kind filters, literal `q` search, sorting, URL state |
-| **F-10** | Favorite & Duplicate Transactions | **Sprint 2** | Decided at sprint planning | Planned | Quick re-entry, star and view favorite transactions, clone records |
+| **F-10** | Favorite & Duplicate Transactions | **Sprint 2** | Track A (Jirawat) | Implemented (S2-06, #71) | Quick re-entry, star and view favorite transactions, duplicate draft dated today |
 | **F-11** | Financial Reports & Periodic Spending Summaries | **Sprint 3** | Decided at sprint planning | Planned | Monthly income vs expense & category reports (brief), plus visual charts `[Added by Team]` (DL-09) |
 | **F-12** | Transaction Editing, Voiding & Audit Corrections | **Sprint 3** | Decided at sprint planning | Planned | Revise transaction notes/lines, void transactions with rollback |
 | **F-13** | Data Export (CSV & JSON) [Added by Team] | **Sprint 3** | Decided at sprint planning | Planned | Export transaction ledgers and account statements (DL-09) |
@@ -230,21 +230,21 @@ This document provides a comprehensive inventory of all product features across 
 
 ### F-10: Favorite & Duplicate Transactions
 - **Target Sprint:** Sprint 2
-- **Track Owner:** Decided at sprint planning
-- **Status:** Planned
+- **Track Owner:** Track A (Jirawat)
+- **Status:** Implemented (S2-06, #71)
 - **User Story:**  
   *As a personal user, I want to star frequent transactions as favorites and duplicate past transactions with one click, so that recurring manual entries (like monthly bills) take minimal time to log.*
 - **Detailed Capabilities:**
-  - Toggle `isFavorite` on transactions (`PATCH /api/transactions/:id/favorite`) and view/filter favorite transactions (`GET /api/transactions?favorite=true`).
-  - Quick-action "Duplicate" button in transaction list that copies source, categories, and amounts into the transaction form for the current date.
-  - Dedicated "Favorites" tab or dashboard widget for rapid 1-click recording.
+  - Toggle `isFavorite` on transactions (`PATCH /api/transactions/:id/favorite`) with optimistic UI toggle + rollback on error, and filter favorites (`GET /api/transactions?favorite=true` + History "Favorites only" checkbox).
+  - **Duplicate** button on History rows, Detail page, and Dashboard Favorites card opens `/transactions/new?kind=<kind>` pre-filled via `toDuplicateDraft`, dated today, leaving archived accounts blank with a notice.
+  - Dashboard **Favorites** card listing up to 5 newest favorite transactions (hidden when empty).
 - **Mapped FRs:** FR-TX-07, FR-TX-08.
-- **Mapped BRs:** BR-04.
+- **Mapped BRs:** BR-04, BR-05, BR-13 (+ all F-04 / F-06 rules on the duplicated save).
 - **API Endpoints:**
   - `PATCH /api/transactions/:id/favorite`
   - `GET /api/transactions?favorite=true`
-- **UI Components:** `FavoriteStarToggle`, `DuplicateTransactionButton`, `QuickExpenseWidget`.
-- **Dependencies:** F-04, F-05.
+- **UI Components:** `FavoriteToggle`, `FavoritesCard`, `TransactionFormPage` (draft prefill), `toDuplicateDraft` (`client/src/lib/duplicate.ts`).
+- **Dependencies:** F-04, F-05, F-09.
 
 ---
 
