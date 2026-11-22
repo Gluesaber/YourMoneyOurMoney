@@ -37,7 +37,7 @@ the Lab 7 change request L7-01 (#64) and awaits TA approval. They were moved to 
 
 | Feature | Contract merged (reviewed) | Revision before code | RED commit | GREEN commit |
 |---|---|---|---|---|
-| F-06 | v0.2, PR #66 (`abc1ee5`, 08:31) | — | `9dc8bf6` | `67604e7` |
+| F-06 | v0.2, PR #66 (`abc1ee5`, 15:31) | — | `9dc8bf6` | `67604e7` |
 | F-07 | v0.2, PR #66 | v0.3 `ca95736` | `de09a41` | `df91929` |
 | F-08 | v0.2, PR #66 | v0.3 `7bf378c` | `e129021` | `00f404f` |
 | F-09 | v0.2, PR #66 | — | `cb94f7c` | `74ee1dd` |
@@ -57,7 +57,7 @@ the feature code; their RED evidence is in the client and E2E tests, as each con
 | Author → reviewer | Harit Chaiyanukit → Jirawat Rachatapramet | Jirawat Rachatapramet → Harit Chaiyanukit |
 | Review | Approved; non-blocking notes (hide Delete / type for used accounts, busy buttons, row order) fixed in #76 | Changes requested (E2E wrongly credited to CI, traceability status, contract header) → fixed in `c46fd8d` → approved |
 | CI | `test-and-docker` pass | `test-and-docker` pass |
-| Staging | PR #73 → `c09f4ad`, 22 Nov 12:05 | PR #77 → `2d9ce7c`, 22 Nov 15:59 |
+| Staging | PR #73 → `c09f4ad`, 22 Nov 19:05 | PR #77 → `2d9ce7c`, 22 Nov 22:59 |
 | Release | §6 | §6 |
 
 ## 5. Contribution

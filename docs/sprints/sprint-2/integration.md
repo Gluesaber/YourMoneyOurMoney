@@ -7,13 +7,13 @@
 
 | PR | Issue | Feature | Author → reviewer | Merged into `Sprint-2/staging` |
 |---|---|---|---|---|
-| #66 | S2-01 (#65) | Contracts F-06 … F-10 (v0.1 → v0.2 after review) | Harit → Jirawat (changes requested, then approved) | 22 Nov 08:31, `abc1ee5` |
-| #73 | S2-02 (#67) | F-06 Custom account & category management | Harit → Jirawat | 22 Nov 12:05, `c09f4ad` |
-| #74 | S2-03 (#68) | F-07 Internal transfers between Cash accounts | Harit → Jirawat | 22 Nov 14:36, `dc36389` |
-| #75 | S2-04 (#69) | F-08 Lending and borrowing | Jirawat → Harit | 22 Nov 15:14, `abb24cd` |
-| #76 | — (links #67, #68) | F-06 / F-07 review follow-ups | Harit → Jirawat | 22 Nov 15:30, `f01b355` |
-| #77 | S2-05 (#70) | F-09 Search, filtering and sorting | Jirawat → Harit (changes requested, then approved) | 22 Nov 15:59, `2d9ce7c` |
-| #78 | S2-06 (#71) | F-10 Favorites and duplicate (+ F-08 label / date-field fix `fea600c`) | Jirawat → Harit | 22 Nov 16:31, `a8d6b06` |
+| #66 | S2-01 (#65) | Contracts F-06 … F-10 (v0.1 → v0.2 after review) | Harit → Jirawat (changes requested, then approved) | 22 Nov 15:31, `abc1ee5` |
+| #73 | S2-02 (#67) | F-06 Custom account & category management | Harit → Jirawat | 22 Nov 19:05, `c09f4ad` |
+| #74 | S2-03 (#68) | F-07 Internal transfers between Cash accounts | Harit → Jirawat | 22 Nov 21:36, `dc36389` |
+| #75 | S2-04 (#69) | F-08 Lending and borrowing | Jirawat → Harit | 22 Nov 22:14, `abb24cd` |
+| #76 | — (links #67, #68) | F-06 / F-07 review follow-ups | Harit → Jirawat | 22 Nov 22:30, `f01b355` |
+| #77 | S2-05 (#70) | F-09 Search, filtering and sorting | Jirawat → Harit (changes requested, then approved) | 22 Nov 22:59, `2d9ce7c` |
+| #78 | S2-06 (#71) | F-10 Favorites and duplicate (+ F-08 label / date-field fix `fea600c`) | Jirawat → Harit | 22 Nov 23:31, `a8d6b06` |
 
 Every feature PR has a contract (or contract revision) commit and a RED test commit before its GREEN commit; the
 commit lists are in `evidence.md` §4.
