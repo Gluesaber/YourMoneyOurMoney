@@ -107,3 +107,83 @@ describe("TransactionDetailPage", () => {
     expect(screen.getByRole("link", { name: "Back to history" })).toHaveAttribute("href", "/transactions");
   });
 });
+
+// F-07 §5 — docs/sprints/sprint-2/F-07-transfers.md. Transfers are labelled from the account types in
+// GET /api/accounts; without them (e.g. the request fails) the page still shows every transaction.
+describe("Transfer labels (F-07)", () => {
+  const TRANSFER = {
+    id: 20,
+    kind: "PAYMENT",
+    date: "2026-11-22",
+    totalAmount: 200_000,
+    note: "ATM",
+    isFavorite: false,
+    source: { id: 1, name: "Bank" },
+    lines: [{ accountId: 9, name: "Wallet", amount: 200_000 }],
+  };
+  const ACCOUNTS = [
+    { id: 1, name: "Bank", type: "CASH", subtype: "BANK", openingBalance: 0, openingDate: null, balance: 0 },
+    {
+      id: 2,
+      name: "Credit Card",
+      type: "LOAN_TAKEN",
+      subtype: "CREDIT_CARD",
+      openingBalance: 0,
+      openingDate: null,
+      balance: 0,
+    },
+    {
+      id: 5,
+      name: "Dining",
+      type: "EXPENSE",
+      subtype: null,
+      openingBalance: 0,
+      openingDate: null,
+      balance: 0,
+    },
+    {
+      id: 6,
+      name: "Groceries",
+      type: "EXPENSE",
+      subtype: null,
+      openingBalance: 0,
+      openingDate: null,
+      balance: 0,
+    },
+    {
+      id: 9,
+      name: "Wallet",
+      type: "CASH",
+      subtype: "WALLET",
+      openingBalance: 0,
+      openingDate: null,
+      balance: 0,
+    },
+  ];
+
+  it('T-HST-UI-04: only the transfer row is labelled "Transfer: Bank → Wallet"', async () => {
+    mockApi({
+      "GET /api/transactions": { body: { transactions: [TRANSFER, CARD] } },
+      "GET /api/accounts": { body: { accounts: ACCOUNTS } },
+    });
+    renderAt("/transactions");
+
+    const table = await screen.findByRole("table");
+    const rows = within(table).getAllByRole("row").slice(1);
+    expect(await within(rows[0]).findByText("Transfer: Bank → Wallet")).toBeInTheDocument();
+    expect(rows[1]).toHaveTextContent("Payment");
+    expect(rows[1]).not.toHaveTextContent("Transfer");
+  });
+
+  it('T-HST-UI-04: the detail page of a transfer is headed "Transfer: Bank → Wallet"', async () => {
+    mockApi({
+      "GET /api/transactions/20": { body: { transaction: TRANSFER } },
+      "GET /api/accounts": { body: { accounts: ACCOUNTS } },
+    });
+    renderAt("/transactions/20");
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Transfer: Bank → Wallet" }),
+    ).toBeInTheDocument();
+  });
+});
