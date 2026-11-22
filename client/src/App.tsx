@@ -6,6 +6,8 @@ import { Layout } from "./components/Layout.js";
 import { LoginPage } from "./pages/LoginPage.js";
 import { DashboardPage } from "./pages/DashboardPage.js";
 import { OpeningBalancePage } from "./pages/OpeningBalancePage.js";
+import { AccountsPage } from "./pages/AccountsPage.js";
+import { NewAccountPage } from "./pages/NewAccountPage.js";
 import { TransactionFormPage } from "./pages/TransactionFormPage.js";
 import { TransactionsPage } from "./pages/TransactionsPage.js";
 import { TransactionDetailPage } from "./pages/TransactionDetailPage.js";
@@ -32,6 +34,8 @@ export function AppRoutes() {
 
         {/* Track B (USER) */}
         <Route path="dashboard" element={<UserOnly page={<DashboardPage />} />} />
+        <Route path="accounts" element={<UserOnly page={<AccountsPage />} />} />
+        <Route path="accounts/new" element={<UserOnly page={<NewAccountPage />} />} />
         <Route path="accounts/:id/opening-balance" element={<UserOnly page={<OpeningBalancePage />} />} />
         <Route path="transactions" element={<UserOnly page={<TransactionsPage />} />} />
         <Route path="transactions/new" element={<UserOnly page={<TransactionFormPage />} />} />

@@ -22,7 +22,7 @@ const CASES = TYPES.flatMap((type) =>
 describe("validateAccountShape (F-06 R4)", () => {
   it("covers every type × subtype pair", () => {
     expect(CASES).toHaveLength(20);
-    expect(CASES.filter((c) => c.allowed)).toHaveLength(7);
+    expect(CASES.filter((c) => c.allowed)).toHaveLength(8); // CASH 3 + LOAN_TAKEN 2 + 1 each for the other three
   });
 
   it.each(CASES.filter((c) => c.allowed))(

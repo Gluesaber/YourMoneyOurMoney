@@ -13,6 +13,16 @@ export interface Account {
   openingBalance: number;
   openingDate: string | null;
   balance: number;
+  // F-06: an archived account keeps its history but takes no new transactions. Absent = active.
+  archived?: boolean;
+}
+
+export type AccountSubtype = NonNullable<Account["subtype"]>;
+
+export interface AccountInput {
+  name: string;
+  type: AccountType;
+  subtype: AccountSubtype | null;
 }
 
 export interface Transaction {
@@ -61,6 +71,15 @@ export const LINE_TYPES: Record<TransactionKind, AccountType[]> = {
 // BR-12.
 export const OPENING_BALANCE_TYPES: AccountType[] = ["CASH", "LOAN_TAKEN", "LOAN_GIVEN"];
 
+// F-06 R4: the subtypes each type may have (mirrors server/src/services/accounts.ts).
+export const ALLOWED_SUBTYPES: Record<AccountType, AccountSubtype[]> = {
+  CASH: ["BANK", "WALLET"],
+  LOAN_TAKEN: ["CREDIT_CARD"],
+  LOAN_GIVEN: [],
+  INCOME: [],
+  EXPENSE: [],
+};
+
 export async function getAccounts(): Promise<Account[]> {
   return (await api<{ accounts: Account[] }>("/api/accounts")).accounts;
 }
@@ -95,4 +114,33 @@ export async function createTransaction(input: NewTransaction): Promise<Transact
     body: JSON.stringify(input),
   });
   return res.transaction;
+}
+
+// F-06 Custom account & category management — docs/sprints/sprint-2/F-06-account-management.md §3.
+export async function createAccount(input: AccountInput): Promise<Account> {
+  const res = await api<{ account: Account }>("/api/accounts", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return res.account;
+}
+
+export async function updateAccount(id: number, changes: Partial<AccountInput>): Promise<Account> {
+  const res = await api<{ account: Account }>(`/api/accounts/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(changes),
+  });
+  return res.account;
+}
+
+export async function setArchived(id: number, archived: boolean): Promise<Account> {
+  const res = await api<{ account: Account }>(`/api/accounts/${id}/archive`, {
+    method: "PATCH",
+    body: JSON.stringify({ archived }),
+  });
+  return res.account;
+}
+
+export async function deleteAccount(id: number): Promise<void> {
+  await api<void>(`/api/accounts/${id}`, { method: "DELETE" });
 }
