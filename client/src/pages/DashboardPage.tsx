@@ -18,6 +18,12 @@ export function DashboardPage() {
           <Link className="btn btn-outline-primary" to="/transactions/new?kind=RECEIVE">
             Record money received
           </Link>
+          {/* F-07 §5: a transfer needs two active cash accounts (summary.cash lists exactly those). */}
+          {summary && summary.cash.length >= 2 && (
+            <Link className="btn btn-outline-primary" to="/transfers/new">
+              Transfer
+            </Link>
+          )}
           <Link className="btn btn-outline-secondary" to="/accounts">
             Accounts
           </Link>
@@ -27,6 +33,11 @@ export function DashboardPage() {
         </div>
       </div>
 
+      {summary && summary.cash.length === 1 && (
+        <p className="small text-body-secondary">
+          Add a second cash account to transfer between them (<Link to="/accounts/new">new account</Link>).
+        </p>
+      )}
       <ErrorAlert error={error} />
       {!summary && !error && <Loading />}
       {summary && <SummaryView summary={summary} />}

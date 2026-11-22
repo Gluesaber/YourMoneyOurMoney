@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { getTransactions } from "../api/finance.js";
+import { getAccounts, getTransactions } from "../api/finance.js";
 import { Amount, ErrorAlert, Loading, useLoad } from "../components/Feedback.js";
+import { accountTypesOf, transferLabel } from "../lib/transactions.js";
 
 export const KIND_LABEL = { PAYMENT: "Payment", RECEIVE: "Money received" } as const;
 
@@ -8,6 +9,9 @@ export const KIND_LABEL = { PAYMENT: "Payment", RECEIVE: "Money received" } as c
 // (newest date first, then most recently entered).
 export function TransactionsPage() {
   const { data: transactions, error } = useLoad(getTransactions);
+  // F-07: account types label transfers. If they fail to load the list still shows, just without labels.
+  const { data: accounts } = useLoad(getAccounts);
+  const types = accountTypesOf(accounts);
 
   return (
     <section>
@@ -43,7 +47,7 @@ export function TransactionsPage() {
               {transactions.map((t) => (
                 <tr key={t.id}>
                   <td>{t.date}</td>
-                  <td>{KIND_LABEL[t.kind]}</td>
+                  <td>{transferLabel(t, types) ?? KIND_LABEL[t.kind]}</td>
                   <td>{t.source.name}</td>
                   <td>{t.lines.map((l) => l.name).join(", ")}</td>
                   <td className="text-end">
