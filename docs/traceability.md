@@ -69,8 +69,8 @@ E2E 11 / 11 passed (local run, incl. `T-HST-E2E-01`), lint · format · typechec
 `transactionQuery.ts`, `toDuplicateDraft`, `FavoriteToggle` (optimistic + rollback), `FavoritesCard` (max 5 on Dashboard),
 `Favorites only` filter, and `Duplicate of #<id>` prefill dated today (with archived account notices). RED: server unit
 5 failed / 104 passed, client 2 failed / 101 passed. GREEN (local offline checks): server unit 109 / 109 passed (9 files),
-client 108 / 108 passed (18 files), lint · format · client build · server types clean (`T-FAV-API-01..03` and
-`T-FAV-E2E-01` pending DB/CI run).
+client 110 / 110 passed (18 files, incl. 2 F-08 follow-up UI tests), lint · format · client build · server types clean (`T-FAV-API-01..03` and
+`T-FAV-E2E-01` pending local PostgreSQL / E2E run; server API suite verified in CI).
 
 **ID rule:** an ID means one thing only. IDs reserved for Sprint 2–3 were renumbered in S1-15 where Sprint 1
 contracts had already used the same number (e.g. F-06 planned `AC-ACC-07..09` → `AC-ACC-12..14`).
