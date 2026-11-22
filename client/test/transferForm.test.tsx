@@ -114,4 +114,33 @@ describe("TransferFormPage", () => {
     expect(screen.getByLabelText("Amount (THB)")).toHaveValue("2,000");
     expect(screen.getByLabelText("Note (optional)")).toHaveValue("ATM");
   });
+
+  it("T-TRF-UI-03: a server date error marks the Date field invalid with the server's message", async () => {
+    mockApi({
+      "GET /api/accounts": { body: { accounts: ACCOUNTS } },
+      "POST /api/transactions": {
+        status: 400,
+        body: {
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Invalid request.",
+            details: { formErrors: [], fieldErrors: { date: ["Use a date from 2000 to 2099."] } },
+          },
+        },
+      },
+    });
+    const user = userEvent.setup();
+    renderAt("/transfers/new");
+
+    await fillTransfer(user);
+    const date = screen.getByLabelText("Date");
+    await user.clear(date);
+    await user.type(date, "1999-12-31");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Invalid request.");
+    expect(date).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByText("Use a date from 2000 to 2099.")).toBeInTheDocument();
+    expect(date).toHaveValue("1999-12-31");
+  });
 });

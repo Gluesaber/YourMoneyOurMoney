@@ -44,6 +44,7 @@ describe("POST /api/accounts", () => {
       openingDate: null,
       balance: 0,
       archived: false,
+      inUse: false,
     });
     const list = (await agent.get("/api/accounts")).body.accounts;
     expect(list.map((a: { name: string }) => a.name).slice(0, 2)).toEqual(["Bank", "Wallet"]);
@@ -339,5 +340,41 @@ describe("F-06 database backstop", () => {
     await expect(
       prisma.account.create({ data: { userId: alice.id, name: "bank", type: "CASH", subtype: "BANK" } }),
     ).rejects.toThrow();
+  });
+});
+
+describe("inUse (F-06 v0.4)", () => {
+  it("T-ACC-API-21: every account reports inUse, which turns true once it is a source or a line", async () => {
+    const agent = await agentAs("alice");
+    const walletId = await wallet(agent);
+    const card = await accountOf("alice", "Credit Card");
+    const dining = await accountOf("alice", "Dining");
+    const inUseOf = async () =>
+      new Map(
+        ((await agent.get("/api/accounts")).body.accounts as { id: number; inUse: unknown }[]).map((a) => [
+          a.id,
+          a.inUse,
+        ]),
+      );
+
+    const before = await inUseOf();
+    expect([...before.values()].every((v) => v === false)).toBe(true);
+    expect(before.size).toBe(9);
+
+    await agent
+      .post("/api/transactions")
+      .send({
+        kind: "PAYMENT",
+        sourceAccountId: card.id,
+        date: "2026-11-22",
+        totalAmount: 10_000,
+        lines: [{ accountId: dining.id, amount: 10_000 }],
+      })
+      .expect(201);
+
+    const after = await inUseOf();
+    expect(after.get(card.id)).toBe(true); // source
+    expect(after.get(dining.id)).toBe(true); // line
+    expect(after.get(walletId)).toBe(false);
   });
 });
