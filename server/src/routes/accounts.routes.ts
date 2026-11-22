@@ -288,13 +288,31 @@ async function loadAccount(userId: number, id: number) {
 }
 
 async function loadAccountsWithBalances(userId: number) {
-  const { accounts, balances } = await loadLedger(userId);
+  const [{ accounts, balances }, used] = await Promise.all([loadLedger(userId), usedAccountIds(userId)]);
   return accounts
     .sort((a, b) => TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type) || a.name.localeCompare(b.name))
-    .map((a) => toAccountResponse(a, balances.get(a.id)!));
+    .map((a) => toAccountResponse(a, balances.get(a.id)!, used.has(a.id)));
 }
 
-function toAccountResponse(a: Account, balance: number) {
+// F-06 v0.4 §3 `inUse`: every account of the user that is the source or a line of any transaction.
+async function usedAccountIds(userId: number): Promise<Set<number>> {
+  const prisma = getPrisma();
+  const [sources, lines] = await Promise.all([
+    prisma.transaction.findMany({
+      where: { userId },
+      select: { sourceAccountId: true },
+      distinct: ["sourceAccountId"],
+    }),
+    prisma.transactionLine.findMany({
+      where: { userId },
+      select: { accountId: true },
+      distinct: ["accountId"],
+    }),
+  ]);
+  return new Set([...sources.map((t) => t.sourceAccountId), ...lines.map((l) => l.accountId)]);
+}
+
+function toAccountResponse(a: Account, balance: number, inUse: boolean) {
   return {
     id: a.id,
     name: a.name,
@@ -304,5 +322,6 @@ function toAccountResponse(a: Account, balance: number) {
     openingDate: a.openingDate ? toDateOnly(a.openingDate) : null,
     balance,
     archived: a.archivedAt !== null,
+    inUse,
   };
 }

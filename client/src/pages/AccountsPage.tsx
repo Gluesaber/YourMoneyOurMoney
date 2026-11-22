@@ -21,15 +21,20 @@ export function AccountsPage() {
   const { data: accounts, error: loadError } = useLoad(getAccounts, [version]);
   const [error, setError] = useState<unknown>(null);
   const [editing, setEditing] = useState<number | null>(null);
+  // F-06 v0.4 §5: the row whose action is saving; its buttons stay disabled until the request ends.
+  const [busy, setBusy] = useState<number | null>(null);
 
-  async function run(action: () => Promise<unknown>) {
+  async function run(id: number, action: () => Promise<unknown>) {
     setError(null);
+    setBusy(id);
     try {
       await action();
       setEditing(null);
       setVersion((v) => v + 1);
     } catch (err) {
       setError(err);
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -73,8 +78,9 @@ export function AccountsPage() {
                       <EditRow
                         key={a.id}
                         account={a}
+                        saving={busy === a.id}
                         onCancel={() => setEditing(null)}
-                        onSave={(changes) => run(() => updateAccount(a.id, changes))}
+                        onSave={(changes) => run(a.id, () => updateAccount(a.id, changes))}
                       />
                     ) : (
                       <tr key={a.id} className={a.archived ? "text-body-secondary" : undefined}>
@@ -91,6 +97,7 @@ export function AccountsPage() {
                             <button
                               type="button"
                               className="btn btn-sm btn-outline-primary"
+                              disabled={busy === a.id}
                               onClick={() => setEditing(a.id)}
                             >
                               Edit
@@ -98,21 +105,26 @@ export function AccountsPage() {
                             <button
                               type="button"
                               className="btn btn-sm btn-outline-secondary"
-                              onClick={() => run(() => setArchived(a.id, !a.archived))}
+                              disabled={busy === a.id}
+                              onClick={() => run(a.id, () => setArchived(a.id, !a.archived))}
                             >
                               {a.archived ? "Unarchive" : "Archive"}
                             </button>
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() => {
-                                if (window.confirm(`Delete ${a.name}? This cannot be undone.`)) {
-                                  void run(() => deleteAccount(a.id));
-                                }
-                              }}
-                            >
-                              Delete
-                            </button>
+                            {/* F-06 R9: only an account no transaction has used can be deleted. */}
+                            {!a.inUse && (
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-danger"
+                                disabled={busy === a.id}
+                                onClick={() => {
+                                  if (window.confirm(`Delete ${a.name}? This cannot be undone.`)) {
+                                    void run(a.id, () => deleteAccount(a.id));
+                                  }
+                                }}
+                              >
+                                Delete
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -135,10 +147,12 @@ export function AccountsPage() {
 
 function EditRow({
   account,
+  saving,
   onSave,
   onCancel,
 }: {
   account: Account;
+  saving: boolean;
   onSave: (changes: { name?: string; type?: AccountType; subtype?: AccountSubtype | null }) => void;
   onCancel: () => void;
 }) {
@@ -146,6 +160,8 @@ function EditRow({
   const [type, setType] = useState<AccountType>(account.type);
   const [subtype, setSubtype] = useState<AccountSubtype | "">(account.subtype ?? "");
   const subtypes = ALLOWED_SUBTYPES[type];
+  // F-06 R5: the type and subtype of a used account cannot change, so they are not offered.
+  const typeFixed = Boolean(account.inUse);
 
   function submit(e: FormEvent) {
     e.preventDefault();
@@ -161,6 +177,11 @@ function EditRow({
     <tr>
       <td colSpan={3}>
         <form className="row g-2 align-items-end" onSubmit={submit} noValidate>
+          {typeFixed && (
+            <p className="col-12 small text-body-secondary mb-0">
+              This account has transactions, so only its name can change.
+            </p>
+          )}
           <div className="col-12 col-md-4">
             <label htmlFor={`edit-name-${account.id}`} className="form-label small">
               Name
@@ -172,28 +193,30 @@ function EditRow({
               onChange={(e) => setName(e.target.value)}
             />
           </div>
-          <div className="col-6 col-md-3">
-            <label htmlFor={`edit-type-${account.id}`} className="form-label small">
-              Type
-            </label>
-            <select
-              id={`edit-type-${account.id}`}
-              className="form-select form-select-sm"
-              value={type}
-              onChange={(e) => {
-                const next = e.target.value as AccountType;
-                setType(next);
-                if (!ALLOWED_SUBTYPES[next].includes(subtype as AccountSubtype)) setSubtype("");
-              }}
-            >
-              {TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {TYPE_LABEL[t]}
-                </option>
-              ))}
-            </select>
-          </div>
-          {subtypes.length > 0 && (
+          {!typeFixed && (
+            <div className="col-6 col-md-3">
+              <label htmlFor={`edit-type-${account.id}`} className="form-label small">
+                Type
+              </label>
+              <select
+                id={`edit-type-${account.id}`}
+                className="form-select form-select-sm"
+                value={type}
+                onChange={(e) => {
+                  const next = e.target.value as AccountType;
+                  setType(next);
+                  if (!ALLOWED_SUBTYPES[next].includes(subtype as AccountSubtype)) setSubtype("");
+                }}
+              >
+                {TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {TYPE_LABEL[t]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {!typeFixed && subtypes.length > 0 && (
             <div className="col-6 col-md-2">
               <label htmlFor={`edit-subtype-${account.id}`} className="form-label small">
                 Subtype
@@ -214,10 +237,15 @@ function EditRow({
             </div>
           )}
           <div className="col-12 col-md-3 d-flex gap-2">
-            <button type="submit" className="btn btn-sm btn-primary">
+            <button type="submit" className="btn btn-sm btn-primary" disabled={saving}>
               Save
             </button>
-            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onCancel}>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary"
+              disabled={saving}
+              onClick={onCancel}
+            >
               Cancel
             </button>
           </div>

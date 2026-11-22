@@ -336,7 +336,7 @@ Admin responses never contain accounts, transactions or balances (BR-05).
 
 | Endpoint | Request | Success | Errors |
 |---|---|---|---|
-| `GET /api/accounts` | — | `200 { accounts: [{ id, name, type, subtype, openingBalance, openingDate, balance, archived }] }` | 401, 403 |
+| `GET /api/accounts` | — | `200 { accounts: [{ id, name, type, subtype, openingBalance, openingDate, balance, archived, inUse }] }` (`inUse`: a source or line of any transaction, F-06 v0.4) | 401, 403 |
 | `PUT /api/accounts/:id/opening-balance` | `{ openingBalance, openingDate }` | `200 { account }` (same shape as one list item) | 400 `VALIDATION_ERROR` / `INVALID_ACCOUNT_TYPE` / `ACCOUNT_ARCHIVED`, 401, 403, 404 |
 | `POST /api/accounts` | `{ name, type, subtype? }` | `201 { account }` | 400 `VALIDATION_ERROR`, 409 `ACCOUNT_NAME_TAKEN`, 401, 403 |
 | `PATCH /api/accounts/:id` | `{ name?, type?, subtype? }` (at least one; a `type` without `subtype` resets it to null) | `200 { account }` | 400 `VALIDATION_ERROR` / `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS` / `INVALID_ACCOUNT_TYPE`, 409 `ACCOUNT_NAME_TAKEN`, 401, 403, 404 |

@@ -15,6 +15,8 @@ export interface Account {
   balance: number;
   // F-06: an archived account keeps its history but takes no new transactions. Absent = active.
   archived?: boolean;
+  // F-06 v0.4: the account is the source or a line of a transaction, so it cannot be deleted or change type.
+  inUse?: boolean;
 }
 
 export type AccountSubtype = NonNullable<Account["subtype"]>;

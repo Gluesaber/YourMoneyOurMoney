@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createTransaction, getAccounts, type Account } from "../api/finance.js";
-import { ErrorAlert, Loading, todayLocal, useLoad } from "../components/Feedback.js";
+import { ErrorAlert, Loading, fieldErrorsOf, todayLocal, useLoad } from "../components/Feedback.js";
 import { formatBaht, toSatang } from "../lib/money.js";
 
 // F-07 §5 Transfer form — docs/sprints/sprint-2/F-07-transfers.md. A transfer is saved as a PAYMENT from the
@@ -27,6 +27,8 @@ function TransferForm({ cashAccounts }: { cashAccounts: Account[] }) {
   const satang = toSatang(amount);
   const destinations = cashAccounts.filter((a) => String(a.id) !== fromId);
   const amountInvalid = amount !== "" && (satang === null || satang <= 0);
+  // F-07 v0.4: a server field error on `date` marks the Date field, as the other forms do (#60).
+  const dateError = fieldErrorsOf(error).date?.[0];
   const canSave = Boolean(fromId && toId && fromId !== toId && satang && satang > 0 && date) && !saving;
 
   function changeFrom(id: string) {
@@ -122,12 +124,19 @@ function TransferForm({ cashAccounts }: { cashAccounts: Account[] }) {
           <input
             id="trf-date"
             type="date"
-            className="form-control"
+            className={`form-control ${dateError ? "is-invalid" : ""}`}
             min="2000-01-01"
             max="2099-12-31"
             value={date}
             onChange={(e) => setDate(e.target.value)}
+            aria-invalid={Boolean(dateError)}
+            aria-describedby="trf-date-error"
           />
+          {dateError && (
+            <div id="trf-date-error" className="invalid-feedback">
+              {dateError}
+            </div>
+          )}
         </div>
         <div className="mb-3">
           <label htmlFor="trf-note" className="form-label">
