@@ -26,10 +26,10 @@ Seeded accounts (F-03 §1.1) are ordinary accounts: they can be renamed, archive
 | R1 | A user sees and changes only their own accounts | BR-04 | 404 `NOT_FOUND` |
 | R2 | `name` is trimmed, 1 … 50 characters | FR-ACC-03 | 400 `VALIDATION_ERROR` |
 | R3 | Names are unique per user, ignoring case and surrounding spaces ("bank" clashes with "Bank") | FR-ACC-03 | 409 `ACCOUNT_NAME_TAKEN` |
-| R4 | `type` ∈ CASH, LOAN_TAKEN, LOAN_GIVEN, INCOME, EXPENSE; `subtype`: CASH → BANK / WALLET / null; LOAN_TAKEN → CREDIT_CARD / null; others → null | FR-ACC-02 | 400 `VALIDATION_ERROR` |
+| R4 | `type` ∈ CASH, LOAN_TAKEN, LOAN_GIVEN, INCOME, EXPENSE; `subtype`: CASH → BANK / WALLET / null; LOAN_TAKEN → CREDIT_CARD / null; others → null. On `PATCH`, changing `type` without sending `subtype` resets `subtype` to null; a `subtype` that is sent must fit the new type | FR-ACC-02 | 400 `VALIDATION_ERROR` |
 | R5 | `type`/`subtype` can change only while no transaction uses the account (as source or line) | FR-ACC-06, new BR-15 | 400 `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS` |
 | R6 | Changing the type to INCOME or EXPENSE requires `openingBalance` = 0 | BR-12 | 400 `INVALID_ACCOUNT_TYPE` |
-| R7 | An archived account cannot be the source or a line of a new transaction | new BR-16 | 400 `ACCOUNT_ARCHIVED`, details `{ field, lineIndex?, accountId }` |
+| R7 | An archived account cannot be the source or a line of a new transaction, and its opening balance cannot be changed (`PUT /api/accounts/:id/opening-balance`), so an archived account never gains a balance | new BR-16 | 400 `ACCOUNT_ARCHIVED`, details `{ field, lineIndex?, accountId }` |
 | R8 | A CASH / LOAN_TAKEN / LOAN_GIVEN account can be archived only when its balance is 0 (no money or debt hidden) | new BR-16 | 400 `ACCOUNT_NOT_EMPTY`, details `{ balance }` |
 | R9 | An account can be deleted only if no transaction has ever used it | FR-ACC-06 | 409 `ACCOUNT_IN_USE` |
 | R10 | At most 100 accounts per user (archived included) | bounded input | 400 `VALIDATION_ERROR` |
@@ -89,12 +89,12 @@ Balances, income/expense totals: unchanged rules (system-sds §4.1); archived ac
 |---|---|
 | AC-ACC-12 | When alice creates CASH/WALLET "Wallet", then 201, and `GET /api/accounts` lists it with balance 0, `archived: false`. |
 | AC-ACC-13 | When alice creates EXPENSE "Transport", she can record a PAYMENT to it and the summary expense list includes it. |
-| AC-ACC-14 | When the name is empty, only spaces, or 51 characters, or type/subtype is invalid (e.g. EXPENSE + BANK), then 400 `VALIDATION_ERROR` and nothing is created. |
+| AC-ACC-14 | When the name is empty, only spaces, or 51 characters, type/subtype is invalid (e.g. EXPENSE + BANK), or the user already has 100 accounts (archived included), then 400 `VALIDATION_ERROR` and nothing is created. A type change without `subtype` resets `subtype` to null. |
 | AC-ACC-15 | When alice creates or renames to " bank " while "Bank" exists, then 409 `ACCOUNT_NAME_TAKEN`; bob may still create "Wallet" when alice has one. |
 | AC-ACC-16 | When alice renames an account used by transactions, then 200 and history shows the new name. |
 | AC-ACC-17 | When she changes the type of an unused account, 200; of a used account, 400 `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS`; to INCOME/EXPENSE with a non-zero opening balance, 400 `INVALID_ACCOUNT_TYPE`. |
 | AC-ACC-18 | When she archives an EXPENSE account, or a CASH account with balance 0, then 200; a CASH account with balance ≠ 0 → 400 `ACCOUNT_NOT_EMPTY`. |
-| AC-ACC-19 | When a transaction uses an archived account as source or line, then 400 `ACCOUNT_ARCHIVED` and nothing is saved; after unarchive it is accepted. |
+| AC-ACC-19 | When a transaction uses an archived account as source or line, or the user sets the opening balance of an archived account, then 400 `ACCOUNT_ARCHIVED` and nothing is saved; after unarchive both are accepted. |
 | AC-ACC-20 | When she deletes an unused account, 204 and it is gone; a used account → 409 `ACCOUNT_IN_USE` and it remains. |
 | AC-ACC-21 | Any F-06 route on bob's account or a missing id → 404 and bob's account unchanged; anonymous 401; ADMIN 403. |
 | AC-ACC-22 | Through the UI alice creates "Wallet", sees it on the dashboard, and can pick it as a payment source. |
@@ -106,16 +106,16 @@ Balances, income/expense totals: unchanged rules (system-sds §4.1); archived ac
 | T-ACC-UNIT-01 | Unit (table) | `validateAccountShape` for every type × subtype pair | allowed pairs pass; others `VALIDATION_ERROR` | AC-ACC-14 |
 | T-ACC-API-11 | API | `resetDb()`; alice POST Wallet (CASH/WALLET) | 201; listed with balance 0 | AC-ACC-12 |
 | T-ACC-API-12 | API | alice POST Transport (EXPENSE); PAYMENT Card → Transport 10,000 | 201; summary expense includes Transport 10,000 | AC-ACC-13 |
-| T-ACC-API-13 | API (table) | names `""`, `"   "`, 51 chars; EXPENSE+BANK; CASH+CREDIT_CARD; unknown type; 101st account | each 400 `VALIDATION_ERROR`; count unchanged | AC-ACC-14 |
+| T-ACC-API-13 | API (table) | names `""`, `"   "`, 51 chars; EXPENSE+BANK; CASH+CREDIT_CARD; unknown type; 101st account; PATCH unused Wallet (CASH/WALLET) to `{ type: "LOAN_TAKEN" }`, then `{ type: "CASH", subtype: "CREDIT_CARD" }` | each create 400 `VALIDATION_ERROR`, count unchanged; PATCH 200 with `subtype` null, then 400 | AC-ACC-14 |
 | T-ACC-API-14 | API | alice POST `" bank "`; PATCH Dining name `"BANK"`; bob POST "Wallet" after alice has one | 409, 409, 201 | AC-ACC-15 |
 | T-ACC-API-15 | API | demo journey; rename Dining → "Eating out"; GET transaction | 200; line name "Eating out" | AC-ACC-16 |
 | T-ACC-API-16 | API | type change on unused / used / opening-balance ≠ 0 account | 200 / 400 `CANNOT_CHANGE…` / 400 `INVALID_ACCOUNT_TYPE` | AC-ACC-17 |
 | T-ACC-API-17 | API | archive Telecom; archive Wallet at 0; archive Bank at 38,500.00 | 200, 200, 400 `ACCOUNT_NOT_EMPTY` | AC-ACC-18 |
-| T-ACC-API-18 | API | archived Telecom as line; archived Wallet as source; unarchive; retry | 400 `ACCOUNT_ARCHIVED` ×2, counts unchanged; 201 | AC-ACC-19 |
+| T-ACC-API-18 | API | archived Telecom as line; archived Wallet as source; `PUT` opening balance 100,000 on archived Wallet; unarchive; retry all three | 400 `ACCOUNT_ARCHIVED` ×3, counts and Wallet opening balance unchanged; 201, 201, 200 | AC-ACC-19 |
 | T-ACC-API-19 | API | DELETE unused Wallet; DELETE used Dining | 204; 409 `ACCOUNT_IN_USE`, Dining remains | AC-ACC-20 |
 | T-ACC-API-20 | API (table) | alice on bob's account for every F-06 route; id 999999 / `abc`; anon; admin | 404 / 404 / 401 / 403; bob unchanged | AC-ACC-21 |
 | T-ACC-DB-01 | DB | insert case-only duplicate name directly | unique-index violation | AC-ACC-15 |
-| T-ACC-UI-03 | Component | new-account form: type EXPENSE hides subtype; server 409 | subtype hidden; alert shows message | AC-ACC-14, 15 |
+| T-ACC-UI-04 | Component | new-account form: type EXPENSE hides subtype; server 409 | subtype hidden; alert shows message | AC-ACC-14, 15 |
 | T-ACC-E2E-02 | E2E | alice creates Wallet, records PAYMENT from Wallet after funding it | Wallet on dashboard with the right balance | AC-ACC-22 |
 
 Regression kept: all T-ACC-API-01…10, T-TX-API-*, T-SUM-*, access suite T-ADM-API-04 (now including F-06 routes).
@@ -133,7 +133,7 @@ Regression kept: all T-ACC-API-01…10, T-TX-API-*, T-SUM-*, access suite T-ADM-
 
 ## 9. Definition of Done
 
-- [ ] T-ACC-UNIT-01, T-ACC-API-11…20, T-ACC-DB-01 pass (`npm --prefix server test`); T-ACC-UI-03 passes (`npm --prefix client test`); T-ACC-E2E-02 passes
+- [ ] T-ACC-UNIT-01, T-ACC-API-11…20, T-ACC-DB-01 pass (`npm --prefix server test`); T-ACC-UI-04 passes (`npm --prefix client test`); T-ACC-E2E-02 passes
 - [ ] Each rule test seen failing before implementation (RED commit before GREEN)
 - [ ] Migration applies cleanly on a copy of the current data (`prisma migrate deploy`) and through the Lab 5 pipeline
 - [ ] Lint, format, type check pass; existing regression green
@@ -144,4 +144,5 @@ Regression kept: all T-ACC-API-01…10, T-TX-API-*, T-SUM-*, access suite T-ADM-
 
 | Version | Date | Commit | PR / Issue | Change |
 |---|---|---|---|---|
-| 0.1 | 2026-11-21 | — (draft, not committed) | — | First draft for review |
+| 0.1 | 2026-11-21 | `b6e700a` | #66 / S2-01 (#65) | First draft for review |
+| 0.2 | 2026-11-22 | — | #66 review (Jirawat) | Test ID T-ACC-UI-03 → T-ACC-UI-04 (03 exists, #60); R7 also blocks opening-balance changes on archived accounts; R4 type change without `subtype` resets it to null; AC-ACC-14 states the 100-account limit; T-ACC-API-13 and T-ACC-API-18 extended |

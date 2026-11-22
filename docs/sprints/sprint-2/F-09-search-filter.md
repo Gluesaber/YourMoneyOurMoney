@@ -3,8 +3,8 @@
 > **Status:** v0.1 draft for review. Merged before any F-09 code.
 > **Requirements:** FR-HST-03 (extends FR-HST-01) · BR-04, BR-05 · NFR-SEC-03
 > **Depends on:** F-05 (`GET /api/transactions`). F-10 adds `favorite=true` to the same query parser.
-> **IDs:** `AC-HST-04…`, `T-HST-API-04…` as reserved in `docs/traceability.md`; UI tests from `T-HST-UI-05`
-> (`T-HST-UI-01…03` exist, `T-HST-UI-04` is used by F-07).
+> **IDs:** `AC-HST-04…`, `T-HST-API-04…` as reserved in `docs/traceability.md`; the filter-bar UI test uses
+> `T-HST-UI-02`, reserved for F-09 (`T-HST-UI-01` and `T-HST-UI-03` exist; `T-HST-UI-04` is used by F-07).
 
 ## 1. Behaviour
 
@@ -31,7 +31,7 @@ result is exactly the Sprint 1 list (FR-HST-01 order). Quick buttons: This month
 | R3 | `accountId` of another user or missing → **empty list**, not 404 | BR-04, NFR-SEC-03 | 200 `{ transactions: [] }` — same as a real account with no transactions, so ids cannot be probed |
 | R4 | `q` is matched literally: `%` and `_` are not wildcards | — | (escaped) |
 | R5 | ADMIN 403, anonymous 401 (unchanged) | BR-05 | 403 / 401 |
-| R6 | No pagination; at most 500 rows returned, newest-first slice under the chosen sort, response says `truncated: true` when cut | bounded output | — |
+| R6 | No pagination; at most 500 rows: the first 500 in the chosen sort order; `truncated: true` when more matched, otherwise `false` | bounded output | — |
 
 Unknown parameter names are ignored (forward compatibility with F-10 / F-13).
 
@@ -73,7 +73,7 @@ acceptable at ≤ thousands of rows per user — stated as a performance limitat
 | AC-HST-04 | With the demo journey + extra fixtures, `startDate`/`endDate` return only transactions in the inclusive range; boundary dates included; `startDate` > `endDate` → 400. |
 | AC-HST-05 | `accountId` returns transactions where the account is the source or a line; `kind` and `q` (case-insensitive, `%`/`_` literal) narrow further; combined filters AND together; no filters = Sprint 1 list unchanged. |
 | AC-HST-06 | bob's or a missing `accountId` → 200 empty list; bob's transactions never appear under any filter; ADMIN 403; anonymous 401. |
-| AC-HST-07 | `sort` orders by date or total amount, ties by id; invalid `sort`/`kind`/dates/`q` > 100 → 400 `VALIDATION_ERROR`. |
+| AC-HST-07 | `sort` orders by date or total amount, ties by id; invalid `sort`/`kind`/dates/`q` > 100 → 400 `VALIDATION_ERROR`; when more than 500 match, the first 500 in sort order are returned with `truncated: true`. |
 | AC-HST-08 | In the UI, setting filters updates the list and the URL; This month sets the correct range; Clear restores the full list. |
 
 ## 7. Software test specification
@@ -87,10 +87,11 @@ acceptable at ≤ thousands of rows per user — stated as a performance limitat
 | T-HST-API-06 | API | alice with bob's account id / 999999; bob has notes matching `q`; admin; anon | 200 `[]` / `[]`; no bob rows; 403; 401 | AC-HST-06 |
 | T-HST-API-07 | API (table) | each `sort`; `sort=foo`, `kind=X`, `startDate=2026-02-30`, `q` 101 chars | correct order; 400 each | AC-HST-07 |
 | T-HST-API-08 | API | no query params | identical body to Sprint 1 `T-HST-API-01` expectation (+ `truncated: false`) | AC-HST-05 |
-| T-HST-UI-05 | Component | filter bar: set Kind=Receive, type search, press This month, Clear | requests carry the params; URL updates; Clear removes them | AC-HST-08 |
+| T-HST-API-09 | API | 501 transactions for alice inserted with Prisma (dates 2026-01-01 + n days); default sort; then exactly 500 | 500 rows, `truncated: true`, the oldest one missing; then 500 rows, `truncated: false` | AC-HST-07 |
+| T-HST-UI-02 | Component | filter bar: set Kind=Receive, type search, press This month, Clear | requests carry the params; URL updates; Clear removes them | AC-HST-08 |
 | T-HST-E2E-01 | E2E | alice after demo journey filters Account = Dining | only the card purchase is listed | AC-HST-05, 08 |
 
-Regression kept: T-HST-API-01…03, T-HST-UI-01…03, access suite (`GET /api/transactions` with params as admin/anon).
+Regression kept: T-HST-API-01…03, T-HST-UI-01, T-HST-UI-03, access suite (`GET /api/transactions` with params as admin/anon).
 
 ## 8. Decisions made in this contract (to confirm in review)
 
@@ -103,7 +104,7 @@ Regression kept: T-HST-API-01…03, T-HST-UI-01…03, access suite (`GET /api/tr
 
 ## 9. Definition of Done
 
-- [ ] T-HST-UNIT-01, T-HST-API-04…08 pass (`npm --prefix server test`); T-HST-UNIT-02, T-HST-UI-05 pass (`npm --prefix client test`); T-HST-E2E-01 passes
+- [ ] T-HST-UNIT-01, T-HST-API-04…09 pass (`npm --prefix server test`); T-HST-UNIT-02, T-HST-UI-02 pass (`npm --prefix client test`); T-HST-E2E-01 passes
 - [ ] Each test seen failing before the implementation (RED commit before GREEN)
 - [ ] Lint, format, type check pass; existing regression green
 - [ ] SRS FR-HST-03, System SDS §5.3 (query params, `truncated`), `traceability.md` rows updated
@@ -113,4 +114,5 @@ Regression kept: T-HST-API-01…03, T-HST-UI-01…03, access suite (`GET /api/tr
 
 | Version | Date | Commit | PR / Issue | Change |
 |---|---|---|---|---|
-| 0.1 | 2026-11-21 | — (draft, not committed) | — | First draft for review |
+| 0.1 | 2026-11-21 | `b6e700a` | #66 / S2-01 (#65) | First draft for review |
+| 0.2 | 2026-11-22 | — | #66 review (Jirawat) | Filter-bar test uses the reserved T-HST-UI-02 (not -05) and the ID note is corrected; R6 states the 500-row cut exactly; new T-HST-API-09 covers `truncated: true` and the 500 boundary; AC-HST-07 updated |

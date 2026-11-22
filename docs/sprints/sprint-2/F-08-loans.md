@@ -56,8 +56,10 @@ as "owes you" / "you overpaid" on the Loans page.
 
 ## 3. API
 
-No change. Uses `GET /api/summary` (`loansGiven`, `loansTaken`), `GET /api/accounts`, `POST /api/transactions`,
-and `GET /api/transactions?accountId=` (F-09) for a loan's history. Example (Lend):
+No change. Uses `GET /api/summary` (`loansGiven`, `loansTaken` outstanding amounts), `GET /api/accounts` (the
+`subtype`, to label credit cards — the summary has no `subtype`), `POST /api/transactions`, and
+`GET /api/transactions?accountId=` (F-09) for a loan's history. The Loans page joins summary and accounts by
+`accountId`. Example (Lend):
 
 ```
 POST /api/transactions
@@ -88,7 +90,7 @@ record a loan that existed before the user started.
 | AC-DEBT-02 | Ben repaying 2,000.00 into Bank → Bank +2,000.00, Ben 3,000.00; borrowing 10,000.00 from Mom → Bank +10,000.00, Mom 10,000.00; repaying Mom 10,000.00 → Mom 0.00. Income/expense unchanged throughout. |
 | AC-DEBT-03 | Lending or repaying more than the Cash balance → 400 `INSUFFICIENT_FUNDS`, nothing saved. |
 | AC-DEBT-04 | Using bob's loan account or a non-loan line (e.g. Dining in "Get repaid") → 404 / 400 `INVALID_ACCOUNT_TYPE`; ADMIN 403; anonymous 401. |
-| AC-DEBT-05 | The Loans page lists each loan account with the outstanding amounts from `GET /api/summary`, credit cards labelled. |
+| AC-DEBT-05 | The Loans page lists each loan account with the outstanding amounts from `GET /api/summary`, and labels credit cards using `subtype` from `GET /api/accounts`. |
 | AC-DEBT-06 | Repaying more than outstanding shows a warning before sending; after confirming, the loan shows the overpaid amount. |
 | AC-DEBT-07 | E2E: alice creates "Ben" (LOAN_GIVEN), lends 5,000.00, records 2,000.00 repaid; Loans page shows Ben 3,000.00 and dashboard Bank 35,500.00. |
 
@@ -101,8 +103,8 @@ record a loan that existed before the user started.
 | T-DEBT-API-03 | API | Bank 0; lend 1 | 400 `INSUFFICIENT_FUNDS`; counts unchanged | AC-DEBT-03 |
 | T-DEBT-API-04 | API | bob's Ben as line; "Get repaid" with Dining line; admin; anonymous | 404; 400 `INVALID_ACCOUNT_TYPE`; 403; 401 | AC-DEBT-04 |
 | T-DEBT-UNIT-01 | Unit (client) | `loanActionToTransaction` for each of the 4 actions | kind/source/line exactly as §1 table | AC-DEBT-01, 02 |
-| T-DEBT-UI-01 | Component | Loans page with summary containing Ben 300,000, Mom 0, Credit Card 150,000 | both tables, values, Credit Card labelled | AC-DEBT-05 |
-| T-DEBT-UI-02 | Component | Repay Ben form, outstanding 300,000, amount 3,500.00 | warning shown; nothing sent until confirmed | AC-DEBT-06 |
+| T-DEBT-UI-01 | Component | Loans page with mocked `GET /api/summary` (Ben 300,000, Mom 0, Credit Card 150,000) and `GET /api/accounts` (Credit Card `subtype` CREDIT_CARD, Mom `subtype` null) | both tables, values, only Credit Card labelled as a card | AC-DEBT-05 |
+| T-DEBT-UI-02 | Component | "Get repaid" form for Ben (`/loans/:id/repaid`), outstanding 300,000, amount 3,500.00 | warning shown; nothing sent until confirmed | AC-DEBT-06 |
 | T-DEBT-E2E-01 | E2E | as AC-DEBT-07 | Ben 3,000.00, Bank 35,500.00 | AC-DEBT-07 |
 
 Regression kept: T-TX-*, T-FUND-*, T-SUM-* (loans sections), access suite, demo-journey E2E.
@@ -128,4 +130,5 @@ Regression kept: T-TX-*, T-FUND-*, T-SUM-* (loans sections), access suite, demo-
 
 | Version | Date | Commit | PR / Issue | Change |
 |---|---|---|---|---|
-| 0.1 | 2026-11-21 | — (draft, not committed) | — | First draft for review |
+| 0.1 | 2026-11-21 | `b6e700a` | #66 / S2-01 (#65) | First draft for review |
+| 0.2 | 2026-11-22 | — | #66 review (Jirawat) | Credit-card label uses `subtype` from `GET /api/accounts` (summary has none); AC-DEBT-05 and T-DEBT-UI-01 updated; T-DEBT-UI-02 uses the "Get repaid" action for Ben (LOAN_GIVEN) |

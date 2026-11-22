@@ -39,14 +39,16 @@ All checks are the existing F-04 steps; F-07 adds no new server rule.
 | Saved all-or-nothing | BR-13 | nothing saved on any error |
 
 **Transfer, as displayed** (client-side, no stored flag): a transaction whose source is CASH and whose every
-line is a CASH account. History and detail show it as "Transfer: Bank → Wallet".
+line is a CASH account. The arrow follows the money: PAYMENT shows "Transfer: <source> → <line>"; RECEIVE (a
+transfer recorded through the API into the source) shows "Transfer: <line> → <source>". Example: RECEIVE into Bank
+with a Wallet line is "Transfer: Wallet → Bank".
 
 ### 2.1 Where the logic lives
 
 | Piece | Location |
 |---|---|
 | Server rules | unchanged: `validateTransaction`, `checkCashFunds` (`ledger.ts`), `transactions.routes.ts` |
-| `isTransfer(transaction, accountsById)` | `client/src/lib/transactions.ts` (pure, unit-tested) |
+| `isTransfer(transaction, accountsById)`, `transferLabel(transaction, accountsById)` | `client/src/lib/transactions.ts` (pure, unit-tested) |
 | Transfer form | `client/src/pages/TransferFormPage.tsx` (new), route `/transfers/new` |
 
 ## 3. API
@@ -73,7 +75,7 @@ No schema change.
   accounts except From), *Amount (THB)*, *Date* (default today), optional *Note*. Save disabled until From, To,
   a valid amount and a date are set and From ≠ To. Server errors appear in the alert above the form, values kept.
   On success → `/transactions/:id`.
-- History list and detail page label transfers "Transfer: <from> → <to>".
+- History list and detail page label transfers "Transfer: <from> → <to>" in the direction the money moved (§2).
 
 ## 6. Acceptance criteria
 
@@ -82,8 +84,8 @@ No schema change.
 | AC-TX-13 | Given alice has Bank 38,500.00 and Wallet 0.00, when she transfers 2,000.00 Bank → Wallet, then 201, Bank 36,500.00, Wallet 2,000.00. |
 | AC-TX-14 | After any transfer, summary income and expense totals and every category total are unchanged (BR-08). |
 | AC-TX-15 | Transferring more than the From balance → 400 `INSUFFICIENT_FUNDS`, nothing saved; exactly the balance → 201 and From = 0.00. |
-| AC-TX-16 | From = To → 400 `VALIDATION_ERROR`; To = bob's Wallet → 404 and nothing saved. |
-| AC-TX-17 | History and detail show the transfer as "Transfer: Bank → Wallet"; a normal payment is not labelled a transfer. |
+| AC-TX-16 | From = To → 400 `VALIDATION_ERROR`; To = bob's Wallet → 404 and nothing saved; ADMIN → 403; anonymous → 401. |
+| AC-TX-17 | History and detail show the transfer as "Transfer: Bank → Wallet"; a RECEIVE into Bank with a Wallet line shows "Transfer: Wallet → Bank"; a normal payment is not labelled a transfer. |
 | AC-TX-18 | In the UI the Transfer form offers only active CASH accounts, excludes From from To, and keeps Save disabled until the form is complete. |
 | AC-TX-19 | E2E: alice creates Wallet (F-06), transfers 2,000.00 from Bank and the dashboard shows both new balances. |
 
@@ -94,8 +96,8 @@ No schema change.
 | T-TX-API-11 | API | demo journey; create Wallet (CASH/WALLET); transfer 200,000 Bank → Wallet | 201; `GET /api/accounts` Bank 3,650,000, Wallet 200,000 | AC-TX-13 |
 | T-TX-API-12 | API | as above; `GET /api/summary` before/after | `totals` and `income`/`expense` lists equal | AC-TX-14 |
 | T-TX-API-13 | API | Wallet 200,000; transfer Wallet → Bank 200,001, then 200,000 | 400 `INSUFFICIENT_FUNDS`, counts unchanged; 201, Wallet 0 | AC-TX-15 |
-| T-TX-API-14 | API | Bank → Bank; Bank → bob's Wallet | 400 `VALIDATION_ERROR`; 404, counts unchanged | AC-TX-16 |
-| T-TRF-UNIT-01 | Unit (client) | `isTransfer` for CASH→CASH, CASH→EXPENSE, CARD→CASH, mixed CASH+EXPENSE lines | true, false, false, false | AC-TX-17 |
+| T-TX-API-14 | API | Bank → Bank; Bank → bob's Wallet; the §3 transfer body as admin and with no session | 400 `VALIDATION_ERROR`; 404, counts unchanged; 403; 401 | AC-TX-16 |
+| T-TRF-UNIT-01 | Unit (client) | `isTransfer` / `transferLabel` for PAYMENT Bank→Wallet, RECEIVE into Bank with Wallet line, PAYMENT Bank→Dining, PAYMENT Card→Bank, mixed CASH+EXPENSE lines | "Transfer: Bank → Wallet", "Transfer: Wallet → Bank", not a transfer ×3 | AC-TX-17 |
 | T-TRF-UI-01 | Component | form with Bank, Wallet, Card, Dining | From/To list only Bank, Wallet; To excludes From; Save disabled until complete; sends the §3 body | AC-TX-18 |
 | T-TRF-UI-02 | Component | server replies `INSUFFICIENT_FUNDS` | alert shows the message; values kept | AC-TX-15 |
 | T-HST-UI-04 | Component | history with a transfer and a payment | only the transfer row labelled "Transfer: Bank → Wallet" | AC-TX-17 |
@@ -124,4 +126,5 @@ Regression kept: T-TX-*, T-FUND-*, T-SUM-*, access suite, demo-journey E2E.
 
 | Version | Date | Commit | PR / Issue | Change |
 |---|---|---|---|---|
-| 0.1 | 2026-11-21 | — (draft, not committed) | — | First draft for review |
+| 0.1 | 2026-11-21 | `b6e700a` | #66 / S2-01 (#65) | First draft for review |
+| 0.2 | 2026-11-22 | — | #66 review (Jirawat) | Transfer label follows the money for RECEIVE (line → source); AC-TX-16 / T-TX-API-14 add ADMIN 403 and anonymous 401; T-TRF-UNIT-01 adds the RECEIVE case |
