@@ -19,7 +19,7 @@ This document provides a comprehensive inventory of all product features across 
 | **F-03** | Account Setup & Opening Balances | **Sprint 1** | Track B | In Progress | Seeded accounts (Bank, Card, Categories), opening balances |
 | **F-04** | Transaction Recording & Split Allocations | **Sprint 1** | Track B | In Progress | Payment/Receive entry, multi-line splits, balance validation |
 | **F-05** | Financial Summary & Transaction History | **Sprint 1** | Track B | In Progress | Real-time balances, debt tracking, category totals, history list |
-| **F-06** | Custom Account & Category Management | **Sprint 2** | Decided at sprint planning | Planned | Create, edit, and archive custom accounts and categories |
+| **F-06** | Custom Account & Category Management | **Sprint 2** | Track B (Harit) | Implemented (S2-02, #67) | Create, edit, archive and delete custom accounts and categories |
 | **F-07** | Internal Account Transfers | **Sprint 2** | Decided at sprint planning | Planned | Dedicated UI for inter-account cash transfers |
 | **F-08** | Debt & Receivable Lifecycle (Lending & Borrowing) | **Sprint 2** | Decided at sprint planning | Planned | Loan given / loan taken tracking, repayments, outstanding debts |
 | **F-09** | Transaction Search, Filtering & Sorting | **Sprint 2** | Decided at sprint planning | Planned | Date range filtering, category search, keyword matching (`q`) |
@@ -150,8 +150,8 @@ This document provides a comprehensive inventory of all product features across 
 
 ### F-06: Custom Account & Category Management
 - **Target Sprint:** Sprint 2
-- **Track Owner:** Decided at sprint planning
-- **Status:** Planned
+- **Track Owner:** Track B (Harit)
+- **Status:** Implemented (S2-02, #67)
 - **User Story:**  
   *As a personal user, I want to create custom bank accounts, e-wallets, and customized income and expense categories, so that the system fits my specific personal spending habits.*
 - **Detailed Capabilities:**

@@ -111,7 +111,9 @@ A client without an active, valid session cookie.
 
 ## 4. Business Rules (BR-01 through BR-13)
 
-The system enforces 13 immutable business rules across the service layer and database schema:
+The system enforces the business rules below across the service layer and database schema. BR-01 … BR-13 come from
+Sprint 1; BR-15 and BR-16 were added by F-06 in Sprint 2 (#67). BR-14 is reserved for the Lab 7 change request L7-01
+(#64, awaiting approval).
 
 | ID | Rule Statement | Enforcing Layer | Error Code & Status | Rationale |
 |---|---|---|---|---|
@@ -128,6 +130,8 @@ The system enforces 13 immutable business rules across the service layer and dat
 | **BR-11** | The source account cannot appear as one of its own allocation lines. | Service (`ledger.ts`) | 400 `VALIDATION_ERROR` | An account cannot allocate funds to itself within the same transaction. |
 | **BR-12** | Only `CASH`, `LOAN_TAKEN`, and `LOAN_GIVEN` accounts have opening balances. | Database CHECK constraint & Service | 400 `INVALID_ACCOUNT_TYPE` | Nominal accounts (`INCOME`, `EXPENSE`) accumulate period transactions only; no initial equity. |
 | **BR-13** | A transaction is saved all-or-nothing; a rejected transaction changes no balance. | Database Transaction (`prisma.$transaction`) | Handled via Rollback | Eliminates partial writes or orphaned records upon validation or database failures. |
+| **BR-15** | An account's `type` and `subtype` cannot change once any transaction uses it (as source or line). (F-06) | Service (`accounts.routes.ts`) | 400 `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS` | Changing the type would silently change the meaning and balance effect of recorded transactions. |
+| **BR-16** | An archived account takes no new transactions and no opening-balance change; a CASH / LOAN account can be archived only when its balance is 0. (F-06) | Service (`accounts.routes.ts`, `transactions.routes.ts`) | 400 `ACCOUNT_ARCHIVED` / `ACCOUNT_NOT_EMPTY` | Archiving hides an account from new entries without losing history, and never hides money or debt. |
 
 ---
 
@@ -263,9 +267,9 @@ The system enforces 13 immutable business rules across the service layer and dat
 - **Business Rules:** BR-08.
 
 #### FR-ACC-06: Custom Account Creation and Management (Sprint 2)
-- **Description:** A User can create custom accounts, edit account names, and archive accounts with no active transactions. Changing the account type (`type`) is strictly prohibited once transactions exist for that account (returning 400 `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS` — to be added to `errors.ts` and SDS §5.1 in Sprint 2), to prevent retroactive ledger corruption.
+- **Description:** A User can create custom accounts and categories (`POST /api/accounts`), rename them and change their type/subtype while unused (`PATCH /api/accounts/:id`), archive or unarchive them (`PATCH /api/accounts/:id/archive`), and delete an account no transaction has ever used (`DELETE /api/accounts/:id`). Names are unique per user ignoring case (409 `ACCOUNT_NAME_TAKEN`); a type change on a used account returns 400 `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS` (BR-15); archiving needs a balance of 0 for CASH/LOAN accounts and an archived account takes no new transactions or opening-balance change (BR-16); deleting a used account returns 409 `ACCOUNT_IN_USE`. At most 100 accounts per user. Contract: `docs/sprints/sprint-2/F-06-account-management.md`.
 - **Actor:** User.
-- **Business Rules:** BR-03, BR-04, BR-12.
+- **Business Rules:** BR-03, BR-04, BR-12, BR-15, BR-16.
 - **Target Sprint:** Sprint 2.
 
 ---

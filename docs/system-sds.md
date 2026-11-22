@@ -153,7 +153,7 @@ The largest storable amount is 2,147,483,647 satang (≈ 21.4 million THB) per v
 | Table | Purpose | Key columns |
 |---|---|---|
 | `User` | Login identity | `username` (unique), `passwordHash` (bcrypt), `role` USER\|ADMIN, `isEnabled` |
-| `Account` | A user's financial account or category | `userId`, `name` (unique per user), `type`, `subtype`, `openingBalance`, `openingDate` |
+| `Account` | A user's financial account or category | `userId`, `name` (unique per user, ignoring case — F-06), `type`, `subtype`, `openingBalance`, `openingDate`, `archivedAt` (null = active, F-06) |
 | `Transaction` | One Payment or Receive | `userId`, `kind` PAYMENT\|RECEIVE, `sourceAccountId`, `date` (DATE), `totalAmount`, `note`, `isFavorite` |
 | `TransactionLine` | One allocation line of a transaction | `transactionId`, `userId`, `accountId`, `amount` |
 | `session` | Login sessions (connect-pg-simple) | `sid`, `sess`, `expire` — declared as model `Session` only so Prisma owns the table; app code never uses it through Prisma |
@@ -196,8 +196,10 @@ user, even if application code has a bug.
 | BR-12 opening balance only on CASH / LOAN_* | ✅ `Account_openingBalance_allowed_type`, `Account_openingBalance_nonnegative` | ✅ `INVALID_ACCOUNT_TYPE` |
 | BR-13 all-or-nothing save | — | ✅ one `prisma.$transaction` |
 | Subtype fits type | ✅ `Account_subtype_matches_type` | (seed data only in Sprint 1) |
-| Account name unique per user | ✅ `Account_userId_name_key` | — |
-| Cannot delete an account in use | ✅ `ON DELETE RESTRICT` | — |
+| Account name unique per user | ✅ `Account_userId_name_key` (exact) and `Account_userId_lower_name_key` (ignoring case, migration `add_account_archived_at`; hand-written, Prisma does not track it) | ✅ 409 `ACCOUNT_NAME_TAKEN` (F-06) |
+| BR-15 type fixed once used | — | ✅ `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS` (F-06) |
+| BR-16 archived accounts | — | ✅ `ACCOUNT_ARCHIVED` in `POST /api/transactions` and opening-balance `PUT`; `ACCOUNT_NOT_EMPTY` when archiving a non-zero CASH/LOAN account (F-06) |
+| Cannot delete an account in use | ✅ `ON DELETE RESTRICT` | ✅ 409 `ACCOUNT_IN_USE` (F-06) |
 
 Services validate **first** so users get a clear 400; the database constraints are the last line of defence.
 CHECK constraints are written by hand in the migration SQL because Prisma cannot declare them; Prisma does
@@ -276,10 +278,11 @@ Recorded in `docs/sprints/sprint-1/F-04-transactions.md` §8:
 
 | Status | Codes |
 |---|---|
-| 400 | `VALIDATION_ERROR`, `ALLOCATION_MISMATCH`, `INVALID_ACCOUNT_TYPE`, `SELF_DISABLE_NOT_ALLOWED` |
+| 400 | `VALIDATION_ERROR`, `ALLOCATION_MISMATCH`, `INVALID_ACCOUNT_TYPE`, `SELF_DISABLE_NOT_ALLOWED`, `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS`, `ACCOUNT_ARCHIVED`, `ACCOUNT_NOT_EMPTY` (F-06) |
 | 401 | `UNAUTHENTICATED`, `INVALID_CREDENTIALS` |
 | 403 | `FORBIDDEN`, `ACCOUNT_DISABLED` |
 | 404 | `NOT_FOUND` |
+| 409 | `ACCOUNT_NAME_TAKEN`, `ACCOUNT_IN_USE` (F-06) |
 | 500 | `INTERNAL_ERROR` (no internal details are ever returned) |
 
 New codes are added to `server/src/lib/errors.ts` **and** this table in the same PR.
@@ -295,6 +298,10 @@ New codes are added to `server/src/lib/errors.ts` **and** this table in the same
 | PATCH | `/api/admin/users/:id` | ADMIN | A | S1-07 |
 | GET | `/api/accounts` | USER | B | S1-11 |
 | PUT | `/api/accounts/:id/opening-balance` | USER | B | S1-11 |
+| POST | `/api/accounts` | USER | B | S2-02 (#67) |
+| PATCH | `/api/accounts/:id` | USER | B | S2-02 (#67) |
+| PATCH | `/api/accounts/:id/archive` | USER | B | S2-02 (#67) |
+| DELETE | `/api/accounts/:id` | USER | B | S2-02 (#67) |
 | POST | `/api/transactions` | USER | B | S1-12 |
 | GET | `/api/transactions` | USER | B | S1-13 |
 | GET | `/api/transactions/:id` | USER | B | S1-13 |
@@ -329,8 +336,12 @@ Admin responses never contain accounts, transactions or balances (BR-05).
 
 | Endpoint | Request | Success | Errors |
 |---|---|---|---|
-| `GET /api/accounts` | — | `200 { accounts: [{ id, name, type, subtype, openingBalance, openingDate, balance }] }` | 401, 403 |
-| `PUT /api/accounts/:id/opening-balance` | `{ openingBalance, openingDate }` | `200 { account }` (same shape as one list item) | 400 `VALIDATION_ERROR` / `INVALID_ACCOUNT_TYPE`, 401, 403, 404 |
+| `GET /api/accounts` | — | `200 { accounts: [{ id, name, type, subtype, openingBalance, openingDate, balance, archived }] }` | 401, 403 |
+| `PUT /api/accounts/:id/opening-balance` | `{ openingBalance, openingDate }` | `200 { account }` (same shape as one list item) | 400 `VALIDATION_ERROR` / `INVALID_ACCOUNT_TYPE` / `ACCOUNT_ARCHIVED`, 401, 403, 404 |
+| `POST /api/accounts` | `{ name, type, subtype? }` | `201 { account }` | 400 `VALIDATION_ERROR`, 409 `ACCOUNT_NAME_TAKEN`, 401, 403 |
+| `PATCH /api/accounts/:id` | `{ name?, type?, subtype? }` (at least one; a `type` without `subtype` resets it to null) | `200 { account }` | 400 `VALIDATION_ERROR` / `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS` / `INVALID_ACCOUNT_TYPE`, 409 `ACCOUNT_NAME_TAKEN`, 401, 403, 404 |
+| `PATCH /api/accounts/:id/archive` | `{ archived: boolean }` | `200 { account }` | 400 `VALIDATION_ERROR` / `ACCOUNT_NOT_EMPTY`, 401, 403, 404 |
+| `DELETE /api/accounts/:id` | — | `204` | 409 `ACCOUNT_IN_USE`, 401, 403, 404 |
 
 **Transactions**
 
@@ -345,7 +356,7 @@ POST /api/transactions
   "lines": [ { "accountId": 7, "amount": 90000 }, { "accountId": 8, "amount": 60000 } ]
 }
 → 201 { "transaction": Transaction }
-→ 400 VALIDATION_ERROR | ALLOCATION_MISMATCH | INVALID_ACCOUNT_TYPE · 401 · 403 · 404 (an account is not the user's)
+→ 400 VALIDATION_ERROR | ALLOCATION_MISMATCH | INVALID_ACCOUNT_TYPE | ACCOUNT_ARCHIVED (F-06) · 401 · 403 · 404 (an account is not the user's)
 ```
 
 ```
