@@ -371,7 +371,7 @@ Transaction = {
 
 | Endpoint | Success | Errors |
 |---|---|---|
-| `GET /api/transactions` | `200 { transactions: Transaction[] }` newest `date` first, then newest `id` | 401, 403 |
+| `GET /api/transactions` (optional `?startDate=&endDate=&accountId=&kind=&q=&sort=`) | `200 { transactions: Transaction[], truncated: boolean }` (default `date_desc`, tie by `id`; max 500 rows per F-09; `truncated: true` if > 500 matched) | 400 `VALIDATION_ERROR`, 401, 403 |
 | `GET /api/transactions/:id` | `200 { transaction: Transaction }` | 401, 403, 404 |
 
 **Summary**

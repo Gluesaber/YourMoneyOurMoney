@@ -430,10 +430,10 @@ Sprint 1; BR-15 and BR-16 were added by F-06 in Sprint 2 (#67). BR-14 is reserve
 - **Error Handling:** Transaction not found or owned by another user → 404 `NOT_FOUND`.
 
 #### FR-HST-03: Transaction History Filtering and Search (Sprint 2)
-- **Description:** A User can filter transactions by date ranges, account, category, or search keywords within notes (`GET /api/transactions?startDate=...&endDate=...&accountId=...&q=...`).
+- **Description:** A User can filter transactions by inclusive date range (`startDate`, `endDate`), account (`accountId`, matching either source or any allocation line), kind (`PAYMENT` | `RECEIVE`), case-insensitive literal substring search on `note` (`q`, escaping `%`, `_`, `\`, 1..100 chars), and `sort` (`date_desc` | `date_asc` | `amount_desc` | `amount_asc` with same-direction `id` tie-breaker) on `GET /api/transactions`. Filters combine with AND; foreign or non-existent `accountId` returns an empty list (`200`) so IDs cannot be probed (NFR-SEC-03). Results are capped at 500 rows with `truncated: true` when more match. On the UI (`/transactions`), filters stay synced with URL search parameters alongside quick date-range buttons (*This month*, *Last month*, *This year*) and **Clear**. Contract: `docs/sprints/sprint-2/F-09-search-filter.md`.
 - **Actor:** User.
-- **Business Rules:** BR-04.
-- **Target Sprint:** Sprint 2.
+- **Business Rules:** BR-04, BR-05.
+- **Target Sprint:** Sprint 2 (Feature F-09).
 
 #### FR-HST-04: Data Export in CSV and JSON Formats (Sprint 3) [Added by Team]
 - **Description:** A User can export their transaction records and summary balances in CSV and JSON formats for offline archiving.
