@@ -47,7 +47,7 @@ describe("GET /api/transactions", () => {
 
   it("returns an empty list for a new user", async () => {
     const res = await (await agentAs("alice")).get("/api/transactions");
-    expect(res.body).toEqual({ transactions: [] });
+    expect(res.body).toEqual({ transactions: [], truncated: false });
   });
 
   it("returns each item in the same shape as POST /api/transactions", async () => {
