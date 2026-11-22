@@ -102,8 +102,45 @@ export function getSummary(): Promise<Summary> {
   return api<Summary>("/api/summary");
 }
 
-export async function getTransactions(): Promise<Transaction[]> {
-  return (await api<{ transactions: Transaction[] }>("/api/transactions")).transactions;
+export type TransactionSort = "date_desc" | "date_asc" | "amount_desc" | "amount_asc";
+
+export interface TransactionFilters {
+  startDate?: string;
+  endDate?: string;
+  accountId?: string;
+  kind?: TransactionKind | "";
+  q?: string;
+  sort?: TransactionSort;
+}
+
+export interface TransactionListResult {
+  transactions: Transaction[];
+  truncated: boolean;
+}
+
+// Serializes active F-09 filters; empty fields and default `date_desc` sort are omitted so
+// unfiltered calls request plain `/api/transactions`.
+export function buildTransactionQueryString(filters: TransactionFilters = {}): string {
+  const params = new URLSearchParams();
+  if (filters.startDate) params.set("startDate", filters.startDate);
+  if (filters.endDate) params.set("endDate", filters.endDate);
+  if (filters.accountId) params.set("accountId", filters.accountId);
+  if (filters.kind) params.set("kind", filters.kind);
+  if (filters.q?.trim()) params.set("q", filters.q.trim());
+  if (filters.sort && filters.sort !== "date_desc") params.set("sort", filters.sort);
+  return params.toString();
+}
+
+export async function getTransactionList(filters: TransactionFilters = {}): Promise<TransactionListResult> {
+  const qs = buildTransactionQueryString(filters);
+  const res = await api<{ transactions: Transaction[]; truncated?: boolean }>(
+    qs ? `/api/transactions?${qs}` : "/api/transactions",
+  );
+  return { transactions: res.transactions, truncated: Boolean(res.truncated) };
+}
+
+export async function getTransactions(filters: TransactionFilters = {}): Promise<Transaction[]> {
+  return (await getTransactionList(filters)).transactions;
 }
 
 export async function getTransaction(id: string): Promise<Transaction> {
