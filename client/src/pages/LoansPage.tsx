@@ -87,7 +87,7 @@ function LoanSection(props: {
                       {archived && <span className="badge text-bg-secondary ms-2">Archived</span>}
                       {r.outstanding < 0 && (
                         <span className="badge text-bg-warning ms-2">
-                          {props.kind === "TAKEN" ? "owes you · you overpaid" : "you overpaid"}
+                          {props.kind === "TAKEN" ? "owes you · you overpaid" : "overpaid you · you owe them"}
                         </span>
                       )}
                     </th>

@@ -111,6 +111,7 @@ export interface TransactionFilters {
   kind?: TransactionKind | "";
   q?: string;
   sort?: TransactionSort;
+  favorite?: boolean;
 }
 
 export interface TransactionListResult {
@@ -118,7 +119,7 @@ export interface TransactionListResult {
   truncated: boolean;
 }
 
-// Serializes active F-09 filters; empty fields and default `date_desc` sort are omitted so
+// Serializes active F-09 / F-10 filters; empty fields and default `date_desc` sort are omitted so
 // unfiltered calls request plain `/api/transactions`.
 export function buildTransactionQueryString(filters: TransactionFilters = {}): string {
   const params = new URLSearchParams();
@@ -128,7 +129,16 @@ export function buildTransactionQueryString(filters: TransactionFilters = {}): s
   if (filters.kind) params.set("kind", filters.kind);
   if (filters.q?.trim()) params.set("q", filters.q.trim());
   if (filters.sort && filters.sort !== "date_desc") params.set("sort", filters.sort);
+  if (filters.favorite) params.set("favorite", "true");
   return params.toString();
+}
+
+export async function setTransactionFavorite(id: number, isFavorite: boolean): Promise<Transaction> {
+  const res = await api<{ transaction: Transaction }>(`/api/transactions/${id}/favorite`, {
+    method: "PATCH",
+    body: JSON.stringify({ isFavorite }),
+  });
+  return res.transaction;
 }
 
 export async function getTransactionList(filters: TransactionFilters = {}): Promise<TransactionListResult> {

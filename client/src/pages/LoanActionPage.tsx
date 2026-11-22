@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { createTransaction, getAccounts, getSummary, type Account } from "../api/finance.js";
-import { ErrorAlert, Loading, todayLocal, useLoad } from "../components/Feedback.js";
+import { ErrorAlert, Loading, fieldErrorsOf, todayLocal, useLoad } from "../components/Feedback.js";
 import {
   expectedLoanType,
   isLoanAction,
@@ -89,6 +89,7 @@ function LoanActionForm(props: {
 
   const satang = toSatang(amount);
   const amountInvalid = amount !== "" && (satang === null || satang <= 0);
+  const dateError = fieldErrorsOf(error).date?.[0];
   const canSave = Boolean(cashAccountId && satang && satang > 0 && date) && !saving;
   const isOverRepayment =
     isRepaymentAction(props.action) && satang !== null && satang > 0 && satang > props.outstanding;
@@ -199,7 +200,7 @@ function LoanActionForm(props: {
           <input
             id="loan-date"
             type="date"
-            className="form-control"
+            className={`form-control ${dateError ? "is-invalid" : ""}`}
             min="2000-01-01"
             max="2099-12-31"
             value={date}
@@ -207,7 +208,14 @@ function LoanActionForm(props: {
               setDate(e.target.value);
               setAwaitingConfirm(false);
             }}
+            aria-invalid={Boolean(dateError)}
+            aria-describedby="loan-date-error"
           />
+          {dateError && (
+            <div id="loan-date-error" className="invalid-feedback">
+              {dateError}
+            </div>
+          )}
         </div>
         <div className="mb-3">
           <label htmlFor="loan-note" className="form-label">

@@ -303,8 +303,9 @@ New codes are added to `server/src/lib/errors.ts` **and** this table in the same
 | PATCH | `/api/accounts/:id/archive` | USER | B | S2-02 (#67) |
 | DELETE | `/api/accounts/:id` | USER | B | S2-02 (#67) |
 | POST | `/api/transactions` | USER | B | S1-12 |
-| GET | `/api/transactions` | USER | B | S1-13 |
+| GET | `/api/transactions` | USER | B / A | S1-13, S2-05 (#70), S2-06 (#71) |
 | GET | `/api/transactions/:id` | USER | B | S1-13 |
+| PATCH | `/api/transactions/:id/favorite` | USER | A | S2-06 (#71) |
 | GET | `/api/summary` | USER | B | S1-13 |
 | GET | `/api/health` | anonymous | shared | S1-01 |
 | GET | `/api/ready` | anonymous | shared | L5-02 |
@@ -371,8 +372,9 @@ Transaction = {
 
 | Endpoint | Success | Errors |
 |---|---|---|
-| `GET /api/transactions` (optional `?startDate=&endDate=&accountId=&kind=&q=&sort=`) | `200 { transactions: Transaction[], truncated: boolean }` (default `date_desc`, tie by `id`; max 500 rows per F-09; `truncated: true` if > 500 matched) | 400 `VALIDATION_ERROR`, 401, 403 |
+| `GET /api/transactions` (optional `?startDate=&endDate=&accountId=&kind=&q=&sort=&favorite=true`) | `200 { transactions: Transaction[], truncated: boolean }` (default `date_desc`, tie by `id`; max 500 rows per F-09; `truncated: true` if > 500 matched) | 400 `VALIDATION_ERROR`, 401, 403 |
 | `GET /api/transactions/:id` | `200 { transaction: Transaction }` | 401, 403, 404 |
+| `PATCH /api/transactions/:id/favorite` (`{ isFavorite: boolean }`) | `200 { transaction: Transaction }` | 400 `VALIDATION_ERROR`, 401, 403, 404 |
 
 **Summary**
 

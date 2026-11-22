@@ -21,7 +21,7 @@ describe("transactionQuery (T-HST-UNIT-01)", () => {
     expect(escapeLike("dinner")).toBe("dinner");
   });
 
-  it("parseTransactionQuery defaults sort to date_desc, trims q, strips empty q, and ignores unknown params", () => {
+  it("parseTransactionQuery defaults sort to date_desc, parses favorite=true, trims q, strips empty q, and ignores unknown params", () => {
     expect(parseTransactionQuery({})).toEqual({ sort: "date_desc" });
     expect(parseTransactionQuery({ q: "   ", foo: "ignored" })).toEqual({ sort: "date_desc" });
 
@@ -34,6 +34,7 @@ describe("transactionQuery (T-HST-UNIT-01)", () => {
         q: "  dinner  ",
         sort: "amount_asc",
         favorite: "true",
+        futureFlag: "ignored",
       }),
     ).toEqual({
       startDate: "2026-11-01",
@@ -42,6 +43,7 @@ describe("transactionQuery (T-HST-UNIT-01)", () => {
       kind: "PAYMENT",
       q: "dinner",
       sort: "amount_asc",
+      favorite: true,
     });
   });
 
@@ -55,6 +57,9 @@ describe("transactionQuery (T-HST-UNIT-01)", () => {
     ["accountId above MAX_INT", { accountId: "2147483648" }],
     ["unknown kind", { kind: "TRANSFER" }],
     ["unknown sort", { sort: "foo" }],
+    ["invalid favorite=yes", { favorite: "yes" }],
+    ["invalid favorite=false", { favorite: "false" }],
+    ["empty favorite", { favorite: "" }],
     ["q over 100 chars", { q: "a".repeat(101) }],
     ["duplicate array param", { kind: ["PAYMENT", "RECEIVE"] }],
   ])("parseTransactionQuery rejects %s with ZodError", (_label, raw) => {
@@ -63,6 +68,7 @@ describe("transactionQuery (T-HST-UNIT-01)", () => {
 
   it("toWhere always scopes to userId and builds combined filters", () => {
     expect(toWhere({ sort: "date_desc" }, 42)).toEqual({ userId: 42 });
+    expect(toWhere({ favorite: true, sort: "date_desc" }, 42)).toEqual({ userId: 42, isFavorite: true });
 
     expect(toWhere({ startDate: "2026-11-01", sort: "date_desc" }, 42)).toEqual({
       userId: 42,

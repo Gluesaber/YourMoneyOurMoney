@@ -131,6 +131,24 @@ transactionsRouter.get(
   }),
 );
 
+// F-10 R1..R5: star or unstar a transaction owned by the current user; idempotent and never alters balances.
+const favoriteBody = z.object({ isFavorite: z.boolean() }).strict();
+
+transactionsRouter.patch(
+  "/:id/favorite",
+  asyncHandler(async (req, res) => {
+    const id = parseId(req.params.id);
+    if (id === null) throw new AppError(404, ErrorCode.NOT_FOUND, "Transaction not found.");
+    const body = favoriteBody.parse(req.body);
+    const updated = await getPrisma().transaction.updateMany({
+      where: { id, userId: req.user!.id },
+      data: { isFavorite: body.isFavorite },
+    });
+    if (updated.count === 0) throw new AppError(404, ErrorCode.NOT_FOUND, "Transaction not found.");
+    res.json({ transaction: await loadTransaction(req.user!.id, id) });
+  }),
+);
+
 // Shape shared by POST, GET / and GET /:id (system-sds.md §5.3). Lines keep their entry order.
 const transactionInclude = {
   sourceAccount: { select: { id: true, name: true } },

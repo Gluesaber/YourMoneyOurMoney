@@ -1,6 +1,6 @@
 # F-10 — Favorite & Duplicate Transactions (Sprint 2 contract)
 
-> **Status:** v0.1 draft for review. Merged before any F-10 code.
+> **Status:** v0.1 — reviewed in #66; implemented in S2-06 (#71).
 > **Requirements:** FR-TX-07, FR-TX-08 · BR-04, BR-05 (+ every F-04 rule on the duplicated save) · NFR-SEC-03
 > **Depends on:** F-04 (form and save), F-05 (history/detail), F-09 (query parser on `GET /api/transactions`).
 > **IDs:** `AC-FAV-01…`, `T-FAV-API-01…`, `T-FAV-UI-01…` as reserved in `docs/traceability.md`.
@@ -112,4 +112,4 @@ Regression kept: T-TX-*, T-FUND-*, T-HST-*, access suite (add the PATCH route to
 
 | Version | Date | Commit | PR / Issue | Change |
 |---|---|---|---|---|
-| 0.1 | 2026-11-21 | — (draft, not committed) | — | First draft for review |
+| 0.1 | 2026-11-21 | `b6e700a` | #66 / S2-01 (#65) | Reviewed in #66; implemented in S2-06 (#71) |

@@ -1,21 +1,25 @@
-import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   buildTransactionQueryString,
   getAccounts,
   getTransactionList,
+  type Transaction,
   type TransactionFilters,
   type TransactionKind,
   type TransactionSort,
 } from "../api/finance.js";
-import { Amount, ErrorAlert, Loading, useLoad } from "../components/Feedback.js";
+import { Amount, ErrorAlert, Loading, todayLocal, useLoad } from "../components/Feedback.js";
+import { FavoriteToggle } from "../components/FavoriteToggle.js";
 import { TransactionFilterBar } from "../components/TransactionFilterBar.js";
+import { toDuplicateDraft } from "../lib/duplicate.js";
 import { accountTypesOf, transferLabel } from "../lib/transactions.js";
 
 export const KIND_LABEL = { PAYMENT: "Payment", RECEIVE: "Money received" } as const;
 
-// F-05 §5 & F-09 §5 History — docs/sprints/sprint-2/F-09-search-filter.md.
-// Filters stay synced with URL query params so reload/back preserves them.
+// F-05 §5, F-09 §5 & F-10 §5 History — filters stay synced with URL query params so reload/back preserves them.
 export function TransactionsPage() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const filters: TransactionFilters = {
@@ -25,15 +29,23 @@ export function TransactionsPage() {
     kind: (searchParams.get("kind") as TransactionKind | null) ?? "",
     q: searchParams.get("q") ?? "",
     sort: (searchParams.get("sort") as TransactionSort | null) ?? "date_desc",
+    favorite: searchParams.get("favorite") === "true",
   };
 
   const queryString = buildTransactionQueryString(filters);
   const { data, error } = useLoad(() => getTransactionList(filters), [queryString]);
+  const [rows, setRows] = useState<Transaction[] | undefined>(undefined);
+  const [favoriteError, setFavoriteError] = useState<unknown>(null);
+
+  useEffect(() => {
+    setRows(data?.transactions);
+  }, [data]);
+
   // F-07 / F-09: account types label transfers and populate Account filter options.
   const { data: accounts } = useLoad(getAccounts);
   const types = accountTypesOf(accounts);
 
-  const transactions = data?.transactions;
+  const transactions = rows;
   const hasActiveFilters = queryString.length > 0;
 
   function updateFilters(next: TransactionFilters) {
@@ -42,6 +54,14 @@ export function TransactionsPage() {
 
   function clearFilters() {
     setSearchParams(new URLSearchParams());
+  }
+
+  function handleToggled(updated: Transaction) {
+    setRows((prev) =>
+      prev
+        ?.map((item) => (item.id === updated.id ? updated : item))
+        .filter((item) => !filters.favorite || item.isFavorite),
+    );
   }
 
   return (
@@ -58,7 +78,7 @@ export function TransactionsPage() {
         onChange={updateFilters}
         onClear={clearFilters}
       />
-      <ErrorAlert error={error} />
+      <ErrorAlert error={error ?? favoriteError} />
       {!transactions && !error && <Loading />}
       {data?.truncated && (
         <div className="alert alert-info">
@@ -91,7 +111,7 @@ export function TransactionsPage() {
                   Total
                 </th>
                 <th scope="col">
-                  <span className="visually-hidden">Link</span>
+                  <span className="visually-hidden">Actions</span>
                 </th>
               </tr>
             </thead>
@@ -106,7 +126,26 @@ export function TransactionsPage() {
                     <Amount satang={t.totalAmount} />
                   </td>
                   <td className="text-end">
-                    <Link to={`/transactions/${t.id}`}>Details</Link>
+                    <div className="d-inline-flex align-items-center gap-2">
+                      <FavoriteToggle
+                        transactionId={t.id}
+                        isFavorite={t.isFavorite}
+                        onToggled={handleToggled}
+                        onError={setFavoriteError}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() =>
+                          navigate(`/transactions/new?kind=${t.kind}`, {
+                            state: { draft: toDuplicateDraft(t, todayLocal()) },
+                          })
+                        }
+                      >
+                        Duplicate
+                      </button>
+                      <Link to={`/transactions/${t.id}`}>Details</Link>
+                    </div>
                   </td>
                 </tr>
               ))}

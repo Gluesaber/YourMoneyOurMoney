@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   LINE_TYPES,
   SOURCE_TYPES,
@@ -10,6 +10,7 @@ import {
   type TransactionKind,
 } from "../api/finance.js";
 import { ErrorAlert, Loading, fieldErrorsOf, todayLocal, useLoad } from "../components/Feedback.js";
+import type { DuplicateDraft } from "../lib/duplicate.js";
 import { formatBaht, toSatang } from "../lib/money.js";
 
 // F-04 §5 Payment / Receive form — docs/sprints/sprint-1/F-04-transactions.md.
@@ -39,24 +40,90 @@ interface Line {
 
 export function TransactionFormPage() {
   const [params] = useSearchParams();
-  const kind: TransactionKind = params.get("kind") === "RECEIVE" ? "RECEIVE" : "PAYMENT";
+  const location = useLocation();
+  const draft = (location.state as { draft?: DuplicateDraft } | null)?.draft;
+  const kind: TransactionKind = draft ? draft.kind : params.get("kind") === "RECEIVE" ? "RECEIVE" : "PAYMENT";
   const { data: accounts, error } = useLoad(getAccounts);
 
   if (error) return <ErrorAlert error={error} />;
   if (!accounts) return <Loading />;
-  // `key` resets the form when switching between Payment and Receive.
-  return <TransactionForm key={kind} kind={kind} accounts={accounts} />;
+  // `key` resets the form when switching between Payment, Receive, or a duplicated transaction draft.
+  return (
+    <TransactionForm
+      key={`${kind}-${draft?.fromId ?? "new"}`}
+      kind={kind}
+      accounts={accounts}
+      draft={draft}
+    />
+  );
 }
 
-function TransactionForm({ kind, accounts }: { kind: TransactionKind; accounts: Account[] }) {
+function resolveDraft(kind: TransactionKind, accounts: Account[], draft?: DuplicateDraft) {
+  if (!draft) {
+    return {
+      sourceId: "",
+      date: todayLocal(),
+      total: "",
+      note: "",
+      lines: [{ key: 1, accountId: "", amount: "" }],
+      nextKey: 2,
+      notices: [] as string[],
+    };
+  }
+  const byId = new Map(accounts.map((a) => [a.id, a]));
+  const active = accounts.filter((a) => !a.archived);
+  const sources = active.filter((a) => SOURCE_TYPES[kind].includes(a.type));
+  const noticeFor = (accountId: number) => {
+    const acc = byId.get(accountId);
+    if (!acc)
+      return "An account in the original transaction is no longer available — choose another account.";
+    if (acc.archived) return `${acc.name} is archived — choose another account.`;
+    return `${acc.name} cannot be used here — choose another account.`;
+  };
+
+  const notices: string[] = [];
+  const sourceAllowed = sources.some((a) => a.id === draft.sourceAccountId);
+  const sourceId = sourceAllowed ? String(draft.sourceAccountId) : "";
+  if (!sourceAllowed) notices.push(noticeFor(draft.sourceAccountId));
+
+  const lineAllowedIds = new Set(
+    active.filter((a) => LINE_TYPES[kind].includes(a.type) && String(a.id) !== sourceId).map((a) => a.id),
+  );
+  const lines = draft.lines.map((l, idx) => {
+    const ok = lineAllowedIds.has(l.accountId);
+    if (!ok) notices.push(noticeFor(l.accountId));
+    return { key: idx + 1, accountId: ok ? String(l.accountId) : "", amount: formatBaht(l.amount) };
+  });
+
+  return {
+    sourceId,
+    date: draft.date,
+    total: formatBaht(draft.totalAmount),
+    note: draft.note,
+    lines,
+    nextKey: lines.length + 1,
+    notices: [...new Set(notices)],
+  };
+}
+
+function TransactionForm({
+  kind,
+  accounts,
+  draft,
+}: {
+  kind: TransactionKind;
+  accounts: Account[];
+  draft?: DuplicateDraft;
+}) {
   const navigate = useNavigate();
   const text = TEXT[kind];
-  const [sourceId, setSourceId] = useState("");
-  const [date, setDate] = useState(todayLocal());
-  const [total, setTotal] = useState("");
-  const [note, setNote] = useState("");
-  const [lines, setLines] = useState<Line[]>([{ key: 1, accountId: "", amount: "" }]);
-  const [nextKey, setNextKey] = useState(2);
+  const initial = resolveDraft(kind, accounts, draft);
+  const [sourceId, setSourceId] = useState(initial.sourceId);
+  const [date, setDate] = useState(initial.date);
+  const [total, setTotal] = useState(initial.total);
+  const [note, setNote] = useState(initial.note);
+  const [lines, setLines] = useState<Line[]>(initial.lines);
+  const [nextKey, setNextKey] = useState(initial.nextKey);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
@@ -116,7 +183,14 @@ function TransactionForm({ kind, accounts }: { kind: TransactionKind; accounts: 
 
   return (
     <section style={{ maxWidth: 720 }}>
-      <h1 className="h3">{text.title}</h1>
+      <h1 className="h3">{draft ? `Duplicate of #${draft.fromId}` : text.title}</h1>
+      {initial.notices.length > 0 && (
+        <div className="alert alert-warning" role="status">
+          {initial.notices.map((msg) => (
+            <div key={msg}>{msg}</div>
+          ))}
+        </div>
+      )}
       <ErrorAlert error={error} />
       <form onSubmit={onSubmit} noValidate>
         <div className="row g-3 mb-3">

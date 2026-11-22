@@ -338,16 +338,16 @@ Sprint 1; BR-15 and BR-16 were added by F-06 in Sprint 2 (#67). BR-14 is reserve
 - **Business Rules:** BR-04.
 
 #### FR-TX-07: Favorite Transactions Management and Viewing (Sprint 2)
-- **Description:** A User can toggle a transaction as a favorite (`isFavorite: boolean`) for quick retrieval (`PATCH /api/transactions/:id/favorite`), and filter/view all favorite transactions (`GET /api/transactions?favorite=true`).
+- **Description:** A User can star or unstar any of their transactions (`PATCH /api/transactions/:id/favorite` with strict `{ isFavorite: boolean }`, returning `{ transaction: Transaction }`), and filter favorite transactions (`GET /api/transactions?favorite=true`, combined with F-09 filters; values other than `"true"` return `400 VALIDATION_ERROR`). Starring is idempotent and never modifies balances, dates, amounts, or lines (BR-13). On the UI, star toggles (`FavoriteToggle`) appear on History rows and the detail page with optimistic rollback on error, History offers a **Favorites only** toggle (`?favorite=true`), and Dashboard displays a **Favorites** card (up to 5 newest favorites, hidden when empty). Contract: `docs/sprints/sprint-2/F-10-favorites-duplicate.md`.
 - **Actor:** User.
-- **Business Rules:** BR-04.
+- **Business Rules:** BR-04, BR-05, BR-13.
 - **Target Sprint:** Sprint 2 (Feature F-10).
 
 #### FR-TX-08: Transaction Duplication (Sprint 2)
-- **Description:** A User can duplicate an existing transaction to pre-populate transaction entry forms.
+- **Description:** A User can click **Duplicate** from a transaction's History row, Detail page, or Dashboard Favorites card to open `/transactions/new?kind=<kind>` pre-filled with that transaction's kind, source, lines, amounts, and note, dated today (`toDuplicateDraft`). Nothing is saved until the user submits the normal `POST /api/transactions` flow (enforcing all F-04 / F-06 / BR-14 rules); the new transaction starts with `isFavorite: false` and the original remains unchanged. Any archived or unavailable account in the draft is left blank with a notice (`"<Name> is archived — choose another account."`). Contract: `docs/sprints/sprint-2/F-10-favorites-duplicate.md`.
 - **Actor:** User.
-- **Business Rules:** BR-04.
-- **Target Sprint:** Sprint 2.
+- **Business Rules:** BR-04 (+ all F-04 / F-06 / BR-14 rules on the new save).
+- **Target Sprint:** Sprint 2 (Feature F-10).
 
 #### FR-TX-09: Debt and Loan Lifecycle Tracking (Sprint 2)
 - **Description:** A User can track loans extended to others (`LOAN_GIVEN`) and debts owed (`LOAN_TAKEN`), logging lending outflows, borrowing inflows, and partial or full repayments that adjust outstanding balances without affecting income or expense totals.

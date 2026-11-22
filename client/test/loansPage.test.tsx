@@ -116,6 +116,25 @@ describe("LoansPage (T-DEBT-UI-01)", () => {
     expect(within(momRow).getByText("Archived")).toBeInTheDocument();
     expect(within(momRow).queryByRole("link", { name: "Repay" })).not.toBeInTheDocument();
   });
+
+  it("shows 'overpaid you · you owe them' when a Money you lent account has negative outstanding", async () => {
+    mockApi({
+      "GET /api/summary": {
+        body: {
+          ...SUMMARY_WITH_LOANS,
+          loansGiven: [{ accountId: 10, name: "Ben", outstanding: -50_000 }],
+          loansTaken: [],
+        },
+      },
+      "GET /api/accounts": { body: { accounts: [BANK, BEN] } },
+    });
+    renderAt("/loans");
+
+    const benRow = await screen.findByRole("row", { name: /^Ben\b/ });
+    expect(benRow).toHaveTextContent("-500.00");
+    expect(benRow).toHaveTextContent("overpaid you · you owe them");
+    expect(benRow).not.toHaveTextContent("you overpaid");
+  });
 });
 
 describe("LoanActionPage (T-DEBT-UI-02)", () => {
@@ -218,5 +237,35 @@ describe("LoanActionPage (T-DEBT-UI-02)", () => {
     mockApi({});
     renderAt("/accounts/new?type=LOAN_GIVEN");
     expect(await screen.findByLabelText("Type")).toHaveValue("LOAN_GIVEN");
+  });
+
+  it("highlights the Date field when the server returns a date validation error (#60)", async () => {
+    mockApi({
+      "GET /api/accounts": { body: { accounts: [BANK, BEN] } },
+      "GET /api/summary": { body: SUMMARY_WITH_LOANS },
+      "POST /api/transactions": {
+        status: 400,
+        body: {
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Invalid input.",
+            details: { fieldErrors: { date: ["Use a date from 2000 to 2099."] } },
+          },
+        },
+      },
+    });
+    const user = userEvent.setup();
+    renderAt("/loans/10/lend");
+
+    await screen.findByRole("heading", { level: 1, name: "Lend to Ben" });
+    await user.selectOptions(screen.getByLabelText("Cash account"), "1");
+    await user.type(screen.getByLabelText("Amount (THB)"), "500");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    const dateInput = screen.getByLabelText("Date");
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(dateInput).toHaveAttribute("aria-invalid", "true");
+    expect(dateInput).toHaveClass("is-invalid");
+    expect(screen.getByText("Use a date from 2000 to 2099.")).toBeInTheDocument();
   });
 });

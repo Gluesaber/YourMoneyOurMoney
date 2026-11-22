@@ -26,6 +26,10 @@ export const transactionQuerySchema = z
       .optional()
       .transform((s) => (s ? s : undefined)),
     sort: z.enum(SORT_VALUES).default("date_desc"),
+    favorite: z
+      .enum(["true"])
+      .transform(() => true as const)
+      .optional(),
   })
   .superRefine((val, ctx) => {
     if (val.startDate && val.endDate && val.startDate > val.endDate) {
@@ -64,6 +68,9 @@ export function toWhere(query: TransactionQuery, userId: number): Prisma.Transac
   }
   if (query.q !== undefined) {
     where.note = { contains: escapeLike(query.q), mode: "insensitive" };
+  }
+  if (query.favorite) {
+    where.isFavorite = true;
   }
   return where;
 }
