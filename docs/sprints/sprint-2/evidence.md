@@ -74,5 +74,4 @@ Deploy demo run, Cloud Run revision and the post-deploy check of a critical jour
 
 ## 7. Known limitations
 
-See `integration.md` §6: the two overdraft AC wait for L7-01; E2E is local only (not in CI) and Chromium-only; manual
-cross-checks for Sprint 2 not yet recorded.
+See `integration.md` §6: the two overdraft AC wait for L7-01; E2E is local only (not in CI) and Chromium-only; no separate local manual click-through pass was run before release (pre-release coverage comes from E2E, client component tests, server tests, and peer PR reviews, with manual verification combined into the post-deploy live demo check on the deployed URL).
