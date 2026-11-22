@@ -1,6 +1,6 @@
 # F-07 — Internal Account Transfers (Sprint 2 contract)
 
-> **Status:** v0.3 — reviewed in #66; revised for implementation in S2-03 (#68) before any F-07 code (§10).
+> **Status:** v0.4 — reviewed in #66; v0.3 implemented in #74 (S2-03, #68); v0.4 from the #74 review (§10).
 > **Requirements:** FR-TX-03, FR-SUM-03 · BR-01, BR-02, BR-03, BR-04, BR-08, BR-09, BR-10, BR-11, BR-13, BR-14
 > **Depends on:** F-04 (transaction save path), F-05 (balances/summary), F-06 (creating a second CASH account),
 > L7-01 / BR-14 (no Cash overdraft). BR-14 is still awaiting TA approval (#64), so the overdraft case of a transfer
@@ -74,7 +74,8 @@ No schema change.
   has at least two active CASH accounts (otherwise a hint "Add a second cash account to transfer").
 - **Transfer form (`/transfers/new`)**: *From* (active CASH accounts, with current balance), *To* (active CASH
   accounts except From), *Amount (THB)*, *Date* (default today), optional *Note*. Save disabled until From, To,
-  a valid amount and a date are set and From ≠ To. Server errors appear in the alert above the form, values kept.
+  a valid amount and a date are set and From ≠ To. Server errors appear in the alert above the form, values kept;
+  a server field error on `date` also marks the Date field invalid with that message (same as the F-03/F-04 forms, #60).
   On success → `/transactions/:id`.
 - History list and detail page label transfers "Transfer: <from> → <to>" in the direction the money moved (§2).
 
@@ -87,7 +88,7 @@ No schema change.
 | AC-TX-15 | *Moved to L7-01 (#64) in v0.3.* Transferring more than the From balance → 400 `INSUFFICIENT_FUNDS`, nothing saved; exactly the balance → 201 and From = 0.00. A transfer is a PAYMENT from a CASH account, so this is the BR-14 rule itself; L7-01 tests it with a Bank → Wallet transfer. |
 | AC-TX-16 | From = To → 400 `VALIDATION_ERROR`; To = bob's Wallet → 404 and nothing saved; ADMIN → 403; anonymous → 401. |
 | AC-TX-17 | History and detail show the transfer as "Transfer: Bank → Wallet"; a RECEIVE into Bank with a Wallet line shows "Transfer: Wallet → Bank"; a normal payment is not labelled a transfer. |
-| AC-TX-18 | In the UI the Transfer form offers only active CASH accounts, excludes From from To, and keeps Save disabled until the form is complete. |
+| AC-TX-18 | In the UI the Transfer form offers only active CASH accounts, excludes From from To, and keeps Save disabled until the form is complete; a server error on `date` marks the Date field invalid with the server's message. |
 | AC-TX-19 | E2E: alice creates Wallet (F-06), transfers 2,000.00 from Bank and the dashboard shows both new balances. |
 
 ## 7. Software test specification
@@ -101,6 +102,7 @@ No schema change.
 | T-TRF-UNIT-01 | Unit (client) | `isTransfer` / `transferLabel` for PAYMENT Bank→Wallet, RECEIVE into Bank with Wallet line, PAYMENT Bank→Dining, PAYMENT Card→Bank, mixed CASH+EXPENSE lines | "Transfer: Bank → Wallet", "Transfer: Wallet → Bank", not a transfer ×3 | AC-TX-17 |
 | T-TRF-UI-01 | Component | form with Bank, Wallet, Card, Dining | From/To list only Bank, Wallet; To excludes From; Save disabled until complete; sends the §3 body | AC-TX-18 |
 | T-TRF-UI-02 | Component | server replies 400 `ACCOUNT_ARCHIVED` (any server rule error) | alert shows the message; values kept | AC-TX-18 |
+| T-TRF-UI-03 | Component | server replies 400 `VALIDATION_ERROR` with `fieldErrors.date` | Date field `aria-invalid` with the server message under it | AC-TX-18 |
 | T-HST-UI-04 | Component | history with a transfer and a payment | only the transfer row labelled "Transfer: Bank → Wallet" | AC-TX-17 |
 | T-TX-E2E-02 | E2E | alice: create Wallet, transfer 2,000.00 | dashboard Bank 36,500.00, Wallet 2,000.00; income/expense unchanged | AC-TX-19 |
 
@@ -122,7 +124,7 @@ T-TX-E2E-02, which need the new form and labels.
 
 ## 9. Definition of Done
 
-- [ ] T-TX-API-11, 12, 14 pass (`npm --prefix server test`); T-TRF-UNIT-01, T-TRF-UI-01/02, T-HST-UI-04 pass (`npm --prefix client test`); T-TX-E2E-02 passes
+- [ ] T-TX-API-11, 12, 14 pass (`npm --prefix server test`); T-TRF-UNIT-01, T-TRF-UI-01…03, T-HST-UI-04 pass (`npm --prefix client test`); T-TX-E2E-02 passes
 - [ ] Each client test seen failing before the implementation (RED commit before GREEN); server tests recorded as passing before and after (§7 note)
 - [ ] Lint, format, type check pass; existing regression green
 - [ ] SRS FR-TX-03 / FR-SUM-03, `features.md` F-07 status, `traceability.md` rows updated
@@ -134,4 +136,5 @@ T-TX-E2E-02, which need the new form and labels.
 |---|---|---|---|---|
 | 0.1 | 2026-11-21 | `b6e700a` | #66 / S2-01 (#65) | First draft for review |
 | 0.2 | 2026-11-22 | `14571a7` | #66 review (Jirawat) | Transfer label follows the money for RECEIVE (line → source); AC-TX-16 / T-TX-API-14 add ADMIN 403 and anonymous 401; T-TRF-UNIT-01 adds the RECEIVE case |
-| 0.3 | 2026-11-22 | — | S2-03 (#68), before code | AC-TX-15 / T-TX-API-13 moved to L7-01 (#64) because BR-14 is not yet approved; T-TRF-UI-02 uses an existing server error (`ACCOUNT_ARCHIVED`) and maps to AC-TX-18; §7 note that the server tests pass before F-07 code; DoD updated |
+| 0.3 | 2026-11-22 | `ca95736` | #74 / S2-03 (#68), before code | AC-TX-15 / T-TX-API-13 moved to L7-01 (#64) because BR-14 is not yet approved; T-TRF-UI-02 uses an existing server error (`ACCOUNT_ARCHIVED`) and maps to AC-TX-18; §7 note that the server tests pass before F-07 code; DoD updated |
+| 0.4 | 2026-11-22 | — | #74 review follow-up (S2-03) | §5 and AC-TX-18: a server `date` field error marks the Date field invalid (#60 pattern); T-TRF-UI-03 added |

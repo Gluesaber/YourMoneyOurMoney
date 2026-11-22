@@ -1,6 +1,6 @@
 # F-06 — Custom Account & Category Management (Sprint 2 contract)
 
-> **Status:** v0.1 draft for review. Merged before any F-06 code.
+> **Status:** v0.4 — v0.2 reviewed in #66; implemented in #73 (S2-02, #67); v0.4 from the #73 review (§10).
 > **Requirements:** FR-ACC-02, FR-ACC-03, FR-ACC-04, FR-ACC-06 · BR-03, BR-04, BR-12 · new BR-15, BR-16
 > **Builds on:** F-03 (accounts, opening balances), `docs/system-sds.md` §3 (data model), §4 (balances), §5 (API).
 > **Written against:** BR-14 (Lab 7 L7-01, no Cash overdraft) — assumes L7-01 is merged first.
@@ -57,7 +57,7 @@ PATCH  /api/accounts/:id/archive { archived: boolean }             → 200 { acc
 DELETE /api/accounts/:id                                           → 204
 GET    /api/accounts            (unchanged order, F-03 §3)         → 200 { accounts: Account[] }
 
-Account = F-03 shape + "archived": boolean
+Account = F-03 shape + "archived": boolean + "inUse": boolean   // inUse: a source or line of any transaction (R5, R9)
 Errors: 400 VALIDATION_ERROR | INVALID_ACCOUNT_TYPE | CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS |
         ACCOUNT_NOT_EMPTY · 409 ACCOUNT_NAME_TAKEN | ACCOUNT_IN_USE · 401 · 403 · 404
 POST /api/transactions gains: 400 ACCOUNT_ARCHIVED
@@ -80,7 +80,8 @@ Balances, income/expense totals: unchanged rules (system-sds §4.1); archived ac
 
 - **Accounts page (`/accounts`)**, linked from the dashboard: table of accounts grouped by type, with balance,
   Archived badge, and actions Rename / Change type (hidden once used) / Archive or Unarchive / Delete (only when
-  unused). Server errors appear in an alert.
+  unused). "Used" comes from `inUse` in `GET /api/accounts`; the server still enforces R5 and R9. While an action is
+  saving, that row's buttons are disabled. Server errors appear in an alert.
 - **New account form**: Name, Type, Subtype (options depend on type). Save → back to `/accounts`.
 - **Transaction form** (`TransactionFormPage.tsx`): archived accounts are not offered in source/line selects.
 - **Dashboard**: archived accounts with balance 0 are hidden; summary totals unchanged.
@@ -100,6 +101,7 @@ Balances, income/expense totals: unchanged rules (system-sds §4.1); archived ac
 | AC-ACC-20 | When she deletes an unused account, 204 and it is gone; a used account → 409 `ACCOUNT_IN_USE` and it remains. |
 | AC-ACC-21 | Any F-06 route on bob's account or a missing id → 404 and bob's account unchanged; anonymous 401; ADMIN 403. |
 | AC-ACC-22 | Through the UI alice creates "Wallet", sees it on the dashboard, and can pick it as a payment source. |
+| AC-ACC-23 | `GET /api/accounts` reports `inUse` for every account (false until it is a source or a line). On the Accounts page a used account offers no Delete and no type change, an unused one offers both, and a row's buttons are disabled while its action is saving. |
 
 ## 7. Software test specification
 
@@ -118,6 +120,8 @@ Balances, income/expense totals: unchanged rules (system-sds §4.1); archived ac
 | T-ACC-API-20 | API (table) | alice on bob's account for every F-06 route; id 999999 / `abc`; anon; admin | 404 / 404 / 401 / 403; bob unchanged | AC-ACC-21 |
 | T-ACC-DB-01 | DB | insert case-only duplicate name directly | unique-index violation | AC-ACC-15 |
 | T-ACC-UI-04 | Component | new-account form: type EXPENSE hides subtype; server 409 | subtype hidden; alert shows message | AC-ACC-14, 15 |
+| T-ACC-API-21 | API | `resetDb()`; Wallet created; GET; record PAYMENT Card → Dining; GET | every account has `inUse`; Wallet, Dining, Card false then Dining and Card true, Wallet still false | AC-ACC-23 |
+| T-ACC-UI-05 | Component | Accounts page with one used and one unused account; slow archive request | used: no Delete, edit row has no Type select; unused: both; row buttons disabled until the request ends | AC-ACC-23 |
 | T-ACC-E2E-02 | E2E | alice creates Wallet, records PAYMENT from Wallet after funding it | Wallet on dashboard with the right balance | AC-ACC-22 |
 
 Regression kept: all T-ACC-API-01…10, T-TX-API-*, T-SUM-*, access suite T-ADM-API-04 (now including F-06 routes).
@@ -135,7 +139,7 @@ Regression kept: all T-ACC-API-01…10, T-TX-API-*, T-SUM-*, access suite T-ADM-
 
 ## 9. Definition of Done
 
-- [ ] T-ACC-UNIT-01, T-ACC-API-11…20, T-ACC-DB-01 pass (`npm --prefix server test`); T-ACC-UI-04 passes (`npm --prefix client test`); T-ACC-E2E-02 passes
+- [ ] T-ACC-UNIT-01, T-ACC-API-11…21, T-ACC-DB-01 pass (`npm --prefix server test`); T-ACC-UI-04, T-ACC-UI-05 pass (`npm --prefix client test`); T-ACC-E2E-02 passes
 - [ ] Each rule test seen failing before implementation (RED commit before GREEN)
 - [ ] Migration applies cleanly on a copy of the current data (`prisma migrate deploy`) and through the Lab 5 pipeline
 - [ ] Lint, format, type check pass; existing regression green
@@ -147,5 +151,6 @@ Regression kept: all T-ACC-API-01…10, T-TX-API-*, T-SUM-*, access suite T-ADM-
 | Version | Date | Commit | PR / Issue | Change |
 |---|---|---|---|---|
 | 0.1 | 2026-11-21 | `b6e700a` | #66 / S2-01 (#65) | First draft for review |
-| 0.2 | 2026-11-22 | — | #66 review (Jirawat) | Test ID T-ACC-UI-03 → T-ACC-UI-04 (03 exists, #60); R7 also blocks opening-balance changes on archived accounts; R4 type change without `subtype` resets it to null; AC-ACC-14 states the 100-account limit; T-ACC-API-13 and T-ACC-API-18 extended |
-| 0.3 | 2026-11-22 | — | #67 (S2-02) implementation | §4: the case-insensitive index is added alongside `@@unique([userId, name])` instead of replacing it |
+| 0.2 | 2026-11-22 | `14571a7` | #66 review (Jirawat) | Test ID T-ACC-UI-03 → T-ACC-UI-04 (03 exists, #60); R7 also blocks opening-balance changes on archived accounts; R4 type change without `subtype` resets it to null; AC-ACC-14 states the 100-account limit; T-ACC-API-13 and T-ACC-API-18 extended |
+| 0.3 | 2026-11-22 | `97ab00d` | #73 / S2-02 (#67) implementation | §4: the case-insensitive index is added alongside `@@unique([userId, name])` instead of replacing it |
+| 0.4 | 2026-11-22 | — | #73 review follow-up (S2-02) | §3 adds `inUse` to every account so the Accounts page can hide Delete and type change for used accounts as §5 already required; §5 row buttons disabled while saving; AC-ACC-23, T-ACC-API-21, T-ACC-UI-05 added |
