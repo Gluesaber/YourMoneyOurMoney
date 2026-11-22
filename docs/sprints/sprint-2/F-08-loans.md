@@ -1,8 +1,8 @@
 # F-08 — Debt & Receivable Lifecycle: Lending and Borrowing (Sprint 2 contract)
 
-> **Status:** v0.1 draft for review. Merged before any F-08 code.
+> **Status:** v0.3 — reviewed in #66; revised for implementation in S2-04 (#69) before any F-08 code (§10).
 > **Requirements:** FR-TX-09, FR-ACC-02, FR-TX-01, FR-TX-02, FR-SUM-01 · BR-01, BR-02, BR-03, BR-04, BR-08, BR-09, BR-10, BR-12, BR-13, BR-14
-> **Depends on:** F-04, F-05, F-06 (creating LOAN_GIVEN / personal LOAN_TAKEN accounts), L7-01 / BR-14.
+> **Depends on:** F-04, F-05, F-06 (creating LOAN_GIVEN / personal LOAN_TAKEN accounts), L7-01 / BR-14. BR-14 is still awaiting TA approval (#64), so the overdraft case (`AC-DEBT-03` / `T-DEBT-API-03`) is verified in L7-01, not in this feature (v0.3).
 > **IDs:** `AC-DEBT-01…`, `T-DEBT-API-01…` as reserved in `docs/traceability.md`.
 
 ## 1. Behaviour
@@ -38,7 +38,7 @@ No new server rule. The existing F-04 steps apply:
 |---|---|---|
 | Cash side is a CASH account of the user; loan side is LOAN_GIVEN / LOAN_TAKEN of the user | BR-04, BR-09, BR-10 | 404 / 400 `INVALID_ACCOUNT_TYPE` |
 | Amount integer satang 1 … 2,147,483,647 | BR-02, BR-03 | 400 `VALIDATION_ERROR` |
-| Lend / Repay must not overdraw the Cash account | BR-14 | 400 `INSUFFICIENT_FUNDS` |
+| Lend / Repay must not overdraw the Cash account | BR-14 (enforced and tested by L7-01, #64) | 400 `INSUFFICIENT_FUNDS` once L7-01 is released |
 | Archived accounts cannot be used | F-06 R7 | 400 `ACCOUNT_ARCHIVED` |
 | Saved all-or-nothing; never income or expense | BR-13, BR-08 | — |
 
@@ -88,7 +88,7 @@ record a loan that existed before the user started.
 |---|---|
 | AC-DEBT-01 | Lending 5,000.00 from Bank to Ben → 201; Bank −5,000.00, Ben outstanding 5,000.00; income and expense totals unchanged. |
 | AC-DEBT-02 | Ben repaying 2,000.00 into Bank → Bank +2,000.00, Ben 3,000.00; borrowing 10,000.00 from Mom → Bank +10,000.00, Mom 10,000.00; repaying Mom 10,000.00 → Mom 0.00. Income/expense unchanged throughout. |
-| AC-DEBT-03 | Lending or repaying more than the Cash balance → 400 `INSUFFICIENT_FUNDS`, nothing saved. |
+| AC-DEBT-03 | *Moved to L7-01 (#64) in v0.3.* Lending or repaying more than the Cash balance → 400 `INSUFFICIENT_FUNDS`, nothing saved. |
 | AC-DEBT-04 | Using bob's loan account or a non-loan line (e.g. Dining in "Get repaid") → 404 / 400 `INVALID_ACCOUNT_TYPE`; ADMIN 403; anonymous 401. |
 | AC-DEBT-05 | The Loans page lists each loan account with the outstanding amounts from `GET /api/summary`, and labels credit cards using `subtype` from `GET /api/accounts`. |
 | AC-DEBT-06 | Repaying more than outstanding shows a warning before sending; after confirming, the loan shows the overpaid amount. |
@@ -100,14 +100,16 @@ record a loan that existed before the user started.
 |---|---|---|---|---|
 | T-DEBT-API-01 | API | demo journey; create Ben (LOAN_GIVEN); lend 500,000; Ben repays 200,000 | 201 ×2; accounts Bank 3,550,000, Ben 300,000; summary totals unchanged | AC-DEBT-01, 02 |
 | T-DEBT-API-02 | API | create Mom (LOAN_TAKEN, no subtype); borrow 1,000,000; repay 1,000,000 | Bank +/−, Mom 1,000,000 then 0; `loansTaken` lists Mom; totals unchanged | AC-DEBT-02 |
-| T-DEBT-API-03 | API | Bank 0; lend 1 | 400 `INSUFFICIENT_FUNDS`; counts unchanged | AC-DEBT-03 |
+| T-DEBT-API-03 | API | *Moved to L7-01 (#64) in v0.3.* Bank 0; lend 1 | 400 `INSUFFICIENT_FUNDS`; counts unchanged | AC-DEBT-03 |
 | T-DEBT-API-04 | API | bob's Ben as line; "Get repaid" with Dining line; admin; anonymous | 404; 400 `INVALID_ACCOUNT_TYPE`; 403; 401 | AC-DEBT-04 |
 | T-DEBT-UNIT-01 | Unit (client) | `loanActionToTransaction` for each of the 4 actions | kind/source/line exactly as §1 table | AC-DEBT-01, 02 |
 | T-DEBT-UI-01 | Component | Loans page with mocked `GET /api/summary` (Ben 300,000, Mom 0, Credit Card 150,000) and `GET /api/accounts` (Credit Card `subtype` CREDIT_CARD, Mom `subtype` null) | both tables, values, only Credit Card labelled as a card | AC-DEBT-05 |
 | T-DEBT-UI-02 | Component | "Get repaid" form for Ben (`/loans/:id/repaid`), outstanding 300,000, amount 3,500.00 | warning shown; nothing sent until confirmed | AC-DEBT-06 |
 | T-DEBT-E2E-01 | E2E | as AC-DEBT-07 | Ben 3,000.00, Bank 35,500.00 | AC-DEBT-07 |
 
-Regression kept: T-TX-*, T-FUND-*, T-SUM-* (loans sections), access suite, demo-journey E2E.
+Regression kept: T-TX-*, T-ACC-* (F-06), T-SUM-* (loans sections), access suite, demo-journey E2E.
+
+**Note on TDD (v0.3):** F-08 changes no server code — `POST /api/transactions` and `GET /api/summary` already support `LOAN_GIVEN` and `LOAN_TAKEN`. `T-DEBT-API-01`, `02`, and `04` therefore pass before F-08 code and guard server behaviour, while the RED evidence comes from the client tests (`T-DEBT-UNIT-01`, `T-DEBT-UI-01/02`) and `T-DEBT-E2E-01`.
 
 ## 8. Decisions made in this contract (to confirm in review)
 
@@ -120,8 +122,8 @@ Regression kept: T-TX-*, T-FUND-*, T-SUM-* (loans sections), access suite, demo-
 
 ## 9. Definition of Done
 
-- [ ] T-DEBT-API-01…04 pass (`npm --prefix server test`); T-DEBT-UNIT-01, T-DEBT-UI-01/02 pass (`npm --prefix client test`); T-DEBT-E2E-01 passes
-- [ ] Each test seen failing before the implementation (RED commit before GREEN)
+- [ ] T-DEBT-API-01, 02, 04 pass (`npm --prefix server test`); T-DEBT-UNIT-01, T-DEBT-UI-01/02 pass (`npm --prefix client test`); T-DEBT-E2E-01 passes
+- [ ] Each client test seen failing before the implementation (RED commit before GREEN); server tests recorded as passing before and after (§7 note)
 - [ ] Lint, format, type check pass; existing regression green
 - [ ] SRS FR-TX-09, `features.md` F-08 status, `traceability.md` rows updated
 - [ ] PR into `Sprint-2/staging` reviewed and approved by the teammate
@@ -131,4 +133,5 @@ Regression kept: T-TX-*, T-FUND-*, T-SUM-* (loans sections), access suite, demo-
 | Version | Date | Commit | PR / Issue | Change |
 |---|---|---|---|---|
 | 0.1 | 2026-11-21 | `b6e700a` | #66 / S2-01 (#65) | First draft for review |
-| 0.2 | 2026-11-22 | — | #66 review (Jirawat) | Credit-card label uses `subtype` from `GET /api/accounts` (summary has none); AC-DEBT-05 and T-DEBT-UI-01 updated; T-DEBT-UI-02 uses the "Get repaid" action for Ben (LOAN_GIVEN) |
+| 0.2 | 2026-11-22 | `14571a7` | #66 review (Jirawat) | Credit-card label uses `subtype` from `GET /api/accounts` (summary has none); AC-DEBT-05 and T-DEBT-UI-01 updated; T-DEBT-UI-02 uses the "Get repaid" action for Ben (LOAN_GIVEN) |
+| 0.3 | 2026-11-22 | — | S2-04 (#69), before code | AC-DEBT-03 / T-DEBT-API-03 moved to L7-01 (#64) because BR-14 is awaiting TA approval; §7 note that server API tests pass before F-08 code; DoD updated |

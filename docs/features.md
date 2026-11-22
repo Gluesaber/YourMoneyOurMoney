@@ -21,7 +21,7 @@ This document provides a comprehensive inventory of all product features across 
 | **F-05** | Financial Summary & Transaction History | **Sprint 1** | Track B | In Progress | Real-time balances, debt tracking, category totals, history list |
 | **F-06** | Custom Account & Category Management | **Sprint 2** | Track B (Harit) | Implemented (S2-02, #67) | Create, edit, archive and delete custom accounts and categories |
 | **F-07** | Internal Account Transfers | **Sprint 2** | Track B (Harit) | Implemented (S2-03, #68) | Dedicated UI for inter-account cash transfers |
-| **F-08** | Debt & Receivable Lifecycle (Lending & Borrowing) | **Sprint 2** | Decided at sprint planning | Planned | Loan given / loan taken tracking, repayments, outstanding debts |
+| **F-08** | Debt & Receivable Lifecycle (Lending & Borrowing) | **Sprint 2** | Track A (Jirawat) | Implemented (S2-04, #69); overdraft case verified with L7-01 (#64) | Loan given / loan taken tracking, repayments, outstanding debts |
 | **F-09** | Transaction Search, Filtering & Sorting | **Sprint 2** | Decided at sprint planning | Planned | Date range filtering, category search, keyword matching (`q`) |
 | **F-10** | Favorite & Duplicate Transactions | **Sprint 2** | Decided at sprint planning | Planned | Quick re-entry, star and view favorite transactions, clone records |
 | **F-11** | Financial Reports & Periodic Spending Summaries | **Sprint 3** | Decided at sprint planning | Planned | Monthly income vs expense & category reports (brief), plus visual charts `[Added by Team]` (DL-09) |
@@ -192,21 +192,21 @@ This document provides a comprehensive inventory of all product features across 
 
 ### F-08: Debt & Receivable Lifecycle (Lending & Borrowing)
 - **Target Sprint:** Sprint 2
-- **Track Owner:** Decided at sprint planning
-- **Status:** Planned
+- **Track Owner:** Track A (Jirawat)
+- **Status:** Implemented (S2-04, #69); overdraft case verified with L7-01 (#64)
 - **User Story:**  
   *As a personal user, I want to log loans I have extended to friends (receivables) and loans I have borrowed (debts), and log partial or full repayments, so that I can keep track of outstanding personal balances.*
 - **Detailed Capabilities:**
   - Support `LOAN_GIVEN` accounts for tracking money lent to others.
-  - Support non-credit-card `LOAN_TAKEN` accounts for tracking personal borrowing.
-  - Record lending payments (increases `LOAN_GIVEN` receivable).
-  - Record borrowing receives (increases `LOAN_TAKEN` liability and `CASH` holding).
-  - Record debt repayments received or made, reducing outstanding balances without affecting income or expense totals (BR-08).
+  - Support `LOAN_TAKEN` accounts (labelling credit cards via `subtype` from `GET /api/accounts`).
+  - Record lending payments (`PAYMENT` from Cash, `LOAN_GIVEN` line), borrowing receives (`RECEIVE` into Cash, `LOAN_TAKEN` line), and repayments via guided `/loans/:id/:action` forms.
+  - Show over-repayment confirmation warnings in the UI before submitting repayments exceeding the outstanding amount, and display negative balances cleanly.
+  - Ensure all loan movements are excluded from income/expense summaries (BR-08) and respect archived account guards (BR-16).
 - **Mapped FRs:** FR-TX-09, FR-ACC-02, FR-TX-01, FR-TX-02, FR-SUM-01.
-- **Mapped BRs:** BR-01, BR-02, BR-03, BR-04, BR-08, BR-09, BR-10, BR-12, BR-13.
-- **API Endpoints:** `GET /api/summary` (loansGiven & loansTaken sections), `POST /api/transactions`.
-- **UI Components:** `LoansOverviewPage`, `LendingRepaymentModal`.
-- **Dependencies:** F-04, F-05.
+- **Mapped BRs:** BR-01, BR-02, BR-03, BR-04, BR-08, BR-09, BR-10, BR-12, BR-13, BR-16.
+- **API Endpoints:** `GET /api/summary` (`loansGiven` & `loansTaken`), `GET /api/accounts`, `POST /api/transactions`.
+- **UI Components:** `LoansPage`, `LoanActionPage`, `loanActionToTransaction` (`client/src/lib/loans.ts`).
+- **Dependencies:** F-04, F-05, F-06.
 
 ---
 

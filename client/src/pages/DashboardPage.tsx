@@ -27,6 +27,9 @@ export function DashboardPage() {
           <Link className="btn btn-outline-secondary" to="/accounts">
             Accounts
           </Link>
+          <Link className="btn btn-outline-secondary" to="/loans">
+            Loans
+          </Link>
           <Link className="btn btn-outline-secondary" to="/transactions">
             History
           </Link>
