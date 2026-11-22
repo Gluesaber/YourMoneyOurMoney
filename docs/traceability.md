@@ -29,7 +29,7 @@ note (`client/src/pages/TransactionDetailPage.tsx`) now uses `text-break` so 200
 the `640px` container without horizontal overflow (`NFR-COMP-02`). New test T-HST-UI-03 (`T-HST-UI-02` remains
 reserved for Sprint 2 F-09). Client 72 / 72, lint · format · types clean.
 
-**Sprint 2 F-06 (#67, 2026-11-22)** on `Issue-67` (RED tests first at `9dc8bf6`, base `Sprint-2/staging` @ `abc1ee5`):
+**Sprint 2 F-06 (S2-02 #67, 2026-11-22)** on `Issue-S2-02` (RED tests first at `9dc8bf6`, base `Sprint-2/staging` @ `abc1ee5`):
 account create / edit / archive / delete, migration `add_account_archived_at`, BR-15 and BR-16. RED: server 20 failed /
 186 passed, client 1 failed / 72 passed. GREEN: server 227 / 227, client 73 / 73, E2E 8 / 8, lint · format · types
 clean. T-ACC-API-01 and T-ACC-API-03 now also expect `archived: false` (F-06 §3 adds the field). T-ACC-API-20
