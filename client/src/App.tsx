@@ -9,6 +9,7 @@ import { OpeningBalancePage } from "./pages/OpeningBalancePage.js";
 import { AccountsPage } from "./pages/AccountsPage.js";
 import { NewAccountPage } from "./pages/NewAccountPage.js";
 import { TransactionFormPage } from "./pages/TransactionFormPage.js";
+import { TransferFormPage } from "./pages/TransferFormPage.js";
 import { TransactionsPage } from "./pages/TransactionsPage.js";
 import { TransactionDetailPage } from "./pages/TransactionDetailPage.js";
 import { AdminUsersPage } from "./pages/AdminUsersPage.js";
@@ -39,6 +40,7 @@ export function AppRoutes() {
         <Route path="accounts/:id/opening-balance" element={<UserOnly page={<OpeningBalancePage />} />} />
         <Route path="transactions" element={<UserOnly page={<TransactionsPage />} />} />
         <Route path="transactions/new" element={<UserOnly page={<TransactionFormPage />} />} />
+        <Route path="transfers/new" element={<UserOnly page={<TransferFormPage />} />} />
         <Route path="transactions/:id" element={<UserOnly page={<TransactionDetailPage />} />} />
 
         {/* Track A (ADMIN) */}

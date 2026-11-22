@@ -1,7 +1,8 @@
 import { Link, useParams } from "react-router-dom";
 import { ApiError } from "../api/client.js";
-import { getTransaction } from "../api/finance.js";
+import { getAccounts, getTransaction } from "../api/finance.js";
 import { Amount, ErrorAlert, Loading, useLoad } from "../components/Feedback.js";
+import { accountTypesOf, transferLabel } from "../lib/transactions.js";
 import { KIND_LABEL } from "./TransactionsPage.js";
 
 // F-05 §5 Transaction detail — docs/sprints/sprint-1/F-05-summary-history.md. Another user's, a missing
@@ -9,6 +10,8 @@ import { KIND_LABEL } from "./TransactionsPage.js";
 export function TransactionDetailPage() {
   const { id = "" } = useParams();
   const { data: t, error } = useLoad(() => getTransaction(id), [id]);
+  // F-07: a transfer is headed "Transfer: From → To"; without account types it falls back to the kind.
+  const { data: accounts } = useLoad(getAccounts);
 
   if (error instanceof ApiError && error.status === 404) {
     return (
@@ -23,7 +26,7 @@ export function TransactionDetailPage() {
 
   return (
     <section style={{ maxWidth: 640 }}>
-      <h1 className="h3">{KIND_LABEL[t.kind]}</h1>
+      <h1 className="h3">{transferLabel(t, accountTypesOf(accounts)) ?? KIND_LABEL[t.kind]}</h1>
       <dl className="row">
         <dt className="col-sm-4">Date</dt>
         <dd className="col-sm-8">{t.date}</dd>
