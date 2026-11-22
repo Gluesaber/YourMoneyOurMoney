@@ -1,9 +1,10 @@
 # F-07 — Internal Account Transfers (Sprint 2 contract)
 
-> **Status:** v0.1 draft for review. Merged before any F-07 code.
+> **Status:** v0.3 — reviewed in #66; revised for implementation in S2-03 (#68) before any F-07 code (§10).
 > **Requirements:** FR-TX-03, FR-SUM-03 · BR-01, BR-02, BR-03, BR-04, BR-08, BR-09, BR-10, BR-11, BR-13, BR-14
 > **Depends on:** F-04 (transaction save path), F-05 (balances/summary), F-06 (creating a second CASH account),
-> L7-01 / BR-14 (no Cash overdraft — merged first).
+> L7-01 / BR-14 (no Cash overdraft). BR-14 is still awaiting TA approval (#64), so the overdraft case of a transfer
+> (AC-TX-15) is verified in L7-01, not in this feature (v0.3).
 > **IDs:** uses the `AC-TX-13…` / `T-TX-API-11…` range already reserved for F-07 in `docs/traceability.md`.
 
 ## 1. Behaviour
@@ -33,7 +34,7 @@ All checks are the existing F-04 steps; F-07 adds no new server rule.
 | "To" is a CASH account of the user | BR-04, BR-10 | 404 / (UI only offers CASH) |
 | From ≠ to | BR-11 | 400 `VALIDATION_ERROR` |
 | Amount integer satang 1 … 2,147,483,647; one line equal to the total | BR-01, BR-02, BR-03 | 400 `VALIDATION_ERROR` / `ALLOCATION_MISMATCH` |
-| "From" balance after transfer ≥ 0 | BR-14 | 400 `INSUFFICIENT_FUNDS` |
+| "From" balance after transfer ≥ 0 | BR-14 (enforced and tested by L7-01, #64) | 400 `INSUFFICIENT_FUNDS` once L7-01 is released |
 | Archived account cannot be used | F-06 R7 | 400 `ACCOUNT_ARCHIVED` |
 | Never income or expense | BR-08 | (computed; summary unchanged) |
 | Saved all-or-nothing | BR-13 | nothing saved on any error |
@@ -47,7 +48,7 @@ with a Wallet line is "Transfer: Wallet → Bank".
 
 | Piece | Location |
 |---|---|
-| Server rules | unchanged: `validateTransaction`, `checkCashFunds` (`ledger.ts`), `transactions.routes.ts` |
+| Server rules | unchanged: `validateTransaction` (`ledger.ts`), `transactions.routes.ts` (F-06 archived check); `checkCashFunds` arrives with L7-01 |
 | `isTransfer(transaction, accountsById)`, `transferLabel(transaction, accountsById)` | `client/src/lib/transactions.ts` (pure, unit-tested) |
 | Transfer form | `client/src/pages/TransferFormPage.tsx` (new), route `/transfers/new` |
 
@@ -83,7 +84,7 @@ No schema change.
 |---|---|
 | AC-TX-13 | Given alice has Bank 38,500.00 and Wallet 0.00, when she transfers 2,000.00 Bank → Wallet, then 201, Bank 36,500.00, Wallet 2,000.00. |
 | AC-TX-14 | After any transfer, summary income and expense totals and every category total are unchanged (BR-08). |
-| AC-TX-15 | Transferring more than the From balance → 400 `INSUFFICIENT_FUNDS`, nothing saved; exactly the balance → 201 and From = 0.00. |
+| AC-TX-15 | *Moved to L7-01 (#64) in v0.3.* Transferring more than the From balance → 400 `INSUFFICIENT_FUNDS`, nothing saved; exactly the balance → 201 and From = 0.00. A transfer is a PAYMENT from a CASH account, so this is the BR-14 rule itself; L7-01 tests it with a Bank → Wallet transfer. |
 | AC-TX-16 | From = To → 400 `VALIDATION_ERROR`; To = bob's Wallet → 404 and nothing saved; ADMIN → 403; anonymous → 401. |
 | AC-TX-17 | History and detail show the transfer as "Transfer: Bank → Wallet"; a RECEIVE into Bank with a Wallet line shows "Transfer: Wallet → Bank"; a normal payment is not labelled a transfer. |
 | AC-TX-18 | In the UI the Transfer form offers only active CASH accounts, excludes From from To, and keeps Save disabled until the form is complete. |
@@ -95,15 +96,20 @@ No schema change.
 |---|---|---|---|---|
 | T-TX-API-11 | API | demo journey; create Wallet (CASH/WALLET); transfer 200,000 Bank → Wallet | 201; `GET /api/accounts` Bank 3,650,000, Wallet 200,000 | AC-TX-13 |
 | T-TX-API-12 | API | as above; `GET /api/summary` before/after | `totals` and `income`/`expense` lists equal | AC-TX-14 |
-| T-TX-API-13 | API | Wallet 200,000; transfer Wallet → Bank 200,001, then 200,000 | 400 `INSUFFICIENT_FUNDS`, counts unchanged; 201, Wallet 0 | AC-TX-15 |
+| T-TX-API-13 | API | *Moved to L7-01 (#64) in v0.3.* Wallet 200,000; transfer Wallet → Bank 200,001, then 200,000 | 400 `INSUFFICIENT_FUNDS`, counts unchanged; 201, Wallet 0 | AC-TX-15 |
 | T-TX-API-14 | API | Bank → Bank; Bank → bob's Wallet; the §3 transfer body as admin and with no session | 400 `VALIDATION_ERROR`; 404, counts unchanged; 403; 401 | AC-TX-16 |
 | T-TRF-UNIT-01 | Unit (client) | `isTransfer` / `transferLabel` for PAYMENT Bank→Wallet, RECEIVE into Bank with Wallet line, PAYMENT Bank→Dining, PAYMENT Card→Bank, mixed CASH+EXPENSE lines | "Transfer: Bank → Wallet", "Transfer: Wallet → Bank", not a transfer ×3 | AC-TX-17 |
 | T-TRF-UI-01 | Component | form with Bank, Wallet, Card, Dining | From/To list only Bank, Wallet; To excludes From; Save disabled until complete; sends the §3 body | AC-TX-18 |
-| T-TRF-UI-02 | Component | server replies `INSUFFICIENT_FUNDS` | alert shows the message; values kept | AC-TX-15 |
+| T-TRF-UI-02 | Component | server replies 400 `ACCOUNT_ARCHIVED` (any server rule error) | alert shows the message; values kept | AC-TX-18 |
 | T-HST-UI-04 | Component | history with a transfer and a payment | only the transfer row labelled "Transfer: Bank → Wallet" | AC-TX-17 |
 | T-TX-E2E-02 | E2E | alice: create Wallet, transfer 2,000.00 | dashboard Bank 36,500.00, Wallet 2,000.00; income/expense unchanged | AC-TX-19 |
 
-Regression kept: T-TX-*, T-FUND-*, T-SUM-*, access suite, demo-journey E2E.
+Regression kept: T-TX-*, T-ACC-* (F-06), T-SUM-*, access suite, demo-journey E2E.
+
+**Note on TDD (v0.3):** F-07 changes no server code — `POST /api/transactions` has accepted CASH lines since Sprint 1.
+T-TX-API-11, 12 and 14 therefore pass before the F-07 code; they confirm the API already supports transfers and guard
+that behaviour. The RED evidence for F-07 comes from the client tests (T-TRF-UNIT-01, T-TRF-UI-01/02, T-HST-UI-04) and
+T-TX-E2E-02, which need the new form and labels.
 
 ## 8. Decisions made in this contract (to confirm in review)
 
@@ -116,8 +122,8 @@ Regression kept: T-TX-*, T-FUND-*, T-SUM-*, access suite, demo-journey E2E.
 
 ## 9. Definition of Done
 
-- [ ] T-TX-API-11…14 pass (`npm --prefix server test`); T-TRF-UNIT-01, T-TRF-UI-01/02, T-HST-UI-04 pass (`npm --prefix client test`); T-TX-E2E-02 passes
-- [ ] Each test seen failing before the implementation (RED commit before GREEN)
+- [ ] T-TX-API-11, 12, 14 pass (`npm --prefix server test`); T-TRF-UNIT-01, T-TRF-UI-01/02, T-HST-UI-04 pass (`npm --prefix client test`); T-TX-E2E-02 passes
+- [ ] Each client test seen failing before the implementation (RED commit before GREEN); server tests recorded as passing before and after (§7 note)
 - [ ] Lint, format, type check pass; existing regression green
 - [ ] SRS FR-TX-03 / FR-SUM-03, `features.md` F-07 status, `traceability.md` rows updated
 - [ ] PR into `Sprint-2/staging` reviewed and approved by Jirawat
@@ -127,4 +133,5 @@ Regression kept: T-TX-*, T-FUND-*, T-SUM-*, access suite, demo-journey E2E.
 | Version | Date | Commit | PR / Issue | Change |
 |---|---|---|---|---|
 | 0.1 | 2026-11-21 | `b6e700a` | #66 / S2-01 (#65) | First draft for review |
-| 0.2 | 2026-11-22 | — | #66 review (Jirawat) | Transfer label follows the money for RECEIVE (line → source); AC-TX-16 / T-TX-API-14 add ADMIN 403 and anonymous 401; T-TRF-UNIT-01 adds the RECEIVE case |
+| 0.2 | 2026-11-22 | `14571a7` | #66 review (Jirawat) | Transfer label follows the money for RECEIVE (line → source); AC-TX-16 / T-TX-API-14 add ADMIN 403 and anonymous 401; T-TRF-UNIT-01 adds the RECEIVE case |
+| 0.3 | 2026-11-22 | — | S2-03 (#68), before code | AC-TX-15 / T-TX-API-13 moved to L7-01 (#64) because BR-14 is not yet approved; T-TRF-UI-02 uses an existing server error (`ACCOUNT_ARCHIVED`) and maps to AC-TX-18; §7 note that the server tests pass before F-07 code; DoD updated |
