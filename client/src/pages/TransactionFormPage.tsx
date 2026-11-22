@@ -60,8 +60,10 @@ function TransactionForm({ kind, accounts }: { kind: TransactionKind; accounts: 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
-  const sources = accounts.filter((a) => SOURCE_TYPES[kind].includes(a.type));
-  const lineAccounts = accounts.filter((a) => LINE_TYPES[kind].includes(a.type) && String(a.id) !== sourceId);
+  // F-06 R7: archived accounts take no new transactions, so they are not offered.
+  const active = accounts.filter((a) => !a.archived);
+  const sources = active.filter((a) => SOURCE_TYPES[kind].includes(a.type));
+  const lineAccounts = active.filter((a) => LINE_TYPES[kind].includes(a.type) && String(a.id) !== sourceId);
 
   // The server checks the 2000–2099 range; its field message is shown under the Date input (#60).
   const dateError = fieldErrorsOf(error).date?.[0];

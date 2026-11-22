@@ -69,8 +69,10 @@ New error codes added to `server/src/lib/errors.ts` and `system-sds.md` §5.1: `
 ## 4. Data
 
 Migration `add_account_archived_at`: `Account.archivedAt DateTime?` (null = active). No data change for existing
-rows (all active). Case-insensitive uniqueness (R3): unique index on `(userId, lower(name))` replacing
-`@@unique([userId, name])` — check existing data has no case-only duplicates first (seeded names don't).
+rows (all active). Case-insensitive uniqueness (R3): unique index `Account_userId_lower_name_key` on `(userId, lower(name))`,
+hand-written in the migration (Prisma cannot declare an expression index), **added alongside** the existing
+`@@unique([userId, name])` — keeping the exact index leaves Prisma's `userId_name` lookups (seed, test helpers)
+working. Existing data has no case-only duplicates (seeded names don't).
 Delete (R9) is also backed by the existing `onDelete: Restrict` foreign keys from Transaction / TransactionLine.
 Balances, income/expense totals: unchanged rules (system-sds §4.1); archived accounts still count.
 
@@ -146,3 +148,4 @@ Regression kept: all T-ACC-API-01…10, T-TX-API-*, T-SUM-*, access suite T-ADM-
 |---|---|---|---|---|
 | 0.1 | 2026-11-21 | `b6e700a` | #66 / S2-01 (#65) | First draft for review |
 | 0.2 | 2026-11-22 | — | #66 review (Jirawat) | Test ID T-ACC-UI-03 → T-ACC-UI-04 (03 exists, #60); R7 also blocks opening-balance changes on archived accounts; R4 type change without `subtype` resets it to null; AC-ACC-14 states the 100-account limit; T-ACC-API-13 and T-ACC-API-18 extended |
+| 0.3 | 2026-11-22 | — | #67 (S2-02) implementation | §4: the case-insensitive index is added alongside `@@unique([userId, name])` instead of replacing it |

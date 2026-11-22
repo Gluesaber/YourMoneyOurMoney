@@ -49,6 +49,9 @@ transactionsRouter.post(
     if (accounts.length !== ids.length) {
       throw new AppError(404, ErrorCode.NOT_FOUND, "Account not found.");
     }
+    // F-06 R7 (BR-16): an archived account takes no new transactions. Runs after ownership, before
+    // the type checks, so another user's archived account is still a plain 404.
+    assertNotArchived(body, new Map(accounts.map((a) => [a.id, a])));
 
     // Steps 3–6.
     validateTransaction(body, new Map(accounts.map((a) => [a.id, a])));
@@ -75,6 +78,30 @@ transactionsRouter.post(
     res.status(201).json({ transaction: await loadTransaction(userId, created) });
   }),
 );
+
+function assertNotArchived(
+  body: { sourceAccountId: number; lines: { accountId: number }[] },
+  accountsById: Map<number, { id: number; name: string; archivedAt: Date | null }>,
+) {
+  const archived = (id: number) => accountsById.get(id)!.archivedAt !== null;
+  const message = (id: number) =>
+    `${accountsById.get(id)!.name} is archived. Unarchive it or choose another account.`;
+  if (archived(body.sourceAccountId)) {
+    throw new AppError(400, ErrorCode.ACCOUNT_ARCHIVED, message(body.sourceAccountId), {
+      field: "sourceAccountId",
+      accountId: body.sourceAccountId,
+    });
+  }
+  const lineIndex = body.lines.findIndex((l) => archived(l.accountId));
+  if (lineIndex !== -1) {
+    const accountId = body.lines[lineIndex].accountId;
+    throw new AppError(400, ErrorCode.ACCOUNT_ARCHIVED, message(accountId), {
+      field: "lines",
+      lineIndex,
+      accountId,
+    });
+  }
+}
 
 // FR-HST-01: the user's transactions, newest date first, then highest id first. No pagination in Sprint 1.
 transactionsRouter.get(

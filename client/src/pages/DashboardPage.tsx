@@ -18,6 +18,9 @@ export function DashboardPage() {
           <Link className="btn btn-outline-primary" to="/transactions/new?kind=RECEIVE">
             Record money received
           </Link>
+          <Link className="btn btn-outline-secondary" to="/accounts">
+            Accounts
+          </Link>
           <Link className="btn btn-outline-secondary" to="/transactions">
             History
           </Link>
