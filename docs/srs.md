@@ -352,8 +352,9 @@ Sprint 1; BR-15 and BR-16 were added by F-06 in Sprint 2 (#67). BR-14 is reserve
 #### FR-TX-09: Debt and Loan Lifecycle Tracking (Sprint 2)
 - **Description:** A User can track loans extended to others (`LOAN_GIVEN`) and debts owed (`LOAN_TAKEN`), logging lending outflows, borrowing inflows, and partial or full repayments that adjust outstanding balances without affecting income or expense totals.
 - **Actor:** User.
-- **Business Rules:** BR-01, BR-02, BR-03, BR-04, BR-08, BR-09, BR-10, BR-12, BR-13.
-- **Target Sprint:** Sprint 2.
+- **Business Rules:** BR-01, BR-02, BR-03, BR-04, BR-08, BR-09, BR-10, BR-12, BR-13, BR-16.
+- **User interface (F-08):** The **Loans** page (`/loans`) reads `GET /api/summary` and `GET /api/accounts` (for `subtype` and `archived`), listing `LOAN_GIVEN` ("Money you lent") and `LOAN_TAKEN` ("Money you owe", labelling credit cards via `subtype === "CREDIT_CARD"`) with guided action forms at `/loans/:id/lend|repaid|borrow|repay` (`loanActionToTransaction` → existing `PAYMENT` / `RECEIVE` on `POST /api/transactions`). Repaying more than outstanding triggers a confirmation warning (`overpaid` / `owes you` shown when negative). Contract: `docs/sprints/sprint-2/F-08-loans.md`.
+- **Target Sprint:** Sprint 2 (Feature F-08). The overdraft case (lending/repaying more than the Cash balance) belongs to BR-14 and is verified by L7-01 (#64).
 
 #### FR-TX-10: Transaction Modification and Voiding (Sprint 3)
 - **Description:** A User can edit transaction metadata and allocation lines (`PUT /api/transactions/:id`) or void/delete a transaction (`DELETE /api/transactions/:id`) with atomic balance recalculation and validation rollback.

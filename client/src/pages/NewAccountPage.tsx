@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ALLOWED_SUBTYPES, createAccount, type AccountSubtype, type AccountType } from "../api/finance.js";
 import { ErrorAlert } from "../components/Feedback.js";
 import { SUBTYPE_LABEL, TYPE_LABEL } from "../lib/accountLabels.js";
@@ -9,8 +9,11 @@ const TYPES: AccountType[] = ["CASH", "LOAN_TAKEN", "LOAN_GIVEN", "INCOME", "EXP
 
 export function NewAccountPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const typeParam = searchParams.get("type") as AccountType | null;
+  const initialType: AccountType = typeParam && TYPES.includes(typeParam) ? typeParam : "EXPENSE";
   const [name, setName] = useState("");
-  const [type, setType] = useState<AccountType>("EXPENSE");
+  const [type, setType] = useState<AccountType>(initialType);
   const [subtype, setSubtype] = useState<AccountSubtype | "">("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<unknown>(null);

@@ -12,6 +12,8 @@ import { TransactionFormPage } from "./pages/TransactionFormPage.js";
 import { TransferFormPage } from "./pages/TransferFormPage.js";
 import { TransactionsPage } from "./pages/TransactionsPage.js";
 import { TransactionDetailPage } from "./pages/TransactionDetailPage.js";
+import { LoansPage } from "./pages/LoansPage.js";
+import { LoanActionPage } from "./pages/LoanActionPage.js";
 import { AdminUsersPage } from "./pages/AdminUsersPage.js";
 import { NotFoundPage } from "./pages/NotFoundPage.js";
 
@@ -41,6 +43,8 @@ export function AppRoutes() {
         <Route path="transactions" element={<UserOnly page={<TransactionsPage />} />} />
         <Route path="transactions/new" element={<UserOnly page={<TransactionFormPage />} />} />
         <Route path="transfers/new" element={<UserOnly page={<TransferFormPage />} />} />
+        <Route path="loans" element={<UserOnly page={<LoansPage />} />} />
+        <Route path="loans/:id/:action" element={<UserOnly page={<LoanActionPage />} />} />
         <Route path="transactions/:id" element={<UserOnly page={<TransactionDetailPage />} />} />
 
         {/* Track A (ADMIN) */}
