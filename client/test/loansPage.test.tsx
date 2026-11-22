@@ -7,8 +7,8 @@ import { SEEDED_ACCOUNTS, mockApi, renderAt } from "./renderApp.js";
 // F-08 §5 & §7 T-DEBT-UI-01, T-DEBT-UI-02 — docs/sprints/sprint-2/F-08-loans.md.
 afterEach(() => vi.unstubAllGlobals());
 
-const BANK: Account = { ...SEEDED_ACCOUNTS[0], balance: 3_850_000, archived: false };
-const CREDIT_CARD: Account = { ...SEEDED_ACCOUNTS[1], balance: 150_000, archived: false };
+const BANK = { ...(SEEDED_ACCOUNTS[0] as Account), balance: 3_850_000, archived: false };
+const CREDIT_CARD = { ...(SEEDED_ACCOUNTS[1] as Account), balance: 150_000, archived: false };
 const BEN: Account = {
   id: 10,
   name: "Ben",
@@ -212,5 +212,11 @@ describe("LoanActionPage (T-DEBT-UI-02)", () => {
     // Credit Card is LOAN_TAKEN, so /loans/2/lend is invalid
     renderAt("/loans/2/lend");
     expect(await screen.findByText(/cannot be used for this loan action/i)).toBeInTheDocument();
+  });
+
+  it("preselects the loan type when navigating to /accounts/new?type=LOAN_GIVEN", async () => {
+    mockApi({});
+    renderAt("/accounts/new?type=LOAN_GIVEN");
+    expect(await screen.findByLabelText("Type")).toHaveValue("LOAN_GIVEN");
   });
 });
