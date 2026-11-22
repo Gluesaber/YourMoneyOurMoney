@@ -167,6 +167,18 @@ export function TransactionFilterBar(props: {
         >
           This year
         </button>
+        <div className="form-check form-check-inline align-self-center ms-2">
+          <input
+            id="hst-favorite"
+            type="checkbox"
+            className="form-check-input"
+            checked={Boolean(props.filters.favorite)}
+            onChange={(e) => update({ favorite: e.target.checked })}
+          />
+          <label htmlFor="hst-favorite" className="form-check-label small">
+            Favorites only
+          </label>
+        </div>
         <button type="button" className="btn btn-sm btn-outline-danger ms-auto" onClick={handleClear}>
           Clear
         </button>

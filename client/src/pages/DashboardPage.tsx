@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { getSummary, type Summary } from "../api/finance.js";
+import { FavoritesCard } from "../components/FavoritesCard.js";
 import { Amount, ErrorAlert, Loading, useLoad } from "../components/Feedback.js";
 
 // F-05 §5 Dashboard — docs/sprints/sprint-1/F-05-summary-history.md. Numbers come straight from
@@ -44,6 +45,7 @@ export function DashboardPage() {
       <ErrorAlert error={error} />
       {!summary && !error && <Loading />}
       {summary && <SummaryView summary={summary} />}
+      {summary && <FavoritesCard />}
     </section>
   );
 }
