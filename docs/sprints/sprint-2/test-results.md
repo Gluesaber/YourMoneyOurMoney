@@ -1,7 +1,6 @@
 # Sprint 2 — Build and Test Results (S2-07)
 
-> **Run:** 2026-11-22, 23:41 (UTC+7) · **Code commit:** `a8d6b06` (`Sprint-2/staging` after PR #78, the last code
-> change of Sprint 2). S2-07 changes documentation only, so the Sprint 2 release on `main` contains this same code.
+> **Run:** 2026-11-22, 23:41 (UTC+7) on `a8d6b06`; pre-release re-verification on `1cf4ccc` (2026-11-23, 00:38–00:47 UTC+7; same code as `a8d6b06`, S2-07 changes documentation only).
 > **Environment:** Windows 11 Pro, Node.js 25.8.0, PostgreSQL 16.14 (Docker, `localhost:5434`), Playwright 1.64.1
 > with Chromium.
 
@@ -9,13 +8,14 @@
 
 | Check | Command | Passed | Failed | Skipped | Result |
 |---|---|---|---|---|---|
-| Server unit + API/DB (Vitest + Supertest) | `npm --prefix server test` | 265 | 0 | 0 | Pass (23 files, 63.0 s) |
-| Client component (Vitest + React Testing Library) | `npm --prefix client test` | 110 | 0 | 0 | Pass (18 files, 9.6 s) |
-| End-to-end (Playwright, Chromium, 1 worker) | `npm run test:e2e` | 12 | 0 | 0 | Pass (42.8 s) |
+| Server unit + API/DB (Vitest + Supertest) | `npm --prefix server test` | 265 | 0 | 0 | Pass (23 files, 343.45 s on `1cf4ccc`) |
+| Client component (Vitest + React Testing Library) | `npm --prefix client test` | 110 | 0 | 0 | Pass (18 files, 36.40 s on `1cf4ccc`) |
+| End-to-end (Playwright, Chromium, 1 worker) | `npm run test:e2e` | 12 | 0 | 0 | Pass (1.6 m on `1cf4ccc`) |
 | Lint (ESLint) | `npm run lint` | — | — | — | No problems |
 | Format (Prettier) | `npm run format:check` | — | — | — | All files formatted |
 | Types | `npm --prefix server run typecheck`, `npm --prefix client run typecheck` | — | — | — | No errors |
 | Client production build | `npm --prefix client run build` | — | — | — | Built |
+| Local Docker production image | `docker compose --profile app up --build -d` | — | — | — | Built `ymom:local`; `migrate` Exited (0); `/api/health`, `/api/ready`, `/` → 200 |
 
 **Total automated tests: 387 passed, 0 failed, 0 skipped** (Sprint 1 release: 259). No test is marked `skip`,
 `todo`, `only` or `fails`. CI (`test-and-docker`) runs the server and client suites, lint, format, types and the

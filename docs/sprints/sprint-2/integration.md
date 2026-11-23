@@ -43,8 +43,14 @@ Where a Sprint 2 feature touches older behaviour, shared data or another Sprint 
 
 ## 4. Manual cross-checks (each member checks the other's features)
 
-Not yet recorded. Planned before the release PR is approved: Harit runs F-08, F-09 and F-10 in the UI, Jirawat runs
-F-06 and F-07, each on the dev database, noting date, steps and result here.
+No separate local manual click-through pass was performed before the release PR. Pre-release UI and behaviour verification is covered by:
+
+- **Playwright E2E (`12 / 12`):** end-to-end flows across F-06…F-10 plus the Sprint 1 continuity journey (`demo-journey.spec.ts`), BR-01 rejection, and BR-04 / BR-05 access control.
+- **Client component tests (`110 / 110`):** UI details not exercised individually in E2E, including archive badges, hidden delete and type controls for `inUse` accounts, form/API error alerts, and Transfer form option labels.
+- **Server unit and API/DB tests (`265 / 265`):** business rules, persistence, migrations, and route access control.
+- **Peer PR reviews (#66, #73–#79):** cross-checked contracts, code, and test coverage between Harit and Jirawat.
+
+Manual verification is combined with the **post-deploy live demo check** on the deployed Cloud Run URL after `Sprint-2/staging → main` merges: both members run two Sprint 2 workflows plus the Sprint 1 continuity journey on the live app (showing saved data/persistence, a rule rejection, and forbidden access), with captioned screenshots and results recorded in `evidence.md` §6 and the Deliverable 2 PDF. If any issue is found on the live deployment, roll back to `0731479`.
 
 ## 5. Changes made during integration
 
@@ -68,4 +74,4 @@ top. `Sprint-2/staging` was reset to `c09f4ad` with `--force-with-lease`, the tw
 | AC-FAV-04: the insufficient-funds case of a duplicate | The UI shows any server error (T-FAV-UI-02); the server rule itself arrives with L7-01 |
 | E2E is not part of CI | E2E is run locally before each release; recorded in `test-results.md` |
 | E2E is Chromium-only; no performance measurement | Carried over from Sprint 1 |
-| Manual cross-checks (§4) | Not yet recorded |
+| Manual cross-checks (§4) | No separate local manual pass before release; covered pre-release by E2E (12/12), client component tests (110/110), server tests (265/265), and PR reviews (#66, #73–#79), and completed via the post-deploy live demo check on the deployed URL |
