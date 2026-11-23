@@ -1,8 +1,8 @@
 # Sprint 2 — Deliverable 2 Evidence and Index
 
 > Source for the Sprint 2 parts of the Deliverable 2 PDF and an index of where they live in the repository.
-> **Code tested:** `Sprint-2/staging` @ `a8d6b06` (see `test-results.md`) · **Sprint 2 release on `main`:** recorded in
-> §6 after the release PR (S2-07, #72) · Times are Asia/Bangkok (UTC+7).
+> **Code tested:** `Sprint-2/staging` @ `a8d6b06` (see `test-results.md`) · **Sprint 2 release on `main`:**
+> `v0.2.0` (`cd90cb6`), deployed as `ymom-00008-5rn` (§6) · Times are Asia/Bangkok (UTC+7).
 
 ## 1. Index (Deliverable 2 parts covered by Sprint 2)
 
@@ -15,7 +15,7 @@
 
 ## 2. Sprint 2 completion table
 
-All results are from the run on `a8d6b06` (`test-results.md`). "Release" is filled in §6 once `main` is released.
+All results are from the run on `a8d6b06` (`test-results.md`), repeated on `1cf4ccc`; released as `v0.2.0` (§6).
 
 | Feature | AC | Implementation | Executed verification | Result |
 |---|---|---|---|---|
@@ -58,7 +58,7 @@ the feature code; their RED evidence is in the client and E2E tests, as each con
 | Review | Approved; non-blocking notes (hide Delete / type for used accounts, busy buttons, row order) fixed in #76 | Changes requested (E2E wrongly credited to CI, traceability status, contract header) → fixed in `c46fd8d` → approved |
 | CI | `test-and-docker` pass | `test-and-docker` pass |
 | Staging | PR #73 → `c09f4ad`, 22 Nov 19:05 | PR #77 → `2d9ce7c`, 22 Nov 22:59 |
-| Release | §6 | §6 |
+| Release | `v0.2.0` (`cd90cb6`, PR #81) | `v0.2.0` (`cd90cb6`, PR #81) |
 
 ## 5. Contribution
 
@@ -69,8 +69,38 @@ the feature code; their RED evidence is in the client and E2E tests, as each con
 
 ## 6. Sprint 2 release
 
-Filled in after the release PR `Sprint-2/staging → main` (S2-07, #72): release PR, merge commit on `main`, tag, CI run,
-Deploy demo run, Cloud Run revision and the post-deploy check of a critical journey and persistence.
+| Item | Value |
+|---|---|
+| Release PR | #81 `Sprint-2/staging → main` (author Jirawat Rachatapramet, approved by Harit Chaiyanukit 23 Nov 11:16), head `1ee552e` |
+| CI on the release PR | `test-and-docker` run 45110474481 — pass |
+| Release commit on `main` | `cd90cb6` (merged 23 Nov 2026, 11:16) |
+| Tag / GitHub release | `v0.2.0` → `cd90cb6`, "v0.2.0 — Sprint 2" published 23 Nov 11:50 (Latest) |
+| Deploy demo run | 45110841675 — success (11:16 → 11:20): tests + Docker build, image push, migration job, deploy, smoke test |
+| Migration | Cloud Run job execution `ymom-migrate-9w8bj` completed; applied `20261122120000_add_account_archived_at` |
+| Cloud Run revision | `ymom-00008-5rn`, 100 % of traffic (previous `ymom-00007-pkv`, rollback target `0731479`) |
+| Image | `asia-southeast1-docker.pkg.dev/cpe334-yourmoneymymoney/ymom/ymom@sha256:297a96e3…812e` |
+| Smoke test | `/api/health`, `/api/ready`, `/` PASS; optional login check skipped (no smoke credentials configured) |
+| Pre-release gate | `1cf4ccc` (same code as `1ee552e`): server 265, client 110, E2E 12, lint · format · types · build clean; local upgrade check from the live schema passed (`test-results.md`) |
+
+### 6.1 Post-deploy live check (manual)
+
+Run on the live URL `https://ymom-ck76twbqbq-as.a.run.app`, revision `ymom-00008-5rn`, 23 Nov 2026 11:28–11:45, by Harit
+Chaiyanukit with the shared synthetic demo users. All passed. Screenshot IDs refer to the Deliverable 2 evidence set.
+
+| ID | Check | Role | Expected | Actual |
+|---|---|---|---|---|
+| S2-LIVE-01 | Sprint 1 continuity: dashboard, record money received Bank ← Salary 100.00 | alice | Bank and total income each up 100.00 | Bank 92,979.99 → 93,079.99; income 90,500.00 → 90,600.00 |
+| S2-LIVE-02 | F-06: create Cash/Wallet account "Wallet D2" | alice | Listed with 0.00 | As expected |
+| S2-LIVE-03 | F-07: transfer 50.00 Bank → Wallet D2 | alice | "Transfer: Bank → Wallet D2"; Bank −50.00, Wallet D2 50.00; income / expense unchanged | Bank 93,029.99, Wallet D2 50.00; income 90,600.00, expense 7,520.01 unchanged |
+| S2-LIVE-04 | Saved data retrieved: History and Accounts reloaded from the server | alice | Transfer listed and labelled; balances kept | As expected (11:35 → 11:40) |
+| S2-LIVE-05 | F-09: filter History by Wallet D2 (`?accountId=17`), then Clear | alice | Only the transfer; Clear restores all | As expected |
+| S2-LIVE-06 | Rule rejection: create account "bank" | alice | 409 alert "You already have an account named bank." | As expected |
+| S2-LIVE-07 | Rule rejection: archive Wallet D2 holding 50.00 | alice | Alert "Only an account with a balance of 0 can be archived." | As expected |
+| S2-LIVE-08 | Ownership: alice's transaction 20 opened as bob (UI and `/api/transactions/20`) | bob | "Transaction not found"; API `NOT_FOUND` | As expected |
+| S2-LIVE-09 | Admin denied financial data: `/api/accounts` | admin | API `FORBIDDEN` | As expected |
+
+Also visible on the live Accounts page: accounts already used (Bank, Wallet D2, Credit Card) show no Delete button
+(F-06 v0.4, #76).
 
 ## 7. Known limitations
 
