@@ -13,6 +13,18 @@ export interface Account {
   openingBalance: number;
   openingDate: string | null;
   balance: number;
+  // F-06: an archived account keeps its history but takes no new transactions. Absent = active.
+  archived?: boolean;
+  // F-06 v0.4: the account is the source or a line of a transaction, so it cannot be deleted or change type.
+  inUse?: boolean;
+}
+
+export type AccountSubtype = NonNullable<Account["subtype"]>;
+
+export interface AccountInput {
+  name: string;
+  type: AccountType;
+  subtype: AccountSubtype | null;
 }
 
 export interface Transaction {
@@ -61,6 +73,15 @@ export const LINE_TYPES: Record<TransactionKind, AccountType[]> = {
 // BR-12.
 export const OPENING_BALANCE_TYPES: AccountType[] = ["CASH", "LOAN_TAKEN", "LOAN_GIVEN"];
 
+// F-06 R4: the subtypes each type may have (mirrors server/src/services/accounts.ts).
+export const ALLOWED_SUBTYPES: Record<AccountType, AccountSubtype[]> = {
+  CASH: ["BANK", "WALLET"],
+  LOAN_TAKEN: ["CREDIT_CARD"],
+  LOAN_GIVEN: [],
+  INCOME: [],
+  EXPENSE: [],
+};
+
 export async function getAccounts(): Promise<Account[]> {
   return (await api<{ accounts: Account[] }>("/api/accounts")).accounts;
 }
@@ -81,8 +102,55 @@ export function getSummary(): Promise<Summary> {
   return api<Summary>("/api/summary");
 }
 
-export async function getTransactions(): Promise<Transaction[]> {
-  return (await api<{ transactions: Transaction[] }>("/api/transactions")).transactions;
+export type TransactionSort = "date_desc" | "date_asc" | "amount_desc" | "amount_asc";
+
+export interface TransactionFilters {
+  startDate?: string;
+  endDate?: string;
+  accountId?: string;
+  kind?: TransactionKind | "";
+  q?: string;
+  sort?: TransactionSort;
+  favorite?: boolean;
+}
+
+export interface TransactionListResult {
+  transactions: Transaction[];
+  truncated: boolean;
+}
+
+// Serializes active F-09 / F-10 filters; empty fields and default `date_desc` sort are omitted so
+// unfiltered calls request plain `/api/transactions`.
+export function buildTransactionQueryString(filters: TransactionFilters = {}): string {
+  const params = new URLSearchParams();
+  if (filters.startDate) params.set("startDate", filters.startDate);
+  if (filters.endDate) params.set("endDate", filters.endDate);
+  if (filters.accountId) params.set("accountId", filters.accountId);
+  if (filters.kind) params.set("kind", filters.kind);
+  if (filters.q?.trim()) params.set("q", filters.q.trim());
+  if (filters.sort && filters.sort !== "date_desc") params.set("sort", filters.sort);
+  if (filters.favorite) params.set("favorite", "true");
+  return params.toString();
+}
+
+export async function setTransactionFavorite(id: number, isFavorite: boolean): Promise<Transaction> {
+  const res = await api<{ transaction: Transaction }>(`/api/transactions/${id}/favorite`, {
+    method: "PATCH",
+    body: JSON.stringify({ isFavorite }),
+  });
+  return res.transaction;
+}
+
+export async function getTransactionList(filters: TransactionFilters = {}): Promise<TransactionListResult> {
+  const qs = buildTransactionQueryString(filters);
+  const res = await api<{ transactions: Transaction[]; truncated?: boolean }>(
+    qs ? `/api/transactions?${qs}` : "/api/transactions",
+  );
+  return { transactions: res.transactions, truncated: Boolean(res.truncated) };
+}
+
+export async function getTransactions(filters: TransactionFilters = {}): Promise<Transaction[]> {
+  return (await getTransactionList(filters)).transactions;
 }
 
 export async function getTransaction(id: string): Promise<Transaction> {
@@ -95,4 +163,33 @@ export async function createTransaction(input: NewTransaction): Promise<Transact
     body: JSON.stringify(input),
   });
   return res.transaction;
+}
+
+// F-06 Custom account & category management — docs/sprints/sprint-2/F-06-account-management.md §3.
+export async function createAccount(input: AccountInput): Promise<Account> {
+  const res = await api<{ account: Account }>("/api/accounts", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return res.account;
+}
+
+export async function updateAccount(id: number, changes: Partial<AccountInput>): Promise<Account> {
+  const res = await api<{ account: Account }>(`/api/accounts/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(changes),
+  });
+  return res.account;
+}
+
+export async function setArchived(id: number, archived: boolean): Promise<Account> {
+  const res = await api<{ account: Account }>(`/api/accounts/${id}/archive`, {
+    method: "PATCH",
+    body: JSON.stringify({ archived }),
+  });
+  return res.account;
+}
+
+export async function deleteAccount(id: number): Promise<void> {
+  await api<void>(`/api/accounts/${id}`, { method: "DELETE" });
 }

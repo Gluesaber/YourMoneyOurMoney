@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { getSummary, type Summary } from "../api/finance.js";
+import { FavoritesCard } from "../components/FavoritesCard.js";
 import { Amount, ErrorAlert, Loading, useLoad } from "../components/Feedback.js";
 
 // F-05 §5 Dashboard — docs/sprints/sprint-1/F-05-summary-history.md. Numbers come straight from
@@ -18,15 +19,33 @@ export function DashboardPage() {
           <Link className="btn btn-outline-primary" to="/transactions/new?kind=RECEIVE">
             Record money received
           </Link>
+          {/* F-07 §5: a transfer needs two active cash accounts (summary.cash lists exactly those). */}
+          {summary && summary.cash.length >= 2 && (
+            <Link className="btn btn-outline-primary" to="/transfers/new">
+              Transfer
+            </Link>
+          )}
+          <Link className="btn btn-outline-secondary" to="/accounts">
+            Accounts
+          </Link>
+          <Link className="btn btn-outline-secondary" to="/loans">
+            Loans
+          </Link>
           <Link className="btn btn-outline-secondary" to="/transactions">
             History
           </Link>
         </div>
       </div>
 
+      {summary && summary.cash.length === 1 && (
+        <p className="small text-body-secondary">
+          Add a second cash account to transfer between them (<Link to="/accounts/new">new account</Link>).
+        </p>
+      )}
       <ErrorAlert error={error} />
       {!summary && !error && <Loading />}
       {summary && <SummaryView summary={summary} />}
+      {summary && <FavoritesCard />}
     </section>
   );
 }

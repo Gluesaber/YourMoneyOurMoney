@@ -56,12 +56,16 @@ model Account {
   // Satang. Only CASH, LOAN_TAKEN and LOAN_GIVEN may be non-zero (BR-12). Never counted as income (BR-08).
   openingBalance Int             @default(0)
   openingDate    DateTime?       @db.Date
+  // F-06: null = active. An archived account keeps its history but takes no new transactions (BR-16).
+  archivedAt     DateTime?
   createdAt      DateTime        @default(now())
 
   user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   sourceTransactions Transaction[]
   lines              TransactionLine[]
 
+  // Exact-name uniqueness. Case-insensitive uniqueness (F-06 R3) is the functional index
+  // "Account_userId_lower_name_key" in migration add_account_archived_at, which Prisma cannot declare.
   @@unique([userId, name])
   // Target of the composite foreign keys below, so a transaction or line can only use the owner's accounts.
   @@unique([id, userId])

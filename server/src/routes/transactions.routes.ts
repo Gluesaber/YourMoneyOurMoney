@@ -4,6 +4,7 @@ import { getPrisma } from "../prisma.js";
 import { AppError, ErrorCode } from "../lib/errors.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { MAX_INT, calendarDate, fromDateOnly, parseId, toDateOnly } from "../lib/validation.js";
+import { MAX_TRANSACTION_ROWS, parseTransactionQuery, toOrderBy, toWhere } from "../lib/transactionQuery.js";
 import { requireRole, requireUser } from "../middleware/auth.js";
 import { validateTransaction } from "../services/ledger.js";
 
@@ -49,6 +50,9 @@ transactionsRouter.post(
     if (accounts.length !== ids.length) {
       throw new AppError(404, ErrorCode.NOT_FOUND, "Account not found.");
     }
+    // F-06 R7 (BR-16): an archived account takes no new transactions. Runs after ownership, before
+    // the type checks, so another user's archived account is still a plain 404.
+    assertNotArchived(body, new Map(accounts.map((a) => [a.id, a])));
 
     // Steps 3–6.
     validateTransaction(body, new Map(accounts.map((a) => [a.id, a])));
@@ -76,16 +80,44 @@ transactionsRouter.post(
   }),
 );
 
-// FR-HST-01: the user's transactions, newest date first, then highest id first. No pagination in Sprint 1.
+function assertNotArchived(
+  body: { sourceAccountId: number; lines: { accountId: number }[] },
+  accountsById: Map<number, { id: number; name: string; archivedAt: Date | null }>,
+) {
+  const archived = (id: number) => accountsById.get(id)!.archivedAt !== null;
+  const message = (id: number) =>
+    `${accountsById.get(id)!.name} is archived. Unarchive it or choose another account.`;
+  if (archived(body.sourceAccountId)) {
+    throw new AppError(400, ErrorCode.ACCOUNT_ARCHIVED, message(body.sourceAccountId), {
+      field: "sourceAccountId",
+      accountId: body.sourceAccountId,
+    });
+  }
+  const lineIndex = body.lines.findIndex((l) => archived(l.accountId));
+  if (lineIndex !== -1) {
+    const accountId = body.lines[lineIndex].accountId;
+    throw new AppError(400, ErrorCode.ACCOUNT_ARCHIVED, message(accountId), {
+      field: "lines",
+      lineIndex,
+      accountId,
+    });
+  }
+}
+
+// FR-HST-01 / FR-HST-03: filtered & sorted user transactions, capped at MAX_TRANSACTION_ROWS (F-09 R6).
 transactionsRouter.get(
   "/",
   asyncHandler(async (req, res) => {
+    const query = parseTransactionQuery(req.query);
     const rows = await getPrisma().transaction.findMany({
-      where: { userId: req.user!.id },
-      orderBy: [{ date: "desc" }, { id: "desc" }],
+      where: toWhere(query, req.user!.id),
+      orderBy: toOrderBy(query.sort),
+      take: MAX_TRANSACTION_ROWS + 1,
       include: transactionInclude,
     });
-    res.json({ transactions: rows.map(toTransactionResponse) });
+    const truncated = rows.length > MAX_TRANSACTION_ROWS;
+    const shown = truncated ? rows.slice(0, MAX_TRANSACTION_ROWS) : rows;
+    res.json({ transactions: shown.map(toTransactionResponse), truncated });
   }),
 );
 
@@ -95,6 +127,24 @@ transactionsRouter.get(
   asyncHandler(async (req, res) => {
     const id = parseId(req.params.id);
     if (id === null) throw new AppError(404, ErrorCode.NOT_FOUND, "Transaction not found.");
+    res.json({ transaction: await loadTransaction(req.user!.id, id) });
+  }),
+);
+
+// F-10 R1..R5: star or unstar a transaction owned by the current user; idempotent and never alters balances.
+const favoriteBody = z.object({ isFavorite: z.boolean() }).strict();
+
+transactionsRouter.patch(
+  "/:id/favorite",
+  asyncHandler(async (req, res) => {
+    const id = parseId(req.params.id);
+    if (id === null) throw new AppError(404, ErrorCode.NOT_FOUND, "Transaction not found.");
+    const body = favoriteBody.parse(req.body);
+    const updated = await getPrisma().transaction.updateMany({
+      where: { id, userId: req.user!.id },
+      data: { isFavorite: body.isFavorite },
+    });
+    if (updated.count === 0) throw new AppError(404, ErrorCode.NOT_FOUND, "Transaction not found.");
     res.json({ transaction: await loadTransaction(req.user!.id, id) });
   }),
 );

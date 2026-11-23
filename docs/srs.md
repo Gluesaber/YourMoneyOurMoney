@@ -1,8 +1,8 @@
 # YourMoneyOurMoney — Software Requirements Specification (SRS)
 
-> **Document Version:** 1.0.0  
-> **Date:** 2026-11-04  
-> **Status:** Draft  
+> **Document Version:** 1.2.0  
+> **Date:** 2026-11-22  
+> **Status:** Baseline with approved revisions: Sprint 1 accepted (`v0.1.0`); Sprint 2 FRs (FR-ACC-06, FR-TX-03, FR-TX-07…09, FR-HST-03) and BR-15/16 implemented (S2-07); BR-14 pending TA approval (L7-01, #64)  
 > **Project Theme:** Theme 7 — Personal Money and Expense Logging (CPE 334)  
 > **Authors:** Track A (Identity & Administration) & Track B (Ledger & Reporting)
 
@@ -111,7 +111,9 @@ A client without an active, valid session cookie.
 
 ## 4. Business Rules (BR-01 through BR-13)
 
-The system enforces 13 immutable business rules across the service layer and database schema:
+The system enforces the business rules below across the service layer and database schema. BR-01 … BR-13 come from
+Sprint 1; BR-15 and BR-16 were added by F-06 in Sprint 2 (#67). BR-14 is reserved for the Lab 7 change request L7-01
+(#64, awaiting approval).
 
 | ID | Rule Statement | Enforcing Layer | Error Code & Status | Rationale |
 |---|---|---|---|---|
@@ -128,6 +130,8 @@ The system enforces 13 immutable business rules across the service layer and dat
 | **BR-11** | The source account cannot appear as one of its own allocation lines. | Service (`ledger.ts`) | 400 `VALIDATION_ERROR` | An account cannot allocate funds to itself within the same transaction. |
 | **BR-12** | Only `CASH`, `LOAN_TAKEN`, and `LOAN_GIVEN` accounts have opening balances. | Database CHECK constraint & Service | 400 `INVALID_ACCOUNT_TYPE` | Nominal accounts (`INCOME`, `EXPENSE`) accumulate period transactions only; no initial equity. |
 | **BR-13** | A transaction is saved all-or-nothing; a rejected transaction changes no balance. | Database Transaction (`prisma.$transaction`) | Handled via Rollback | Eliminates partial writes or orphaned records upon validation or database failures. |
+| **BR-15** | An account's `type` and `subtype` cannot change once any transaction uses it (as source or line). (F-06) | Service (`accounts.routes.ts`) | 400 `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS` | Changing the type would silently change the meaning and balance effect of recorded transactions. |
+| **BR-16** | An archived account takes no new transactions and no opening-balance change; a CASH / LOAN account can be archived only when its balance is 0. (F-06) | Service (`accounts.routes.ts`, `transactions.routes.ts`) | 400 `ACCOUNT_ARCHIVED` / `ACCOUNT_NOT_EMPTY` | Archiving hides an account from new entries without losing history, and never hides money or debt. |
 
 ---
 
@@ -263,9 +267,9 @@ The system enforces 13 immutable business rules across the service layer and dat
 - **Business Rules:** BR-08.
 
 #### FR-ACC-06: Custom Account Creation and Management (Sprint 2)
-- **Description:** A User can create custom accounts, edit account names, and archive accounts with no active transactions. Changing the account type (`type`) is strictly prohibited once transactions exist for that account (returning 400 `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS` — to be added to `errors.ts` and SDS §5.1 in Sprint 2), to prevent retroactive ledger corruption.
+- **Description:** A User can create custom accounts and categories (`POST /api/accounts`), rename them and change their type/subtype while unused (`PATCH /api/accounts/:id`), archive or unarchive them (`PATCH /api/accounts/:id/archive`), and delete an account no transaction has ever used (`DELETE /api/accounts/:id`). Names are unique per user ignoring case (409 `ACCOUNT_NAME_TAKEN`); a type change on a used account returns 400 `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS` (BR-15); archiving needs a balance of 0 for CASH/LOAN accounts and an archived account takes no new transactions or opening-balance change (BR-16); deleting a used account returns 409 `ACCOUNT_IN_USE`. At most 100 accounts per user. Contract: `docs/sprints/sprint-2/F-06-account-management.md`.
 - **Actor:** User.
-- **Business Rules:** BR-03, BR-04, BR-12.
+- **Business Rules:** BR-03, BR-04, BR-12, BR-15, BR-16.
 - **Target Sprint:** Sprint 2.
 
 ---
@@ -313,8 +317,10 @@ The system enforces 13 immutable business rules across the service layer and dat
   - Allocation line must belong to user and have type `CASH` (BR-10).
   - Source account cannot appear as an allocation line (BR-11).
   - Lines sum must equal `totalAmount` exactly (BR-01).
+  - Archived accounts cannot be used (BR-16, F-06).
+- **User interface (F-07):** the Transfer form (`/transfers/new`) always records a transfer as form 1 (`PAYMENT` from → one `CASH` line to). History and detail label any transaction whose source and every line are `CASH` as "Transfer: <from> → <to>", the arrow following the money. Contract: `docs/sprints/sprint-2/F-07-transfers.md`.
 - **Outputs:** HTTP 201 `{ transaction: Transaction }`.
-- **Target Sprint:** Sprint 2 (Feature F-07).
+- **Target Sprint:** Sprint 2 (Feature F-07). The overdraft case (a transfer may not take the From account below 0) belongs to BR-14 and is verified by L7-01 (#64).
 
 #### FR-TX-04: Multi-Line Split Allocation
 - **Description:** The system supports splitting any transaction across multiple categories (e.g. a 1,500 THB credit card charge split into 900 THB Dining and 600 THB Groceries).
@@ -332,22 +338,23 @@ The system enforces 13 immutable business rules across the service layer and dat
 - **Business Rules:** BR-04.
 
 #### FR-TX-07: Favorite Transactions Management and Viewing (Sprint 2)
-- **Description:** A User can toggle a transaction as a favorite (`isFavorite: boolean`) for quick retrieval (`PATCH /api/transactions/:id/favorite`), and filter/view all favorite transactions (`GET /api/transactions?favorite=true`).
+- **Description:** A User can star or unstar any of their transactions (`PATCH /api/transactions/:id/favorite` with strict `{ isFavorite: boolean }`, returning `{ transaction: Transaction }`), and filter favorite transactions (`GET /api/transactions?favorite=true`, combined with F-09 filters; values other than `"true"` return `400 VALIDATION_ERROR`). Starring is idempotent and never modifies balances, dates, amounts, or lines (BR-13). On the UI, star toggles (`FavoriteToggle`) appear on History rows and the detail page with optimistic rollback on error, History offers a **Favorites only** toggle (`?favorite=true`), and Dashboard displays a **Favorites** card (up to 5 newest favorites, hidden when empty). Contract: `docs/sprints/sprint-2/F-10-favorites-duplicate.md`.
 - **Actor:** User.
-- **Business Rules:** BR-04.
+- **Business Rules:** BR-04, BR-05, BR-13.
 - **Target Sprint:** Sprint 2 (Feature F-10).
 
 #### FR-TX-08: Transaction Duplication (Sprint 2)
-- **Description:** A User can duplicate an existing transaction to pre-populate transaction entry forms.
+- **Description:** A User can click **Duplicate** from a transaction's History row, Detail page, or Dashboard Favorites card to open `/transactions/new?kind=<kind>` pre-filled with that transaction's kind, source, lines, amounts, and note, dated today (`toDuplicateDraft`). Nothing is saved until the user submits the normal `POST /api/transactions` flow (enforcing all F-04 / F-06 / BR-14 rules); the new transaction starts with `isFavorite: false` and the original remains unchanged. Any archived or unavailable account in the draft is left blank with a notice (`"<Name> is archived — choose another account."`). Contract: `docs/sprints/sprint-2/F-10-favorites-duplicate.md`.
 - **Actor:** User.
-- **Business Rules:** BR-04.
-- **Target Sprint:** Sprint 2.
+- **Business Rules:** BR-04 (+ all F-04 / F-06 / BR-14 rules on the new save).
+- **Target Sprint:** Sprint 2 (Feature F-10).
 
 #### FR-TX-09: Debt and Loan Lifecycle Tracking (Sprint 2)
 - **Description:** A User can track loans extended to others (`LOAN_GIVEN`) and debts owed (`LOAN_TAKEN`), logging lending outflows, borrowing inflows, and partial or full repayments that adjust outstanding balances without affecting income or expense totals.
 - **Actor:** User.
-- **Business Rules:** BR-01, BR-02, BR-03, BR-04, BR-08, BR-09, BR-10, BR-12, BR-13.
-- **Target Sprint:** Sprint 2.
+- **Business Rules:** BR-01, BR-02, BR-03, BR-04, BR-08, BR-09, BR-10, BR-12, BR-13, BR-16.
+- **User interface (F-08):** The **Loans** page (`/loans`) reads `GET /api/summary` and `GET /api/accounts` (for `subtype` and `archived`), listing `LOAN_GIVEN` ("Money you lent") and `LOAN_TAKEN` ("Money you owe", labelling credit cards via `subtype === "CREDIT_CARD"`) with guided action forms at `/loans/:id/lend|repaid|borrow|repay` (`loanActionToTransaction` → existing `PAYMENT` / `RECEIVE` on `POST /api/transactions`). Repaying more than outstanding triggers a confirmation warning (`overpaid` / `owes you` shown when negative). Contract: `docs/sprints/sprint-2/F-08-loans.md`.
+- **Target Sprint:** Sprint 2 (Feature F-08). The overdraft case (lending/repaying more than the Cash balance) belongs to BR-14 and is verified by L7-01 (#64).
 
 #### FR-TX-10: Transaction Modification and Voiding (Sprint 3)
 - **Description:** A User can edit transaction metadata and allocation lines (`PUT /api/transactions/:id`) or void/delete a transaction (`DELETE /api/transactions/:id`) with atomic balance recalculation and validation rollback.
@@ -423,10 +430,10 @@ The system enforces 13 immutable business rules across the service layer and dat
 - **Error Handling:** Transaction not found or owned by another user → 404 `NOT_FOUND`.
 
 #### FR-HST-03: Transaction History Filtering and Search (Sprint 2)
-- **Description:** A User can filter transactions by date ranges, account, category, or search keywords within notes (`GET /api/transactions?startDate=...&endDate=...&accountId=...&q=...`).
+- **Description:** A User can filter transactions by inclusive date range (`startDate`, `endDate`), account (`accountId`, matching either source or any allocation line), kind (`PAYMENT` | `RECEIVE`), case-insensitive literal substring search on `note` (`q`, escaping `%`, `_`, `\`, 1..100 chars), and `sort` (`date_desc` | `date_asc` | `amount_desc` | `amount_asc` with same-direction `id` tie-breaker) on `GET /api/transactions`. Filters combine with AND; foreign or non-existent `accountId` returns an empty list (`200`) so IDs cannot be probed (NFR-SEC-03). Results are capped at 500 rows with `truncated: true` when more match. On the UI (`/transactions`), filters stay synced with URL search parameters alongside quick date-range buttons (*This month*, *Last month*, *This year*) and **Clear**. Contract: `docs/sprints/sprint-2/F-09-search-filter.md`.
 - **Actor:** User.
-- **Business Rules:** BR-04.
-- **Target Sprint:** Sprint 2.
+- **Business Rules:** BR-04, BR-05.
+- **Target Sprint:** Sprint 2 (Feature F-09).
 
 #### FR-HST-04: Data Export in CSV and JSON Formats (Sprint 3) [Added by Team]
 - **Description:** A User can export their transaction records and summary balances in CSV and JSON formats for offline archiving.

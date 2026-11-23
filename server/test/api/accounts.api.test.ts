@@ -40,6 +40,8 @@ describe("GET /api/accounts", () => {
         openingBalance: 0,
         openingDate: null,
         balance: 0,
+        archived: false, // F-06 §3: every account now reports whether it is archived
+        inUse: false, // F-06 v0.4 §3: no transaction uses a seeded account yet
       });
     }
   });
@@ -98,6 +100,8 @@ describe("PUT /api/accounts/:id/opening-balance", () => {
       openingBalance: 1_000_000,
       openingDate: "2026-11-01",
       balance: 1_000_000,
+      archived: false, // F-06 §3
+      inUse: false, // F-06 v0.4 §3
     });
 
     const list = await agent.get("/api/accounts");

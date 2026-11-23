@@ -6,9 +6,14 @@ import { Layout } from "./components/Layout.js";
 import { LoginPage } from "./pages/LoginPage.js";
 import { DashboardPage } from "./pages/DashboardPage.js";
 import { OpeningBalancePage } from "./pages/OpeningBalancePage.js";
+import { AccountsPage } from "./pages/AccountsPage.js";
+import { NewAccountPage } from "./pages/NewAccountPage.js";
 import { TransactionFormPage } from "./pages/TransactionFormPage.js";
+import { TransferFormPage } from "./pages/TransferFormPage.js";
 import { TransactionsPage } from "./pages/TransactionsPage.js";
 import { TransactionDetailPage } from "./pages/TransactionDetailPage.js";
+import { LoansPage } from "./pages/LoansPage.js";
+import { LoanActionPage } from "./pages/LoanActionPage.js";
 import { AdminUsersPage } from "./pages/AdminUsersPage.js";
 import { NotFoundPage } from "./pages/NotFoundPage.js";
 
@@ -32,9 +37,14 @@ export function AppRoutes() {
 
         {/* Track B (USER) */}
         <Route path="dashboard" element={<UserOnly page={<DashboardPage />} />} />
+        <Route path="accounts" element={<UserOnly page={<AccountsPage />} />} />
+        <Route path="accounts/new" element={<UserOnly page={<NewAccountPage />} />} />
         <Route path="accounts/:id/opening-balance" element={<UserOnly page={<OpeningBalancePage />} />} />
         <Route path="transactions" element={<UserOnly page={<TransactionsPage />} />} />
         <Route path="transactions/new" element={<UserOnly page={<TransactionFormPage />} />} />
+        <Route path="transfers/new" element={<UserOnly page={<TransferFormPage />} />} />
+        <Route path="loans" element={<UserOnly page={<LoansPage />} />} />
+        <Route path="loans/:id/:action" element={<UserOnly page={<LoanActionPage />} />} />
         <Route path="transactions/:id" element={<UserOnly page={<TransactionDetailPage />} />} />
 
         {/* Track A (ADMIN) */}

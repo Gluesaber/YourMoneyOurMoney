@@ -1,14 +1,28 @@
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { ApiError } from "../api/client.js";
-import { getTransaction } from "../api/finance.js";
-import { Amount, ErrorAlert, Loading, useLoad } from "../components/Feedback.js";
+import { getAccounts, getTransaction, type Transaction } from "../api/finance.js";
+import { Amount, ErrorAlert, Loading, todayLocal, useLoad } from "../components/Feedback.js";
+import { FavoriteToggle } from "../components/FavoriteToggle.js";
+import { toDuplicateDraft } from "../lib/duplicate.js";
+import { accountTypesOf, transferLabel } from "../lib/transactions.js";
 import { KIND_LABEL } from "./TransactionsPage.js";
 
-// F-05 §5 Transaction detail — docs/sprints/sprint-1/F-05-summary-history.md. Another user's, a missing
-// and a non-numeric id all come back as 404 from the server and show the same "not found" page.
+// F-05 §5 & F-10 §5 Transaction detail — docs/sprints/sprint-1/F-05-summary-history.md.
 export function TransactionDetailPage() {
   const { id = "" } = useParams();
-  const { data: t, error } = useLoad(() => getTransaction(id), [id]);
+  const navigate = useNavigate();
+  const { data: loaded, error } = useLoad(() => getTransaction(id), [id]);
+  const [tx, setTx] = useState<Transaction | undefined>(undefined);
+  const [favoriteError, setFavoriteError] = useState<unknown>(null);
+
+  useEffect(() => {
+    setTx(loaded);
+    setFavoriteError(null);
+  }, [loaded]);
+
+  // F-07: a transfer is headed "Transfer: From → To"; without account types it falls back to the kind.
+  const { data: accounts } = useLoad(getAccounts);
 
   if (error instanceof ApiError && error.status === 404) {
     return (
@@ -19,20 +33,42 @@ export function TransactionDetailPage() {
     );
   }
   if (error) return <ErrorAlert error={error} />;
-  if (!t) return <Loading />;
+  if (!tx) return <Loading />;
 
   return (
     <section style={{ maxWidth: 640 }}>
-      <h1 className="h3">{KIND_LABEL[t.kind]}</h1>
+      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <h1 className="h3 mb-0">{transferLabel(tx, accountTypesOf(accounts)) ?? KIND_LABEL[tx.kind]}</h1>
+        <div className="d-flex gap-2">
+          <FavoriteToggle
+            transactionId={tx.id}
+            isFavorite={tx.isFavorite}
+            onToggled={setTx}
+            onError={setFavoriteError}
+          />
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-primary"
+            onClick={() =>
+              navigate(`/transactions/new?kind=${tx.kind}`, {
+                state: { draft: toDuplicateDraft(tx, todayLocal()) },
+              })
+            }
+          >
+            Duplicate
+          </button>
+        </div>
+      </div>
+      <ErrorAlert error={favoriteError} />
       <dl className="row">
         <dt className="col-sm-4">Date</dt>
-        <dd className="col-sm-8">{t.date}</dd>
-        <dt className="col-sm-4">{t.kind === "PAYMENT" ? "Paid from" : "Received into"}</dt>
-        <dd className="col-sm-8">{t.source.name}</dd>
-        {t.note && (
+        <dd className="col-sm-8">{tx.date}</dd>
+        <dt className="col-sm-4">{tx.kind === "PAYMENT" ? "Paid from" : "Received into"}</dt>
+        <dd className="col-sm-8">{tx.source.name}</dd>
+        {tx.note && (
           <>
             <dt className="col-sm-4">Note</dt>
-            <dd className="col-sm-8 text-break">{t.note}</dd>
+            <dd className="col-sm-8 text-break">{tx.note}</dd>
           </>
         )}
       </dl>
@@ -40,14 +76,14 @@ export function TransactionDetailPage() {
       <table className="table align-middle">
         <thead>
           <tr>
-            <th scope="col">{t.kind === "PAYMENT" ? "Paid for" : "Received from"}</th>
+            <th scope="col">{tx.kind === "PAYMENT" ? "Paid for" : "Received from"}</th>
             <th scope="col" className="text-end">
               Amount
             </th>
           </tr>
         </thead>
         <tbody>
-          {t.lines.map((l, i) => (
+          {tx.lines.map((l, i) => (
             <tr key={i}>
               <th scope="row" className="fw-normal">
                 {l.name}
@@ -62,7 +98,7 @@ export function TransactionDetailPage() {
           <tr>
             <th scope="row">Total</th>
             <td className="text-end fw-semibold">
-              <Amount satang={t.totalAmount} />
+              <Amount satang={tx.totalAmount} />
             </td>
           </tr>
         </tfoot>
