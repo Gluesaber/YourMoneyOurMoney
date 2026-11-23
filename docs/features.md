@@ -24,7 +24,7 @@ This document provides a comprehensive inventory of all product features across 
 | **F-08** | Debt & Receivable Lifecycle (Lending & Borrowing) | **Sprint 2** | Track A (Jirawat) | Implemented (S2-04, #69); overdraft case (AC-DEBT-03) deferred to L7-01 (#64), pending TA approval | Loan given / loan taken tracking, repayments, outstanding debts |
 | **F-09** | Transaction Search, Filtering & Sorting | **Sprint 2** | Track A (Jirawat) | Implemented (S2-05, #70) | Date range filtering, account & kind filters, literal `q` search, sorting, URL state |
 | **F-10** | Favorite & Duplicate Transactions | **Sprint 2** | Track A (Jirawat) | Implemented (S2-06, #71) | Quick re-entry, star and view favorite transactions, duplicate draft dated today |
-| **F-11** | Financial Reports & Periodic Spending Summaries | **Sprint 3** | Decided at sprint planning | Planned | Monthly income vs expense & category reports (brief), plus visual charts `[Added by Team]` (DL-09) |
+| **F-11** | Financial Reports & Periodic Spending Summaries | **Sprint 3** | Track B (Harit) | Implemented (S3-02, #84) | Monthly income vs expense & category reports (brief), plus visual charts `[Added by Team]` (DL-09) |
 | **F-12** | Transaction Editing, Voiding & Audit Corrections | **Sprint 3** | Decided at sprint planning | Planned | Revise transaction notes/lines, void transactions with rollback |
 | **F-13** | Data Export (CSV & JSON) [Added by Team] | **Sprint 3** | Decided at sprint planning | Planned | Export transaction ledgers and account statements (DL-09) |
 | **F-14** | User Profile & Security Settings [Added by Team] | **Sprint 3** | Decided at sprint planning | Planned | Self-service password change and session review (DL-09) |
@@ -252,8 +252,8 @@ This document provides a comprehensive inventory of all product features across 
 
 ### F-11: Financial Reports & Periodic Spending Summaries
 - **Target Sprint:** Sprint 3
-- **Track Owner:** Decided at sprint planning
-- **Status:** Planned
+- **Track Owner:** Track B (Harit)
+- **Status:** Implemented (S3-02, #84)
 - **User Story:**  
   *As a personal user, I want to view monthly expense versus income breakdown reports, category spending summaries, and visual trend charts, so that I understand my financial habits over time.*
 - **Detailed Capabilities:**
