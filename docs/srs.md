@@ -407,10 +407,10 @@ Sprint 1; BR-15 and BR-16 were added by F-06 in Sprint 2 (#67). BR-14 is reserve
   - Fund movements between cash accounts, debt borrowings, loan repayments, and initial equity opening balances are excluded from income and expense summaries.
 
 #### FR-SUM-04: Periodic Financial Reports & Category Spending Summaries (Sprint 3)
-- **Description:** Users can view periodic (e.g. monthly) comparative expense/income breakdowns and category spending summaries (brief scope), supplemented by graphical chart visualizations (`[Added by Team]`, see Decision Log DL-09).
+- **Description:** Users can view periodic (e.g. monthly) comparative expense/income breakdowns and category spending summaries (brief scope), supplemented by graphical chart visualizations (`[Added by Team]`, see Decision Log DL-09). Implemented as `GET /api/reports/monthly?from&to` (up to 24 months, zero rows for empty months) and `GET /api/reports/category-breakdown?startDate&endDate&type` (up to 366 days; shares in integer basis points that add to 10,000; average per day rounded half up), and a Reports page (`/reports`) whose period is kept in the URL. Income and expense come only from INCOME / EXPENSE lines by transaction date. Contract: `docs/sprints/sprint-3/F-11-reports.md`.
 - **Actor:** User.
-- **Business Rules:** BR-03, BR-04, BR-08.
-- **Target Sprint:** Sprint 3.
+- **Business Rules:** BR-03, BR-04, BR-05, BR-08.
+- **Target Sprint:** Sprint 3 (implemented in S3-02, #84).
 
 ---
 

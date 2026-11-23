@@ -308,6 +308,8 @@ New codes are added to `server/src/lib/errors.ts` **and** this table in the same
 | GET | `/api/transactions/:id` | USER | B | S1-13 |
 | PATCH | `/api/transactions/:id/favorite` | USER | A | S2-06 (#71) |
 | GET | `/api/summary` | USER | B | S1-13 |
+| GET | `/api/reports/monthly` | USER | B | S3-02 (#84) |
+| GET | `/api/reports/category-breakdown` | USER | B | S3-02 (#84) |
 | GET | `/api/health` | anonymous | shared | S1-01 |
 | GET | `/api/ready` | anonymous | shared | L5-02 |
 | POST | `/api/test/login-as` | **test only** (`NODE_ENV=test`) | shared | S1-01 |
@@ -393,6 +395,21 @@ GET /api/summary → 200
 ```
 
 Every account of the matching type is listed, including those with a zero total.
+
+**Reports (F-11, `docs/sprints/sprint-3/F-11-reports.md`)**
+
+```
+GET /api/reports/monthly?from=2026-11&to=2026-12            // both required, YYYY-MM, at most 24 months
+→ 200 { "months": [ { "month": "2026-11", "income": 3000000, "expense": 150000, "net": 2850000 }, … ],
+        "totals": { "income": 3000000, "expense": 180000, "net": 2820000 } }
+
+GET /api/reports/category-breakdown?startDate=2026-11-01&endDate=2026-11-30&type=EXPENSE   // dates required, ≤ 366 days
+→ 200 { "type": "EXPENSE", "total": 150000, "days": 30, "averageDaily": 5000,
+        "categories": [ { "accountId": 7, "name": "Dining", "total": 90000, "share": 6000 }, … ] }
+→ 400 VALIDATION_ERROR · 401 · 403
+```
+
+Only INCOME / EXPENSE lines count, by transaction date (BR-08). `share` is in basis points (10,000 = 100 %).
 
 ---
 

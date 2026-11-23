@@ -34,6 +34,9 @@ export function DashboardPage() {
           <Link className="btn btn-outline-secondary" to="/transactions">
             History
           </Link>
+          <Link className="btn btn-outline-secondary" to="/reports">
+            Reports
+          </Link>
         </div>
       </div>
 
