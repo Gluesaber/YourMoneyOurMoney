@@ -10,6 +10,7 @@ import { adminRouter } from "./routes/admin.routes.js";
 import { accountsRouter } from "./routes/accounts.routes.js";
 import { transactionsRouter } from "./routes/transactions.routes.js";
 import { summaryRouter } from "./routes/summary.routes.js";
+import { reportsRouter } from "./routes/reports.routes.js";
 
 function resolveClientDistDir(): string | null {
   const candidates = [
@@ -59,6 +60,7 @@ export function createApp(nodeEnv: string | undefined = process.env.NODE_ENV) {
   app.use("/api/accounts", accountsRouter);
   app.use("/api/transactions", transactionsRouter);
   app.use("/api/summary", summaryRouter);
+  app.use("/api/reports", reportsRouter);
 
   if (nodeEnv === "test") {
     app.use("/api/test", testRouter);

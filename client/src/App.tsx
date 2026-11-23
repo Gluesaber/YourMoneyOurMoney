@@ -10,6 +10,7 @@ import { AccountsPage } from "./pages/AccountsPage.js";
 import { NewAccountPage } from "./pages/NewAccountPage.js";
 import { TransactionFormPage } from "./pages/TransactionFormPage.js";
 import { TransferFormPage } from "./pages/TransferFormPage.js";
+import { ReportsPage } from "./pages/ReportsPage.js";
 import { TransactionsPage } from "./pages/TransactionsPage.js";
 import { TransactionDetailPage } from "./pages/TransactionDetailPage.js";
 import { LoansPage } from "./pages/LoansPage.js";
@@ -43,6 +44,7 @@ export function AppRoutes() {
         <Route path="transactions" element={<UserOnly page={<TransactionsPage />} />} />
         <Route path="transactions/new" element={<UserOnly page={<TransactionFormPage />} />} />
         <Route path="transfers/new" element={<UserOnly page={<TransferFormPage />} />} />
+        <Route path="reports" element={<UserOnly page={<ReportsPage />} />} />
         <Route path="loans" element={<UserOnly page={<LoansPage />} />} />
         <Route path="loans/:id/:action" element={<UserOnly page={<LoanActionPage />} />} />
         <Route path="transactions/:id" element={<UserOnly page={<TransactionDetailPage />} />} />
