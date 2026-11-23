@@ -56,7 +56,8 @@ POST /api/auth/change-password   { "currentPassword": "…", "newPassword": "…
 → 400 VALIDATION_ERROR | INVALID_CURRENT_PASSWORD · 401 UNAUTHENTICATED
 
 GET /api/auth/me → 200 { "id", "username", "role", "sessionStartedAt": "…", "sessionExpiresAt": "…" }
-// Sprint 1 shape kept; the two fields are added, so existing clients are unaffected (T-AUTH-API-* stay green)
+// Sprint 1 shape kept and two fields added. Legitimate change to an existing expected result: T-AUTH-API-03
+// checks `/me` with a strict toEqual({ id, username, role }) and is revised to expect the two new fields too.
 ```
 
 ## 4. Data
@@ -93,7 +94,8 @@ re-seeding — see §8 for the demo accounts.
 | T-PROF-API-03 | API (table) | wrong current; new `"short"`; 129 chars; `"        "`; missing; new = current | 400 `INVALID_CURRENT_PASSWORD` / `VALIDATION_ERROR`; hash and session count unchanged | AC-PROF-03 |
 | T-PROF-API-04 | API | anon; admin changes own password then logs in; body with extra `username: "bob"` | 401; 200 and login ok; bob's hash unchanged | AC-PROF-04 |
 | T-PROF-SEC-01 | API | capture response bodies and server log output during T-PROF-API-01/03 | neither password string appears; stored hash matches `^\$2[aby]\$10\$` | AC-PROF-05 |
-| T-PROF-API-05 | API | `GET /api/auth/me` | `sessionExpiresAt` − `sessionStartedAt` = 24 h; unchanged after password change | AC-PROF-01, R3 |
+| T-PROF-API-05 | API | `GET /api/auth/me` (the test helper `/api/test/login-as` sets `loginAt` like the real login; a session without `loginAt` is already rejected with 401 by `requireUser`) | `sessionExpiresAt` − `sessionStartedAt` = 24 h; unchanged after password change | AC-PROF-01, R3 |
+| T-AUTH-API-03 (revised) | API | existing `/me` test | body equals `{ id, username, role, sessionStartedAt, sessionExpiresAt }` | R3 |
 | T-PROF-UI-01 | Component | Profile form: mismatch, short, valid; server 400 | Save disabled/enabled; alert; fields cleared | AC-PROF-06 |
 | T-PROF-E2E-01 | E2E | alice changes password in the UI, logs out, logs in with the new one | success message; login works | AC-PROF-06 |
 
@@ -123,4 +125,5 @@ request), access suite. E2E uses a throwaway seeded user or `resetDb()` so other
 
 | Version | Date | Commit | PR / Issue | Change |
 |---|---|---|---|---|
-| 0.1 | 2026-11-23 | — | S3-01 (#83) | First draft for review (drafted 2026-11-22, refreshed against the Sprint 2 code 2026-11-23) |
+| 0.1 | 2026-11-23 | `8db8a8d` | #89 / S3-01 (#83) | First draft for review (drafted 2026-11-22, refreshed against the Sprint 2 code 2026-11-23) |
+| 0.2 | 2026-11-23 | — | #89 review (Jirawat) | §3: adding the two `/me` fields revises T-AUTH-API-03 (strict shape), instead of claiming T-AUTH-API-* stay unchanged; §7: T-AUTH-API-03 revision listed; T-PROF-API-05 notes that the test helper sets `loginAt` |

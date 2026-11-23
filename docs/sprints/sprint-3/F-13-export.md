@@ -32,7 +32,7 @@ Exports are read-only and contain nothing from any other user and no credentials
 
 | Piece | Location |
 |---|---|
-| `toCsv(rows)`, `csvField(value)` (quoting + R4 guard), `satangToThbString(n)` | `server/src/services/export.ts` (pure, unit-tested) |
+| `toCsv(rows)`, `csvField(value)` (quoting + R4 guard), `satangToThbString(n)`, `assertExportSize(count, limit = MAX_EXPORT_TRANSACTIONS)` (R7) | `server/src/services/export.ts` (pure, unit-tested) |
 | Routes | `server/src/routes/export.routes.ts` (reuses F-09 `transactionQuery.ts`, `loadLedger`) |
 | Buttons | History page **Export CSV** (current filters), Profile/Settings **Download backup** |
 
@@ -79,6 +79,7 @@ No schema change. Import (restoring a backup) is out of scope (§8).
 | AC-EXP-03 | The JSON backup lists every account with the same balances as `GET /api/accounts` and every transaction with its lines; it contains no password hash, `userId` or any of bob's data. |
 | AC-EXP-04 | Invalid params → 400; bob's `accountId` → header-only CSV; ADMIN 403; anonymous 401. |
 | AC-EXP-05 | In the UI, Export CSV downloads the filtered rows and Download backup downloads the JSON file. |
+| AC-EXP-06 | An export of more than 10,000 transactions → 400 `VALIDATION_ERROR` "Narrow the date range."; exactly 10,000 is allowed (R7). |
 
 ## 7. Software test specification
 
@@ -86,6 +87,7 @@ No schema change. Import (restoring a backup) is out of scope (§8).
 |---|---|---|---|---|
 | T-EXP-UNIT-01 | Unit | `csvField` on `a,b`, `say "hi"`, `line1\nline2`, `=1+1`, `-5`, `@x`, `ข้าว`, empty | quoted/doubled/guarded exactly per R3–R4 | AC-EXP-02 |
 | T-EXP-UNIT-02 | Unit | `satangToThbString` on 0, 1, 150050, 2147483647, −150000 | `0.00`, `0.01`, `1500.50`, `21474836.47`, `-1500.00` | AC-EXP-01 |
+| T-EXP-UNIT-03 | Unit | `assertExportSize` with the limit injected: (3, 3), (4, 3); and the default `MAX_EXPORT_TRANSACTIONS` = 10,000 | no error; `VALIDATION_ERROR` "Narrow the date range."; constant equals 10,000 | AC-EXP-06 |
 | T-EXP-API-01 | API | demo journey (F-04 demo bodies with note); GET CSV | 200 `text/csv`, BOM, header + 4 rows equal to stored lines; `Content-Disposition` attachment | AC-EXP-01 |
 | T-EXP-API-02 | API | CSV with `accountId`=Dining, `q`, date range; note with `,"\n` and `=SUM(A1)`; parse with an RFC 4180 parser | filtered rows only; values round-trip; guarded cell | AC-EXP-02 |
 | T-EXP-API-03 | API | alice and bob with data; GET backup.json | balances = `GET /api/accounts`; all transactions; response text has no `passwordHash`, `$2`, `userId`, bob's names or ids | AC-EXP-03 |
@@ -107,7 +109,7 @@ Regression kept: T-HST-* (shared query parser), T-ACC-API-01 (balances), access 
 
 ## 9. Definition of Done
 
-- [ ] T-EXP-UNIT-01/02, T-EXP-API-01…04 pass (`npm --prefix server test`); T-EXP-UI-01 passes (`npm --prefix client test`); T-EXP-E2E-01 passes
+- [ ] T-EXP-UNIT-01…03, T-EXP-API-01…04 pass (`npm --prefix server test`); T-EXP-UI-01 passes (`npm --prefix client test`); T-EXP-E2E-01 passes
 - [ ] Each test seen failing before the implementation (RED commit before GREEN)
 - [ ] Lint, format, type check pass; existing regression green
 - [ ] SRS FR-HST-04, System SDS §5 (new routes), `traceability.md` updated
@@ -117,4 +119,5 @@ Regression kept: T-HST-* (shared query parser), T-ACC-API-01 (balances), access 
 
 | Version | Date | Commit | PR / Issue | Change |
 |---|---|---|---|---|
-| 0.1 | 2026-11-23 | — | S3-01 (#83) | First draft for review (drafted 2026-11-22, refreshed against the Sprint 2 code 2026-11-23) |
+| 0.1 | 2026-11-23 | `8db8a8d` | #89 / S3-01 (#83) | First draft for review (drafted 2026-11-22, refreshed against the Sprint 2 code 2026-11-23) |
+| 0.2 | 2026-11-23 | — | #89 review (Jirawat) | R7 limit gets AC-EXP-06 and T-EXP-UNIT-03 (pure `assertExportSize` with an injected limit, so no 10,000-row fixture is needed) |

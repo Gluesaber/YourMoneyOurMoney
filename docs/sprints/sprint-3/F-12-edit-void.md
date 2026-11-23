@@ -44,6 +44,7 @@ applies only to accounts newly added by the edit; keeping an already-used archiv
 | R3 | Duplicating (F-10) a voided transaction is allowed (it is a new transaction) | F-10 |
 | R4 | ADMIN 403, anonymous 401 | BR-05 |
 | R5 | A voided transaction still counts for F-06 `inUse` (its rows still reference the accounts, so they cannot be deleted or change type) | F-06 R5, R9 |
+| R6 | `PATCH /api/transactions/:id/favorite` on a voided transaction → 400 `TRANSACTION_VOIDED`, so a voided transaction cannot return to Favorites | BR-17, FR-TX-07 |
 
 ### 2.1 Where the logic lives
 
@@ -94,7 +95,7 @@ delete + insert inside the same database transaction. No edit history table (§8
 |---|---|
 | AC-VOID-01 | Editing the card purchase from Dining 90,000 + Groceries 60,000 to Dining 100,000 + Groceries 60,000 (total 160,000) → 200; Card debt, Dining and expense totals reflect the new values; the old lines are gone. |
 | AC-VOID-02 | An edit that breaks any F-04 rule (lines ≠ total, wrong type, source as line, bob's account, archived new account, overdraft) or changes `kind` → that error, and the stored transaction and every balance are unchanged. |
-| AC-VOID-03 | Voiding a transaction → 200 with `voidedAt`; balances, summary and reports no longer include it; it is still in history with `includeVoided=true`; editing or voiding it again → 400 `TRANSACTION_VOIDED`. |
+| AC-VOID-03 | Voiding a transaction → 200 with `voidedAt`; balances, summary and reports no longer include it; it is still in history with `includeVoided=true`; editing, voiding or starring it again → 400 `TRANSACTION_VOIDED`. |
 | AC-VOID-04 | Voiding (or editing) that would leave a CASH account below 0 → 400 `INSUFFICIENT_FUNDS`, nothing changed; at exactly 0 → accepted. |
 | AC-VOID-05 | PUT/DELETE on bob's, a missing or a non-numeric id → 404 and bob's row unchanged; ADMIN 403; anonymous 401. |
 | AC-VOID-06 | In the UI the user edits a note and the amount of a transaction and voids another after confirming; the dashboard reflects both. |
@@ -106,7 +107,7 @@ delete + insert inside the same database transaction. No edit history table (§8
 | T-VOID-UNIT-01 | Unit | `computeBalances` with a voided transaction and with `excludeTransactionId` | voided/excluded rows contribute nothing | AC-VOID-03, 04 |
 | T-VOID-API-01 | API | demo journey; PUT card purchase to 100,000 + 60,000 | 200; Card 10,000 (160,000 − 150,000 repaid); Dining 100,000; expense total 160,000; 2 lines stored | AC-VOID-01 |
 | T-VOID-API-02 | API (table) | PUT with lines ≠ total; Salary line in PAYMENT; source as line; bob's line; kind RECEIVE; archived new account; overdraft | each F-04 error; stored row, lines and balances unchanged | AC-VOID-02 |
-| T-VOID-API-03 | API | void the card repayment; GET accounts/summary; GET transactions with/without `includeVoided`; void again; PUT it | Bank +150,000, Card +150,000; listed only with flag; 400 `TRANSACTION_VOIDED` ×2 | AC-VOID-03 |
+| T-VOID-API-03 | API | void the card repayment; GET accounts/summary; GET transactions with/without `includeVoided`; void again; PUT it; star it (`PATCH …/favorite`) | Bank +150,000, Card +150,000; listed only with flag; 400 `TRANSACTION_VOIDED` ×3 | AC-VOID-03 |
 | T-VOID-API-04 | API | (a) Bank opening 0; RECEIVE Salary 100,000; PAYMENT Bank → Dining 100,000; void the RECEIVE. (b) fresh DB: RECEIVE 100,000; PAYMENT 40,000; void the RECEIVE. (c) fresh DB: RECEIVE 100,000 only; void it | (a) 400 `INSUFFICIENT_FUNDS`, shortfall 100,000; (b) 400, shortfall 40,000; (c) 200, Bank 0 | AC-VOID-04 |
 | T-VOID-API-05 | API | Bank: RECEIVE 100,000, PAYMENT 60,000; PUT the PAYMENT to 100,000 / 100,001 | 200 (Bank 0) / 400 `INSUFFICIENT_FUNDS` | AC-VOID-04 |
 | T-VOID-API-06 | API (table) | PUT/DELETE bob's tx, 999999, `abc`; admin; anon | 404 ×3 (bob unchanged); 403; 401 | AC-VOID-05 |
@@ -138,4 +139,5 @@ Regression kept: all T-TX-*, T-FUND-*, T-SUM-*, T-HST-*, T-REP-* (voided exclude
 
 | Version | Date | Commit | PR / Issue | Change |
 |---|---|---|---|---|
-| 0.1 | 2026-11-23 | — | S3-01 (#83) | First draft for review (drafted 2026-11-22, refreshed against the Sprint 2 code 2026-11-23) |
+| 0.1 | 2026-11-23 | `8db8a8d` | #89 / S3-01 (#83) | First draft for review (drafted 2026-11-22, refreshed against the Sprint 2 code 2026-11-23) |
+| 0.2 | 2026-11-23 | — | #89 review (Jirawat) | R6: starring a voided transaction → 400 `TRANSACTION_VOIDED`; AC-VOID-03 and T-VOID-API-03 extended |
