@@ -196,6 +196,7 @@ user, even if application code has a bug.
 | BR-11 source not used as a line | — | ✅ `VALIDATION_ERROR` |
 | BR-12 opening balance only on CASH / LOAN_* | ✅ `Account_openingBalance_allowed_type`, `Account_openingBalance_nonnegative` | ✅ `INVALID_ACCOUNT_TYPE` |
 | BR-13 all-or-nothing save | — | ✅ one `prisma.$transaction` |
+| BR-14 no Cash overdraft (L7-01) | — (balances are computed, not stored) | ✅ `INSUFFICIENT_FUNDS` from `checkCashFunds`, inside the save transaction with the decreased CASH rows locked `FOR UPDATE` |
 | Subtype fits type | ✅ `Account_subtype_matches_type` | (seed data only in Sprint 1) |
 | Account name unique per user | ✅ `Account_userId_name_key` (exact) and `Account_userId_lower_name_key` (ignoring case, migration `add_account_archived_at`; hand-written, Prisma does not track it) | ✅ 409 `ACCOUNT_NAME_TAKEN` (F-06) |
 | BR-15 type fixed once used | — | ✅ `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS` (F-06) |
@@ -262,7 +263,9 @@ Category totals after step 4: Salary 30,000.00 · Dining 900.00 · Groceries 600
 
 Recorded in `docs/sprints/sprint-1/F-04-transactions.md` §8:
 
-- **Overdraft:** allowed. A CASH balance may go negative; there is no balance check when saving.
+- **Overdraft:** *(changed by Lab 7 L7-01, #64, approved 2026-11-24)* not allowed for CASH accounts: a new transaction
+  that would leave a decreased CASH account below 0 is rejected with 400 `INSUFFICIENT_FUNDS` (BR-14, F-04 v1.1 step 7).
+  LOAN_TAKEN has no limit. Up to Sprint 2 (`v0.2.0`) a CASH balance could go negative.
 - **Transaction dates:** any real calendar date from 2000-01-01 to 2099-12-31, including future dates.
 
 ---
@@ -279,7 +282,7 @@ Recorded in `docs/sprints/sprint-1/F-04-transactions.md` §8:
 
 | Status | Codes |
 |---|---|
-| 400 | `VALIDATION_ERROR`, `ALLOCATION_MISMATCH`, `INVALID_ACCOUNT_TYPE`, `SELF_DISABLE_NOT_ALLOWED`, `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS`, `ACCOUNT_ARCHIVED`, `ACCOUNT_NOT_EMPTY` (F-06) |
+| 400 | `VALIDATION_ERROR`, `ALLOCATION_MISMATCH`, `INVALID_ACCOUNT_TYPE`, `SELF_DISABLE_NOT_ALLOWED`, `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS`, `ACCOUNT_ARCHIVED`, `ACCOUNT_NOT_EMPTY` (F-06), `INSUFFICIENT_FUNDS` (L7-01) |
 | 401 | `UNAUTHENTICATED`, `INVALID_CREDENTIALS` |
 | 403 | `FORBIDDEN`, `ACCOUNT_DISABLED` |
 | 404 | `NOT_FOUND` |
@@ -308,6 +311,8 @@ New codes are added to `server/src/lib/errors.ts` **and** this table in the same
 | GET | `/api/transactions/:id` | USER | B | S1-13 |
 | PATCH | `/api/transactions/:id/favorite` | USER | A | S2-06 (#71) |
 | GET | `/api/summary` | USER | B | S1-13 |
+| GET | `/api/reports/monthly` | USER | B | S3-02 (#84) |
+| GET | `/api/reports/category-breakdown` | USER | B | S3-02 (#84) |
 | GET | `/api/health` | anonymous | shared | S1-01 |
 | GET | `/api/ready` | anonymous | shared | L5-02 |
 | POST | `/api/test/login-as` | **test only** (`NODE_ENV=test`) | shared | S1-01 |
@@ -358,7 +363,7 @@ POST /api/transactions
   "lines": [ { "accountId": 7, "amount": 90000 }, { "accountId": 8, "amount": 60000 } ]
 }
 → 201 { "transaction": Transaction }
-→ 400 VALIDATION_ERROR | ALLOCATION_MISMATCH | INVALID_ACCOUNT_TYPE | ACCOUNT_ARCHIVED (F-06) · 401 · 403 · 404 (an account is not the user's)
+→ 400 VALIDATION_ERROR | ALLOCATION_MISMATCH | INVALID_ACCOUNT_TYPE | ACCOUNT_ARCHIVED (F-06) | INSUFFICIENT_FUNDS (L7-01) · 401 · 403 · 404 (an account is not the user's)
 ```
 
 ```
@@ -393,6 +398,21 @@ GET /api/summary → 200
 ```
 
 Every account of the matching type is listed, including those with a zero total.
+
+**Reports (F-11, `docs/sprints/sprint-3/F-11-reports.md`)**
+
+```
+GET /api/reports/monthly?from=2026-11&to=2026-12            // both required, YYYY-MM, at most 24 months
+→ 200 { "months": [ { "month": "2026-11", "income": 3000000, "expense": 150000, "net": 2850000 }, … ],
+        "totals": { "income": 3000000, "expense": 180000, "net": 2820000 } }
+
+GET /api/reports/category-breakdown?startDate=2026-11-01&endDate=2026-11-30&type=EXPENSE   // dates required, ≤ 366 days
+→ 200 { "type": "EXPENSE", "total": 150000, "days": 30, "averageDaily": 5000,
+        "categories": [ { "accountId": 7, "name": "Dining", "total": 90000, "share": 6000 }, … ] }
+→ 400 VALIDATION_ERROR · 401 · 403
+```
+
+Only INCOME / EXPENSE lines count, by transaction date (BR-08). `share` is in basis points (10,000 = 100 %).
 
 ---
 

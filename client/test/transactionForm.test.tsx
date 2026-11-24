@@ -191,4 +191,36 @@ describe("TransactionFormPage", () => {
     expect(screen.getByLabelText("Total (THB)")).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
   });
+
+  // Lab 7 L7-01, BR-14 (F-04 v1.1 §7): the form shows the overdraft refusal like any server error.
+  it("T-FUND-UI-01: an overdrawing payment shows the server message and keeps the entered values", async () => {
+    mockApi({
+      "GET /api/accounts": { body: { accounts: SEEDED_ACCOUNTS } },
+      "POST /api/transactions": {
+        status: 400,
+        body: {
+          error: {
+            code: "INSUFFICIENT_FUNDS",
+            message: "This would overdraw Bank.",
+            details: { accountId: 1, balance: 0, required: 150_000, shortfall: 150_000 },
+          },
+        },
+      },
+    });
+    const user = userEvent.setup();
+    renderAt("/transactions/new?kind=PAYMENT");
+
+    await user.selectOptions(await screen.findByLabelText("Paid from"), "Bank");
+    await user.type(screen.getByLabelText("Total (THB)"), "1,500");
+    await user.selectOptions(screen.getByLabelText("Account for line 1"), "Dining");
+    await user.type(screen.getByLabelText("Amount for line 1"), "1,500");
+    await user.type(screen.getByLabelText("Note (optional)"), "Dinner");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("This would overdraw Bank.");
+    expect(screen.getByLabelText("Paid from")).toHaveValue("1");
+    expect(screen.getByLabelText("Total (THB)")).toHaveValue("1,500");
+    expect(screen.getByLabelText("Amount for line 1")).toHaveValue("1,500");
+    expect(screen.getByLabelText("Note (optional)")).toHaveValue("Dinner");
+  });
 });

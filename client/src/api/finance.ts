@@ -193,3 +193,33 @@ export async function setArchived(id: number, archived: boolean): Promise<Accoun
 export async function deleteAccount(id: number): Promise<void> {
   await api<void>(`/api/accounts/${id}`, { method: "DELETE" });
 }
+
+// F-11 Financial reports — docs/sprints/sprint-3/F-11-reports.md §3. Amounts in satang; `share` in basis points.
+export type ReportType = "EXPENSE" | "INCOME";
+
+export interface MonthlyReport {
+  months: { month: string; income: number; expense: number; net: number }[];
+  totals: { income: number; expense: number; net: number };
+}
+
+export interface CategoryBreakdown {
+  type: ReportType;
+  total: number;
+  days: number;
+  averageDaily: number;
+  categories: { accountId: number; name: string; total: number; share: number }[];
+}
+
+export function getMonthlyReport(from: string, to: string): Promise<MonthlyReport> {
+  const q = new URLSearchParams({ from, to });
+  return api<MonthlyReport>(`/api/reports/monthly?${q}`);
+}
+
+export function getCategoryBreakdown(
+  startDate: string,
+  endDate: string,
+  type: ReportType,
+): Promise<CategoryBreakdown> {
+  const q = new URLSearchParams({ startDate, endDate, type });
+  return api<CategoryBreakdown>(`/api/reports/category-breakdown?${q}`);
+}

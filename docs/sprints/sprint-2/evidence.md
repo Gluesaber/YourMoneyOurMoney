@@ -78,6 +78,7 @@ the feature code; their RED evidence is in the client and E2E tests, as each con
 | Deploy demo run | 45110841675 — success (11:16 → 11:20): tests + Docker build, image push, migration job, deploy, smoke test |
 | Migration | Cloud Run job execution `ymom-migrate-9w8bj` completed; applied `20261122120000_add_account_archived_at` |
 | Cloud Run revision | `ymom-00008-5rn`, 100 % of traffic (previous `ymom-00007-pkv`, rollback target `0731479`) |
+| Later redeploy (no code change) | PR #82 (this §6) was merged into `main` instead of staging: `main` `249eb2d`, Deploy demo run 45119065635 (migration `ymom-migrate-n4545`), revision **`ymom-00009-dd6`** from 23 Nov 12:42. `cd90cb6..249eb2d` changes only this file, so the deployed code is still `v0.2.0` |
 | Image | `asia-southeast1-docker.pkg.dev/cpe334-yourmoneymymoney/ymom/ymom@sha256:297a96e3…812e` |
 | Smoke test | `/api/health`, `/api/ready`, `/` PASS; optional login check skipped (no smoke credentials configured) |
 | Pre-release gate | `1cf4ccc` (same code as `1ee552e`): server 265, client 110, E2E 12, lint · format · types · build clean; local upgrade check from the live schema passed (`test-results.md`) |
