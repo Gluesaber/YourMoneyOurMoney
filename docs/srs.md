@@ -2,7 +2,7 @@
 
 > **Document Version:** 1.2.0  
 > **Date:** 2026-11-22  
-> **Status:** Baseline with approved revisions: Sprint 1 accepted (`v0.1.0`); Sprint 2 FRs (FR-ACC-06, FR-TX-03, FR-TX-07…09, FR-HST-03) and BR-15/16 implemented (S2-07); BR-14 pending TA approval (L7-01, #64)  
+> **Status:** Baseline with approved revisions: Sprint 1 accepted (`v0.1.0`); Sprint 2 FRs (FR-ACC-06, FR-TX-03, FR-TX-07…09, FR-HST-03) and BR-15/16 implemented (S2-07); BR-14 approved 2026-11-24 (Lab 7 L7-01, #64), contract revised, implementation in progress  
 > **Project Theme:** Theme 7 — Personal Money and Expense Logging (CPE 334)  
 > **Authors:** Track A (Identity & Administration) & Track B (Ledger & Reporting)
 
@@ -112,8 +112,8 @@ A client without an active, valid session cookie.
 ## 4. Business Rules (BR-01 through BR-13)
 
 The system enforces the business rules below across the service layer and database schema. BR-01 … BR-13 come from
-Sprint 1; BR-15 and BR-16 were added by F-06 in Sprint 2 (#67). BR-14 is reserved for the Lab 7 change request L7-01
-(#64, awaiting approval).
+Sprint 1; BR-15 and BR-16 were added by F-06 in Sprint 2 (#67). BR-14 was added by the Lab 7 change request L7-01
+(#64, approved by the TA on 2026-11-24); it replaces the Sprint 1 decision that a Cash balance may go negative.
 
 | ID | Rule Statement | Enforcing Layer | Error Code & Status | Rationale |
 |---|---|---|---|---|
@@ -130,6 +130,7 @@ Sprint 1; BR-15 and BR-16 were added by F-06 in Sprint 2 (#67). BR-14 is reserve
 | **BR-11** | The source account cannot appear as one of its own allocation lines. | Service (`ledger.ts`) | 400 `VALIDATION_ERROR` | An account cannot allocate funds to itself within the same transaction. |
 | **BR-12** | Only `CASH`, `LOAN_TAKEN`, and `LOAN_GIVEN` accounts have opening balances. | Database CHECK constraint & Service | 400 `INVALID_ACCOUNT_TYPE` | Nominal accounts (`INCOME`, `EXPENSE`) accumulate period transactions only; no initial equity. |
 | **BR-13** | A transaction is saved all-or-nothing; a rejected transaction changes no balance. | Database Transaction (`prisma.$transaction`) | Handled via Rollback | Eliminates partial writes or orphaned records upon validation or database failures. |
+| **BR-14** | A new transaction must not leave any CASH account it decreases (the PAYMENT source, or a CASH line of a RECEIVE) with a balance below 0; balance = opening balance + every recorded transaction, whatever its date. LOAN_TAKEN accounts have no limit. (Lab 7, L7-01) | Service (`ledger.ts` `checkCashFunds`) inside the save transaction, decreased CASH rows locked | 400 `INSUFFICIENT_FUNDS` | Cash accounts are money the user holds and the product has no overdraft facility; replaces the Sprint 1 "overdraft allowed" decision. |
 | **BR-15** | An account's `type` and `subtype` cannot change once any transaction uses it (as source or line). (F-06) | Service (`accounts.routes.ts`) | 400 `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS` | Changing the type would silently change the meaning and balance effect of recorded transactions. |
 | **BR-16** | An archived account takes no new transactions and no opening-balance change; a CASH / LOAN account can be archived only when its balance is 0. (F-06) | Service (`accounts.routes.ts`, `transactions.routes.ts`) | 400 `ACCOUNT_ARCHIVED` / `ACCOUNT_NOT_EMPTY` | Archiving hides an account from new entries without losing history, and never hides money or debt. |
 
@@ -279,7 +280,7 @@ Sprint 1; BR-15 and BR-16 were added by F-06 in Sprint 2 (#67). BR-14 is reserve
 #### FR-TX-01: Payment Transaction Recording
 - **Description:** A User can record a `PAYMENT` transaction representing an outflow from liquid funds (`CASH`) or an increase in debt (`LOAN_TAKEN`), allocated across one or more line items.
 - **Actor:** User.
-- **Business Rules:** BR-01, BR-02, BR-03, BR-04, BR-09, BR-10, BR-11, BR-13.
+- **Business Rules:** BR-01, BR-02, BR-03, BR-04, BR-09, BR-10, BR-11, BR-13, BR-14.
 - **Inputs:** `kind: 'PAYMENT'`, `sourceAccountId` (integer), `date` (`YYYY-MM-DD`), `totalAmount` (integer satang > 0), optional `note` (string), `lines: [{ accountId, amount }]`.
 - **Validation Rules:**
   - Source must belong to user and be `CASH` or `LOAN_TAKEN` (BR-09).
@@ -287,13 +288,14 @@ Sprint 1; BR-15 and BR-16 were added by F-06 in Sprint 2 (#67). BR-14 is reserve
   - Line accounts must belong to user and have type `EXPENSE`, `LOAN_TAKEN`, `LOAN_GIVEN`, or `CASH` (BR-10).
   - Lines sum must equal `totalAmount` exactly (BR-01).
   - Source cannot appear as an allocation line (BR-11).
+  - If the source is `CASH`, its balance after the payment must be at least 0 (BR-14, L7-01).
 - **Outputs:** HTTP 201 `{ transaction: Transaction }`.
 - **Target Sprint:** Sprint 1 (Feature F-04).
 
 #### FR-TX-02: Receive Transaction Recording
 - **Description:** A User can record a `RECEIVE` transaction representing an inflow deposited into liquid funds (`CASH`), allocated across one or more line items.
 - **Actor:** User.
-- **Business Rules:** BR-01, BR-02, BR-03, BR-04, BR-09, BR-10, BR-11, BR-13.
+- **Business Rules:** BR-01, BR-02, BR-03, BR-04, BR-09, BR-10, BR-11, BR-13, BR-14.
 - **Inputs:** `kind: 'RECEIVE'`, `sourceAccountId` (integer), `date` (`YYYY-MM-DD`), `totalAmount` (integer satang > 0), optional `note` (string), `lines: [{ accountId, amount }]`.
 - **Validation Rules:**
   - Source must belong to user and be `CASH` (BR-09).
@@ -301,6 +303,7 @@ Sprint 1; BR-15 and BR-16 were added by F-06 in Sprint 2 (#67). BR-14 is reserve
   - Line accounts must belong to user and have type `INCOME`, `LOAN_GIVEN`, `LOAN_TAKEN`, or `CASH` (BR-10).
   - Lines sum must equal `totalAmount` exactly (BR-01).
   - Source cannot appear as an allocation line (BR-11).
+  - Each `CASH` line account's balance after the receive must be at least 0 (BR-14, L7-01).
 - **Outputs:** HTTP 201 `{ transaction: Transaction }`.
 - **Target Sprint:** Sprint 1 (Feature F-04).
 
