@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { getPrisma } from "../prisma.js";
 import { AppError, ErrorCode } from "../lib/errors.js";
@@ -6,7 +7,8 @@ import { asyncHandler } from "../lib/asyncHandler.js";
 import { MAX_INT, calendarDate, fromDateOnly, parseId, toDateOnly } from "../lib/validation.js";
 import { MAX_TRANSACTION_ROWS, parseTransactionQuery, toOrderBy, toWhere } from "../lib/transactionQuery.js";
 import { requireRole, requireUser } from "../middleware/auth.js";
-import { validateTransaction } from "../services/ledger.js";
+import { cashDecreases, checkCashFunds, validateTransaction } from "../services/ledger.js";
+import { loadLedger } from "../services/userLedger.js";
 
 // F-04 Record a transaction (POST /) — docs/sprints/sprint-1/F-04-transactions.md.
 // F-05 Transaction history (GET /, GET /:id) — docs/sprints/sprint-1/F-05-summary-history.md §3.
@@ -55,11 +57,24 @@ transactionsRouter.post(
     assertNotArchived(body, new Map(accounts.map((a) => [a.id, a])));
 
     // Steps 3–6.
-    validateTransaction(body, new Map(accounts.map((a) => [a.id, a])));
+    const accountsById = new Map(accounts.map((a) => [a.id, a]));
+    validateTransaction(body, accountsById);
 
-    // Step 7 — BR-13: the transaction and its lines are saved together or not at all. Lines are created
-    // separately because the composite (id, userId) foreign keys do not allow userId in a nested create.
+    // Steps 7–8 run in one database transaction, so a rejected transaction changes nothing (BR-13).
     const created = await prisma.$transaction(async (tx) => {
+      // Step 7 — BR-14 (Lab 7 L7-01): no CASH account this transaction decreases may end below 0. Lock those
+      // account rows first, in ascending id order so two requests can never lock the same accounts in opposite
+      // order (deadlock), then read the balances inside this transaction: a concurrent payment from the same
+      // account waits here and then sees this one's effect.
+      const decreased = [...cashDecreases(body, accountsById).keys()].sort((a, b) => a - b);
+      if (decreased.length > 0) {
+        await tx.$queryRaw`SELECT "id" FROM "Account" WHERE "id" IN (${Prisma.join(decreased)}) ORDER BY "id" FOR UPDATE`;
+        const { balances } = await loadLedger(userId, tx);
+        checkCashFunds(body, accountsById, balances);
+      }
+
+      // Step 8 — save the transaction and its lines. Lines are created separately because the composite
+      // (id, userId) foreign keys do not allow userId in a nested create.
       const transaction = await tx.transaction.create({
         data: {
           userId,
