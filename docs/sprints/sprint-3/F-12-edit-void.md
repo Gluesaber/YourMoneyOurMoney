@@ -1,10 +1,10 @@
 # F-12 — Transaction Editing, Voiding & Corrections (Sprint 3 contract)
 
-> **Status:** v0.1 draft for review (contract Issue S3-01 #83; implementation Issue S3-03 (#85)). Merged before any F-12 code.
+> **Status:** v0.2 — reviewed and merged in #89 (contract Issue S3-01 #83) before any F-12 code; implementation Issue S3-03 (#85) not started.
 > **Requirements:** FR-TX-10, FR-TX-01, FR-TX-02, FR-TX-05 · BR-01, BR-02, BR-04, BR-05, BR-09, BR-10, BR-11, BR-13, BR-14 · new BR-17
 > **Depends on:** F-04 (validation steps), F-05 (balances), F-06 (archived accounts, `inUse`), F-09 (`transactionQuery.ts`),
-> F-10 (favorites), L7-01 / BR-14 (awaiting TA approval on #64 — if BR-14 is not adopted, the BR-14 parts of this
-> contract are dropped by a versioned revision).
+> F-10 (favorites), L7-01 / BR-14 (approved by the TA on 24 Nov 2026, #64, and released in `v0.3.0-rc.1`, so the BR-14 parts of this
+> contract apply).
 > **IDs:** `AC-VOID-01…`, `T-VOID-API-01…` as reserved in `docs/traceability.md`.
 
 ## 1. Behaviour

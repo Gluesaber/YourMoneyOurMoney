@@ -2,7 +2,7 @@
 
 > **Status:** v0.3 — reviewed in #66; revised for implementation in S2-04 (#69) before any F-08 code (§10).
 > **Requirements:** FR-TX-09, FR-ACC-02, FR-TX-01, FR-TX-02, FR-SUM-01 · BR-01, BR-02, BR-03, BR-04, BR-08, BR-09, BR-10, BR-12, BR-13, BR-14
-> **Depends on:** F-04, F-05, F-06 (creating LOAN_GIVEN / personal LOAN_TAKEN accounts), L7-01 / BR-14. BR-14 is still awaiting TA approval (#64), so the overdraft case (`AC-DEBT-03` / `T-DEBT-API-03`) is verified in L7-01, not in this feature (v0.3).
+> **Depends on:** F-04, F-05, F-06 (creating LOAN_GIVEN / personal LOAN_TAKEN accounts), L7-01 / BR-14. When this contract was written BR-14 awaited TA approval (#64), so the overdraft case (`AC-DEBT-03` / `T-DEBT-API-03`) is verified in L7-01, not in this feature (v0.3). BR-14 was approved on 24 Nov 2026 and AC-DEBT-03 passes as T-FUND-API-08 in `v0.3.0-rc.1`.
 > **IDs:** `AC-DEBT-01…`, `T-DEBT-API-01…` as reserved in `docs/traceability.md`.
 
 ## 1. Behaviour
