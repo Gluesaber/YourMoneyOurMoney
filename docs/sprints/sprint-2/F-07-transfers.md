@@ -3,8 +3,9 @@
 > **Status:** v0.4 — reviewed in #66; v0.3 implemented in #74 (S2-03, #68); v0.4 from the #74 review (§10).
 > **Requirements:** FR-TX-03, FR-SUM-03 · BR-01, BR-02, BR-03, BR-04, BR-08, BR-09, BR-10, BR-11, BR-13, BR-14
 > **Depends on:** F-04 (transaction save path), F-05 (balances/summary), F-06 (creating a second CASH account),
-> L7-01 / BR-14 (no Cash overdraft). BR-14 is still awaiting TA approval (#64), so the overdraft case of a transfer
-> (AC-TX-15) is verified in L7-01, not in this feature (v0.3).
+> L7-01 / BR-14 (no Cash overdraft). When this contract was written BR-14 awaited TA approval (#64), so the overdraft
+> case of a transfer (AC-TX-15) is verified in L7-01, not in this feature (v0.3). BR-14 was approved on 24 Nov 2026 and
+> AC-TX-15 passes as T-FUND-API-07 in `v0.3.0-rc.1`.
 > **IDs:** uses the `AC-TX-13…` / `T-TX-API-11…` range already reserved for F-07 in `docs/traceability.md`.
 
 ## 1. Behaviour

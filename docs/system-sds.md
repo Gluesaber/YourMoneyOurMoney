@@ -1,7 +1,8 @@
 # YourMoneyOurMoney — System-Level SDS
 
 > **Status:** Sprint 1 baseline, revised for Sprint 2 (F-06 accounts, F-07 transfers, F-08 loans, F-09 search, F-10
-> favorites; verified at `a8d6b06`, S2-07). Sections 2–7 are the **shared contracts frozen in S1-02** — both tracks code
+> favorites; verified at `a8d6b06`, S2-07) and for Sprint 3 F-11 reports (#84) and Lab 7 BR-14 (#64), released in
+> `v0.3.0-rc.1` (`65538ae`). F-12…F-14 designs are in their Sprint 3 contracts and are added here when implemented. Sections 2–7 are the **shared contracts frozen in S1-02** — both tracks code
 > against them, and any change needs a PR reviewed by both members. Sections 1 and 8 were added in **S1-09**.
 > Business-rule IDs (BR-xx) are defined in `docs/srs.md` (S1-03); they are quoted here for convenience.
 > The sprint-by-sprint feature allocation is in `docs/sprints/plan.md`.

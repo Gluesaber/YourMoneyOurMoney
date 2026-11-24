@@ -2,7 +2,7 @@
 
 > **Document Version:** 1.2.0  
 > **Date:** 2026-11-24  
-> **Status:** Baseline with approved revisions: Sprint 1 accepted (`v0.1.0`); Sprint 2 FRs (FR-ACC-06, FR-TX-03, FR-TX-07…09, FR-HST-03) and BR-15/16 implemented (S2-07); BR-14 approved 2026-11-24 (Lab 7 L7-01, #64), contract revised, implementation in progress  
+> **Status:** Baseline with approved revisions: Sprint 1 accepted (`v0.1.0`); Sprint 2 FRs (FR-ACC-06, FR-TX-03, FR-TX-07…09, FR-HST-03) and BR-15/16 implemented (S2-07); BR-14 approved 2026-11-24 (Lab 7 L7-01, #64) and implemented; FR-SUM-04 (F-11 reports) implemented; both released in `v0.3.0-rc.1` (`65538ae`); FR-TX-10, FR-HST-04, FR-AUTH-07 (F-12…F-14) specified for Sprint 3, not yet implemented  
 > **Project Theme:** Theme 7 — Personal Money and Expense Logging (CPE 334)  
 > **Authors:** Track A (Identity & Administration) & Track B (Ledger & Reporting)
 

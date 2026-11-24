@@ -1,6 +1,6 @@
 # F-14 — User Profile & Security Settings: Password Change (Sprint 3 contract) [Added by Team]
 
-> **Status:** v0.1 draft for review (contract Issue S3-01 #83; implementation Issue S3-05 (#87)). Merged before any F-14 code.
+> **Status:** v0.2 — reviewed and merged in #89 (contract Issue S3-01 #83) before any F-14 code; implementation Issue S3-05 (#87) not started.
 > **Requirements:** FR-AUTH-07, FR-AUTH-06 · BR-06 · NFR-SEC-01, NFR-SEC-02 · DL-09
 > **Depends on:** F-01 (login, sessions, bcrypt), F-02 (disabled users).
 > **IDs:** `AC-PROF-01…`, `T-PROF-API-01…` as reserved in `docs/traceability.md`.

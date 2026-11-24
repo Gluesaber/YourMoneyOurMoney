@@ -1,8 +1,8 @@
 # YourMoneyOurMoney — Whole-Product Feature Inventory
 
-> **Document Version:** 1.2.0  
-> **Date:** 2026-11-22  
-> **Status:** Sprint 1 accepted (`v0.1.0`; Lab 6 UAT on `0731479`); Sprint 2 F-06…F-10 implemented and verified on `Sprint-2/staging` @ `a8d6b06` (S2-07); Sprint 3 planned  
+> **Document Version:** 1.3.0  
+> **Date:** 2026-11-24  
+> **Status:** Sprint 1 accepted (`v0.1.0`; Lab 6 UAT on `0731479`); Sprint 2 F-06…F-10 accepted in `v0.2.0` (S2-07, `cd90cb6`); F-04 revised by Lab 7 L7-01 (BR-14); Sprint 3 contracts F-11…F-14 v0.2 merged (#89); F-11 implemented; release candidate `v0.3.0-rc.1` (`65538ae`); F-12…F-14 specified, not yet implemented  
 > **Product Scope:** Sprint 1, Sprint 2, and Sprint 3  
 > **Theme:** Theme 7 — Personal Money and Expense Logging (CPE 334)
 
@@ -17,7 +17,7 @@ This document provides a comprehensive inventory of all product features across 
 | **F-01** | User Authentication & Session Management | **Sprint 1** | Track A | Accepted (`v0.1.0`) | Secure login, session persistence, logout, auth context |
 | **F-02** | Administrator User Management | **Sprint 1** | Track A | Accepted (`v0.1.0`) | User listing, enable/disable accounts, self-disable protection |
 | **F-03** | Account Setup & Opening Balances | **Sprint 1** | Track B | Accepted (`v0.1.0`) | Seeded accounts (Bank, Card, Categories), opening balances |
-| **F-04** | Transaction Recording & Split Allocations | **Sprint 1** | Track B | Accepted (`v0.1.0`) | Payment/Receive entry, multi-line splits, balance validation |
+| **F-04** | Transaction Recording & Split Allocations | **Sprint 1** | Track B | Accepted (`v0.1.0`); revised by L7-01 (BR-14, no Cash overdraft) in `v0.3.0-rc.1` | Payment/Receive entry, multi-line splits, balance validation |
 | **F-05** | Financial Summary & Transaction History | **Sprint 1** | Track B | Accepted (`v0.1.0`) | Real-time balances, debt tracking, category totals, history list |
 | **F-06** | Custom Account & Category Management | **Sprint 2** | Track B (Harit) | Implemented (S2-02, #67) | Create, edit, archive and delete custom accounts and categories |
 | **F-07** | Internal Account Transfers | **Sprint 2** | Track B (Harit) | Implemented (S2-03, #68) | Dedicated UI for inter-account cash transfers |
@@ -25,9 +25,9 @@ This document provides a comprehensive inventory of all product features across 
 | **F-09** | Transaction Search, Filtering & Sorting | **Sprint 2** | Track A (Jirawat) | Implemented (S2-05, #70) | Date range filtering, account & kind filters, literal `q` search, sorting, URL state |
 | **F-10** | Favorite & Duplicate Transactions | **Sprint 2** | Track A (Jirawat) | Implemented (S2-06, #71) | Quick re-entry, star and view favorite transactions, duplicate draft dated today |
 | **F-11** | Financial Reports & Periodic Spending Summaries | **Sprint 3** | Track B (Harit) | Implemented (S3-02, #84) | Monthly income vs expense & category reports (brief), plus visual charts `[Added by Team]` (DL-09) |
-| **F-12** | Transaction Editing, Voiding & Audit Corrections | **Sprint 3** | Decided at sprint planning | Planned | Revise transaction notes/lines, void transactions with rollback |
-| **F-13** | Data Export (CSV & JSON) [Added by Team] | **Sprint 3** | Decided at sprint planning | Planned | Export transaction ledgers and account statements (DL-09) |
-| **F-14** | User Profile & Security Settings [Added by Team] | **Sprint 3** | Decided at sprint planning | Planned | Self-service password change and session review (DL-09) |
+| **F-12** | Transaction Editing, Voiding & Audit Corrections | **Sprint 3** | Track B (Harit) | Specified (contract v0.2, #89); implementation pending (S3-03, #85) | Revise transaction notes/lines, void transactions with rollback |
+| **F-13** | Data Export (CSV & JSON) [Added by Team] | **Sprint 3** | Track A (Jirawat) | Specified (contract v0.2, #89); implementation pending (S3-04, #86) | Export transaction ledgers and account statements (DL-09) |
+| **F-14** | User Profile & Security Settings [Added by Team] | **Sprint 3** | Track A (Jirawat) | Specified (contract v0.2, #89); implementation pending (S3-05, #87) | Self-service password change and session review (DL-09) |
 
 ---
 
@@ -102,7 +102,7 @@ This document provides a comprehensive inventory of all product features across 
 ### F-04: Transaction Recording & Split Allocations
 - **Target Sprint:** Sprint 1
 - **Track Owner:** Track B (Ledger & Reporting)
-- **Status:** Accepted in `v0.1.0` (S1-10 contract, S1-12 backend, S1-14 frontend); re-accepted in Lab 6 UAT on `0731479`
+- **Status:** Accepted in `v0.1.0` (S1-10 contract, S1-12 backend, S1-14 frontend); re-accepted in Lab 6 UAT on `0731479`; revised by Lab 7 L7-01 (BR-14, contract F-04 v1.1, #64) and released in `v0.3.0-rc.1`
 - **User Story:**  
   *As a personal user, I want to record Payment and Receive transactions split across one or more allocation lines with automatic balance validation, so that my expenditures and incomes are accurately categorized.*
 - **Detailed Capabilities:**
@@ -272,8 +272,8 @@ This document provides a comprehensive inventory of all product features across 
 
 ### F-12: Transaction Editing, Voiding & Audit Corrections
 - **Target Sprint:** Sprint 3
-- **Track Owner:** Decided at sprint planning
-- **Status:** Planned
+- **Track Owner:** Track B (Harit)
+- **Status:** Specified (contract `docs/sprints/sprint-3/F-12-edit-void.md` v0.2, #89); implementation pending (S3-03, #85)
 - **User Story:**  
   *As a personal user, I want to edit mistakes in transaction notes/dates or void a wrongly entered transaction, so that my account balances stay accurate if I make an entry error.*
 - **Detailed Capabilities:**
@@ -292,8 +292,8 @@ This document provides a comprehensive inventory of all product features across 
 
 ### F-13: Data Export (CSV & JSON) [Added by Team]
 - **Target Sprint:** Sprint 3
-- **Track Owner:** Decided at sprint planning
-- **Status:** Planned
+- **Track Owner:** Track A (Jirawat)
+- **Status:** Specified (contract `docs/sprints/sprint-3/F-13-export.md` v0.2, #89); implementation pending (S3-04, #86)
 - **User Story:**  
   *As a personal user, I want to export my transaction records and account balances as CSV or JSON files, so that I can backup my data or inspect it in spreadsheet software.*
 - **Detailed Capabilities:**
@@ -312,8 +312,8 @@ This document provides a comprehensive inventory of all product features across 
 
 ### F-14: User Profile & Security Settings [Added by Team]
 - **Target Sprint:** Sprint 3
-- **Track Owner:** Decided at sprint planning
-- **Status:** Planned
+- **Track Owner:** Track A (Jirawat)
+- **Status:** Specified (contract `docs/sprints/sprint-3/F-14-password-change.md` v0.2, #89); implementation pending (S3-05, #87)
 - **User Story:**  
   *As a user or administrator, I want to change my password and view my active session details, so that I can maintain my account security.*
 - **Detailed Capabilities:**

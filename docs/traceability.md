@@ -1,8 +1,8 @@
 # YourMoneyOurMoney — Requirements Traceability Matrix
 
-> **Document Version:** 1.11.0  
+> **Document Version:** 1.12.0  
 > **Date:** 2026-11-24  
-> **Status:** Sprint 1 verified (S1-15); Lab 6 UAT fixes #60, #59 added; Sprint 2 F-06 (#67), F-07 (#68), F-08 (#69), F-09 (#70), F-10 (#71) implemented; review follow-ups from #73 / #74; Sprint 2 integration run S2-07 (#72); Sprint 3 F-11 (#84) implemented; Lab 7 L7-01 (BR-14) implemented (#64)  
+> **Status:** Sprint 1 verified (S1-15); Lab 6 UAT fixes #60, #59 added; Sprint 2 F-06 (#67), F-07 (#68), F-08 (#69), F-09 (#70), F-10 (#71) implemented; review follow-ups from #73 / #74; Sprint 2 integration run S2-07 (#72); Sprint 3 F-11 (#84) implemented; Lab 7 L7-01 (BR-14) released in `v0.3.0-rc.1` (#64); Deliverable 2 release-candidate run on `65538ae`; F-12…F-14 specified, not implemented  
 > **Theme:** Theme 7 — Personal Money and Expense Logging (CPE 334)
 
 This document traces requirements → features → sprints → acceptance criteria → tests → results. Acceptance criteria
@@ -85,14 +85,23 @@ GREEN: server 294 / 294, client 113 / 113, E2E 13 / 13, lint · format · types 
 **Lab 7 L7-01 (#64, 2026-11-24)** on `Issue-L7-01` (contract F-04 v1.1 merged in PR #91 `cbd3461`, RED tests `6e4405c`,
 pre-change code `Sprint-3/staging` @ `943b463`): BR-14 `checkCashFunds` / `cashDecreases` in `services/ledger.ts`, run in
 the save transaction after locking the decreased CASH rows (`INSUFFICIENT_FUNDS`). RED: server 9 failed / 298 passed
-(T-FUND-UNIT-01…03, T-FUND-API-01…03, 07…09; T-FUND-API-04…06 already pass — they guard preserved behaviour), client
+(T-FUND-UNIT-01…03 — 4 tests — and T-FUND-API-02, 03, 07, 08, 09; T-FUND-API-01 already passes because paying exactly the
+balance was always allowed, and T-FUND-API-04…06 guard preserved behaviour), client
 114 / 114 (T-FUND-UI-01 already passes — the form shows any server error unchanged). GREEN: server 307 / 307, client
 114 / 114, E2E 13 / 13, lint · format · types · client build clean. T-TX-API-03 and T-REP-API-04 setups revised first
-(they overdrew an empty Bank).
+(they overdrew an empty Bank). Merged PR #92 (`25ab556`), released in PR #93 → `main` `65538ae`, deployed as
+`ymom-00010-2xp`, tag `v0.3.0-rc.1`; post-deploy checks passed 24 Nov 21:10–21:25 (`docs/labs/lab07/change-impact.md` §7).
 
 **ID rule:** an ID means one thing only. IDs reserved for Sprint 2–3 were renumbered in S1-15 where Sprint 1
 contracts had already used the same number (e.g. F-06 planned `AC-ACC-07..09` → `AC-ACC-12..14`).
 Result column: **Pass** = automated tests passing in the run above; **Planned** = not yet implemented.
+
+**Release candidate run (Deliverable 2, 2026-11-24 22:20)** on code identical to `v0.3.0-rc.1` / `main` @ `65538ae`:
+server 307 / 307, client 114 / 114, E2E 13 / 13, lint · format · types · client build clean; 0 failed, 0 skipped. Every
+**Pass** above for Sprints 1–3 and L7-01 holds on this commit (`docs/sprints/sprint-3/rc-record.md`). Uncovered at this
+checkpoint and planned for final verification: FR-TX-10, FR-HST-04, FR-AUTH-07 (F-12…F-14), NFR-PERF-01/02 and
+NFR-REL-01 measurements, the remaining browsers of NFR-COMP-01 and the 360 px check of new pages (NFR-COMP-02) —
+owners and dates in `docs/sprints/plan.md` §6.
 
 ---
 
@@ -117,15 +126,15 @@ Result column: **Pass** = automated tests passing in the run above; **Planned** 
 | **FR-ACC-04** | Opening balance and date setup on CASH/LOAN | BR-03, BR-04, BR-12 | F-03, F-06 | 1 / 2 | AC-ACC-03 .. AC-ACC-09, AC-ACC-11 | T-ACC-API-03 .. T-ACC-API-09, T-ACC-UI-01, T-ACC-UI-02, T-ACC-UI-03 (#60), T-ACC-E2E-01 | **Pass** |
 | **FR-ACC-05** | Exclude opening balances from income/expense | BR-08 | F-03, F-05 | 1 | AC-ACC-10, AC-SUM-04 | T-ACC-API-10, T-SUM-UNIT-04, T-ACC-E2E-01 | **Pass** |
 | **FR-ACC-06** | Custom account create, edit, archive, delete (no type change with txns) | BR-03, BR-04, BR-12, BR-15, BR-16 | F-06 | 2 | AC-ACC-12..23 | T-ACC-UNIT-01, T-ACC-API-11..21, T-ACC-DB-01, T-ACC-UI-04, T-ACC-UI-05, T-ACC-E2E-02 | **Pass** (S2-02, #67; AC-ACC-23 in the #73 follow-up) |
-| **FR-TX-01** | Payment transaction recording (CASH/LOAN_TAKEN) | BR-01, BR-02, BR-03, BR-04, BR-09, BR-10, BR-11, BR-13, BR-14 | F-04, F-08, F-12 | 1 / 2 / 3 | AC-TX-02 .. AC-TX-12; AC-FUND-01..06 (L7-01); AC-DEBT-01, 02, 04 (Sprint 2; AC-DEBT-03 → L7-01); AC-VOID-01..03 (Sprint 3) | T-TX-UNIT-01..06, T-TX-API-02..10, T-TX-UI-01..03, T-TX-E2E-01; T-FUND-UNIT-01..03, T-FUND-API-01..09, T-FUND-UI-01 (L7-01); T-DEBT-API-01, 02, 04 (Sprint 2); T-VOID-API-01..02 (Sprint 3) | **Pass** (Sprints 1–2 at `a8d6b06`; L7-01 on `Issue-L7-01`); Sprint 3 part Planned |
-| **FR-TX-02** | Receive transaction recording (CASH source) | BR-01, BR-02, BR-03, BR-04, BR-09, BR-10, BR-11, BR-13, BR-14 | F-04, F-08, F-12 | 1 / 2 / 3 | AC-TX-01, AC-TX-04 .. AC-TX-11; AC-FUND-01..06 (L7-01); AC-DEBT-01, 02, 04 (Sprint 2); AC-VOID-01..03 (Sprint 3) | T-TX-UNIT-01..06, T-TX-API-01, T-TX-API-04..10, T-TX-UI-02, T-TX-UI-03 (#60), S1-15 demo-journey E2E; T-DEBT-API-01, 02, 04 (Sprint 2); T-FUND-UNIT-02, T-FUND-API-04, T-FUND-API-09 (L7-01); T-VOID-API-01..02 (Sprint 3) | **Pass** (Sprints 1–2 at `a8d6b06`; L7-01 on `Issue-L7-01`); Sprint 3 part Planned |
+| **FR-TX-01** | Payment transaction recording (CASH/LOAN_TAKEN) | BR-01, BR-02, BR-03, BR-04, BR-09, BR-10, BR-11, BR-13, BR-14 | F-04, F-08, F-12 | 1 / 2 / 3 | AC-TX-02 .. AC-TX-12; AC-FUND-01..06 (L7-01); AC-DEBT-01, 02, 04 (Sprint 2; AC-DEBT-03 → L7-01); AC-VOID-01..03 (Sprint 3) | T-TX-UNIT-01..06, T-TX-API-02..10, T-TX-UI-01..03, T-TX-E2E-01; T-FUND-UNIT-01..03, T-FUND-API-01..09, T-FUND-UI-01 (L7-01); T-DEBT-API-01, 02, 04 (Sprint 2); T-VOID-API-01..02 (Sprint 3) | **Pass** (Sprints 1–2 at `a8d6b06`; L7-01 in `v0.3.0-rc.1`); Sprint 3 part Planned |
+| **FR-TX-02** | Receive transaction recording (CASH source) | BR-01, BR-02, BR-03, BR-04, BR-09, BR-10, BR-11, BR-13, BR-14 | F-04, F-08, F-12 | 1 / 2 / 3 | AC-TX-01, AC-TX-04 .. AC-TX-11; AC-FUND-01..06 (L7-01); AC-DEBT-01, 02, 04 (Sprint 2); AC-VOID-01..03 (Sprint 3) | T-TX-UNIT-01..06, T-TX-API-01, T-TX-API-04..10, T-TX-UI-02, T-TX-UI-03 (#60), S1-15 demo-journey E2E; T-DEBT-API-01, 02, 04 (Sprint 2); T-FUND-UNIT-02, T-FUND-API-04, T-FUND-API-09 (L7-01); T-VOID-API-01..02 (Sprint 3) | **Pass** (Sprints 1–2 at `a8d6b06`; L7-01 in `v0.3.0-rc.1`); Sprint 3 part Planned |
 | **FR-TX-03** | Internal account transfer recording (CASH to CASH) | BR-01, BR-02, BR-03, BR-04, BR-08, BR-09, BR-10, BR-11, BR-13, BR-14, BR-16 | F-07 | 2 | AC-TX-13, AC-TX-14, AC-TX-16..19 (AC-TX-15 moved to L7-01, #64) | T-TX-API-11, T-TX-API-12, T-TX-API-14, T-TRF-UNIT-01, T-TRF-UI-01, T-TRF-UI-02, T-TRF-UI-03, T-HST-UI-04, T-TX-E2E-02 | **Pass** (S2-03, #68); AC-TX-15 by T-FUND-API-07 (L7-01) **Pass** |
 | **FR-TX-04** | Multi-line split allocation per transaction | BR-01, BR-02 | F-04 | 1 | AC-TX-02, AC-TX-04, AC-TX-12 | T-TX-UNIT-01, T-TX-UNIT-02, T-TX-API-02, T-TX-API-04, T-TX-UI-01, T-TX-E2E-01 | **Pass** |
 | **FR-TX-05** | Atomic persistence via database transaction | BR-13 | F-04, F-12 | 1 / 3 | AC-TX-11; AC-VOID-01..03 (Sprint 3) | T-TX-API-04 .. T-TX-API-09 (counts unchanged on every rejection); T-VOID-API-01..02 (Sprint 3) | **Pass** (Sprint 1 part) |
 | **FR-TX-06** | Composite ownership validation on accounts | BR-04 | F-04 | 1 | AC-TX-09 | T-TX-API-09, T-ADM-API-04, schema DB tests (ownership) | **Pass** |
 | **FR-TX-07** | Favorite transactions toggle and viewing (`?favorite=true`) | BR-04, BR-05, BR-13 | F-10 | 2 | AC-FAV-01, AC-FAV-02, AC-FAV-05 | T-FAV-API-01..03, T-FAV-UI-03, T-ADM-API-04, T-FAV-E2E-01 | **Pass** (S2-06, #71; full run at `a8d6b06`, S2-07) |
 | **FR-TX-08** | Transaction duplication helper | BR-04 | F-10 | 2 | AC-FAV-03, AC-FAV-04, AC-FAV-06 | T-FAV-UNIT-01, T-FAV-UI-01, T-FAV-UI-02, T-FAV-E2E-01 | **Pass** (S2-06, #71; full run at `a8d6b06`, S2-07) |
-| **FR-TX-09** | Debt and loan lifecycle tracking | BR-01, BR-02, BR-03, BR-04, BR-08, BR-09, BR-10, BR-12, BR-13, BR-14, BR-16 | F-08 | 2 | AC-DEBT-01, AC-DEBT-02, AC-DEBT-04..07 (AC-DEBT-03 moved to L7-01, #64) | T-DEBT-API-01, T-DEBT-API-02, T-DEBT-API-04, T-DEBT-UNIT-01, T-DEBT-UI-01, T-DEBT-UI-02, T-DEBT-E2E-01 | **Pass** (S2-04, #69; full run at `a8d6b06`, S2-07); AC-DEBT-03 planned in L7-01 |
+| **FR-TX-09** | Debt and loan lifecycle tracking | BR-01, BR-02, BR-03, BR-04, BR-08, BR-09, BR-10, BR-12, BR-13, BR-14, BR-16 | F-08 | 2 | AC-DEBT-01, AC-DEBT-02, AC-DEBT-04..07 (AC-DEBT-03 moved to L7-01, #64) | T-DEBT-API-01, T-DEBT-API-02, T-DEBT-API-04, T-DEBT-UNIT-01, T-DEBT-UI-01, T-DEBT-UI-02, T-DEBT-E2E-01 | **Pass** (S2-04, #69; full run at `a8d6b06`, S2-07); AC-DEBT-03 by T-FUND-API-08 (L7-01) **Pass** in `v0.3.0-rc.1` |
 | **FR-TX-10** | Transaction modification and voiding | BR-01, BR-02, BR-04, BR-11, BR-13 | F-12 | 3 | AC-VOID-01..03 | T-VOID-API-01..02 | Planned |
 | **FR-SUM-01** | Dynamic balance computation from ledger effects | BR-03, BR-04, BR-08 | F-05, F-08 | 1 / 2 | AC-SUM-01, AC-SUM-02, AC-SUM-03, AC-SUM-05; AC-DEBT-01, AC-DEBT-02 (Sprint 2) | T-SUM-UNIT-01..03, T-SUM-API-01..04, T-ACC-API-03; T-DEBT-API-01..02, T-DEBT-E2E-01 (Sprint 2) | **Pass** (Sprint 1; Sprint 2 part in the S2-07 run at `a8d6b06`) |
 | **FR-SUM-02** | Consolidated summary API (`GET /api/summary`) | BR-04, BR-05, BR-08 | F-05 | 1 | AC-SUM-01, AC-SUM-02, AC-SUM-06, AC-SUM-07 | T-SUM-API-01, T-SUM-API-02, T-SUM-API-05, T-SUM-UI-01, T-SUM-E2E-01 | **Pass** |
@@ -155,9 +164,9 @@ Result column: **Pass** = automated tests passing in the run above; **Planned** 
 | **F-09** | Transaction Search, Filtering & Sorting | 2 | Track A (Jirawat) | FR-HST-03 | BR-04, BR-05 | AC-HST-04..08 | T-HST-UNIT-01, T-HST-UNIT-02, T-HST-API-04..09, T-HST-UI-02, T-HST-E2E-01 | **Pass** (S2-05, #70) |
 | **F-10** | Favorite & Duplicate Transactions | 2 | Track A (Jirawat) | FR-TX-07, FR-TX-08 | BR-04, BR-05, BR-13 | AC-FAV-01..06 | T-FAV-API-01..03, T-FAV-UNIT-01, T-FAV-UI-01..03, T-FAV-E2E-01, T-ADM-API-04 | **Pass** (S2-06, #71; full run at `a8d6b06`, S2-07) |
 | **F-11** | Financial Reports & Periodic Spending Summaries | 3 | Track B (Harit) | FR-SUM-04 | BR-03, BR-04, BR-05, BR-08 | AC-REP-01..05 | T-REP-UNIT-01..03, T-REP-API-01..04, T-REP-UI-01, T-REP-E2E-01 | **Pass** (S3-02, #84) |
-| **F-12** | Transaction Editing, Voiding & Audit Corrections | 3 | Decided at sprint planning | FR-TX-10, FR-TX-01, FR-TX-02, FR-TX-05 | BR-01, BR-02, BR-04, BR-11, BR-13 | AC-VOID-01..03 | T-VOID-API-01..02 | Planned |
-| **F-13** | Data Export (CSV & JSON) [Added by Team] | 3 | Decided at sprint planning | FR-HST-04 | BR-03, BR-04 | AC-EXP-01..03 | T-EXP-API-01..02 | Planned |
-| **F-14** | User Profile & Security Settings [Added by Team] | 3 | Decided at sprint planning | FR-AUTH-07, FR-AUTH-06 | BR-06 | AC-PROF-01..03 | T-PROF-API-01..02 | Planned |
+| **F-12** | Transaction Editing, Voiding & Audit Corrections | 3 | Track B (Harit) | FR-TX-10, FR-TX-01, FR-TX-02, FR-TX-05 | BR-01, BR-02, BR-04, BR-11, BR-13 | AC-VOID-01..03 | T-VOID-API-01..02 | Planned |
+| **F-13** | Data Export (CSV & JSON) [Added by Team] | 3 | Track A (Jirawat) | FR-HST-04 | BR-03, BR-04 | AC-EXP-01..03 | T-EXP-API-01..02 | Planned |
+| **F-14** | User Profile & Security Settings [Added by Team] | 3 | Track A (Jirawat) | FR-AUTH-07, FR-AUTH-06 | BR-06 | AC-PROF-01..03 | T-PROF-API-01..02 | Planned |
 
 ---
 
@@ -178,7 +187,7 @@ Result column: **Pass** = automated tests passing in the run above; **Planned** 
 | **BR-11** | Source account cannot be one of its own lines | FR-TX-01 .. FR-TX-03, FR-TX-10 | F-04, F-07, F-12 | 1 / 2 / 3 | `validateTransaction` → 400 `VALIDATION_ERROR`; source removed from line options | T-TX-UNIT-05, T-TX-UNIT-06, T-TX-API-08, form component tests | **Pass** |
 | **BR-12** | Opening balances only on CASH, LOAN_TAKEN, LOAN_GIVEN | FR-ACC-04, FR-ACC-06, FR-TX-09 | F-03, F-06, F-08 | 1 / 2 | route check → 400 `INVALID_ACCOUNT_TYPE` + DB CHECK constraint | T-ACC-API-06, schema DB tests (accounts) | **Pass** |
 | **BR-13** | A transaction is saved all-or-nothing | FR-TX-01 .. FR-TX-03, FR-TX-05, FR-TX-09, FR-TX-10 | F-04, F-07, F-08, F-12 | 1 / 2 / 3 | one `prisma.$transaction` for transaction + lines | T-TX-API-04 .. T-TX-API-10 (counts unchanged after every rejection) | **Pass** |
-| **BR-14** | A new transaction cannot overdraw a CASH account (L7-01) | FR-TX-01 .. FR-TX-03, FR-TX-09 | F-04 (+ F-07, F-08, F-10 save path) | Lab 7 | `checkCashFunds` in the save transaction, decreased CASH rows locked in id order → 400 `INSUFFICIENT_FUNDS` | T-FUND-UNIT-01..03, T-FUND-API-01..09, T-FUND-UI-01 | **Pass** (L7-01 on `Issue-L7-01`, #64; release pending) |
+| **BR-14** | A new transaction cannot overdraw a CASH account (L7-01) | FR-TX-01 .. FR-TX-03, FR-TX-09 | F-04 (+ F-07, F-08, F-10 save path) | Lab 7 | `checkCashFunds` in the save transaction, decreased CASH rows locked in id order → 400 `INSUFFICIENT_FUNDS` | T-FUND-UNIT-01..03, T-FUND-API-01..09, T-FUND-UI-01 | **Pass** (L7-01, #64; released `v0.3.0-rc.1`, live-checked) |
 | **BR-15** | Account type/subtype fixed once a transaction uses it | FR-ACC-06 | F-06 | 2 | route check → 400 `CANNOT_CHANGE_ACCOUNT_TYPE_WITH_TRANSACTIONS` | T-ACC-API-16, T-ACC-UI-05 (type change not offered once used) | **Pass** (#67; UI part in the #73/#74 follow-up) |
 | **BR-16** | Archived accounts take no new transactions or opening balance; archive only at balance 0 (CASH/LOAN) | FR-ACC-06 | F-06 | 2 | `ACCOUNT_ARCHIVED` in transactions and opening-balance routes; `ACCOUNT_NOT_EMPTY` | T-ACC-API-17, T-ACC-API-18, T-ACC-E2E-02 | **Pass** (#67) |
 

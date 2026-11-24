@@ -149,6 +149,25 @@ reviewed PR, a document) rather than an AI agent's or an author's claim:
 **Remaining after Sprint 2 (S2-07, 22 Nov 2026):** F-11 to F-14 and Sprint 3 hardening; the Lab 7 change L7-01 (#64,
 awaiting TA approval), which also carries AC-TX-15 (F-07) and AC-DEBT-03 (F-08); Lab 7 and Deliverable 2 reports.
 
+**Remaining at Deliverable 2 (24 Nov 2026, release candidate `v0.3.0-rc.1` @ `65538ae`):** Sprint 2 is complete
+(`v0.2.0`); F-11 and L7-01 are implemented, tested and deployed. The final examination period is 1–11 Dec, so the
+remaining features are planned before it and 12–13 Dec is kept for final verification and release only. Defects open:
+none (`docs/change-register.md`).
+
+| Feature / item | Current status (achieved AC, tested commit) | Remaining action | Depends on | Owner | Target |
+|---|---|---|---|---|---|
+| F-12 edit and void (#85) | Contract v0.2 merged (#89); AC-VOID-01…06 not implemented | RED/GREEN for T-VOID-UNIT-01, API-01…06, DB-01, UI-01, E2E-01; apply BR-14 to edits; F-11 voided case (AC-REP-02) | TD-1 | Harit Chaiyanukit | 30 Nov 2026 |
+| F-13 export CSV / JSON (#86) | Contract v0.2 merged (#89); AC-EXP-01…06 not implemented | RED/GREEN for T-EXP-UNIT-01…03, API-01…04, UI-01, E2E-01 | F-12 voided flag | Jirawat Rachatapramet | 30 Nov 2026 |
+| F-14 password change (#87) | Contract v0.2 merged (#89); AC-PROF-01…06 not implemented | RED/GREEN for T-PROF-API-01…05, SEC-01, UI-01, E2E-01; revise T-AUTH-API-03 | — | Jirawat Rachatapramet | 30 Nov 2026 |
+| TD-1 E2E in CI | 13 / 13 E2E pass locally on `65538ae`; not run by CI | Add a Playwright job as a required check on PRs into staging and `main` | — | Harit Chaiyanukit | 30 Nov 2026, before the F-12 PR |
+| TD-2 BR-14 concurrency test | Row lock reviewed (#91, #92); no automated test | One API test: two parallel payments, one 201 and one 400 | — | Harit Chaiyanukit | 30 Nov 2026, with F-12 |
+| TD-3 smoke login | Smoke health / ready / HTML PASS; login skipped | Synthetic smoke user, `SMOKE_EMAIL` variable and `SMOKE_PASSWORD` secret | — | Jirawat Rachatapramet | 12 Dec 2026 |
+| TD-4 `.dockerignore` `.env.*` | Not excluded; no such file exists | Add `**/.env.*`, keep `!**/.env.example` | — | Jirawat Rachatapramet | 12 Dec 2026 |
+| Sprint 3 hardening (S3-06, #88) | Authorization and ownership tests pass on `65538ae` (Sprint 1–3 suites) | Authorization regression for F-12…F-14 routes; responsive check at 360 px of new pages | F-12, F-13, F-14 | Both | 12 Dec 2026 |
+| UAT re-test of the Sprint 1 journey | Lab 6 UAT-01…06 Accepted on `0731479`; demo journey E2E PASS on `65538ae` | Re-run UAT-01…06 on the final release | Final release candidate | Both | 12 Dec 2026 |
+| Final release, deploy and tag `v1.0.0` (#88) | `v0.3.0-rc.1` deployed (`ymom-00010-2xp`) | Release PR to `main`, Deploy demo run, post-deploy checks, tag | All rows above | Both | 13 Dec 2026 |
+| Final video and final report | Not started | Record the demo video; final PDF | Final release | Both | 13 Dec 2026 |
+
 | Date | Change | Reason |
 |---|---|---|
 | 4 Nov 2026 | Baseline plan | S1-09 |
@@ -160,3 +179,5 @@ awaiting TA approval), which also carries AC-TX-15 (F-07) and AC-DEBT-03 (F-08);
 | 22 Nov 2026 | Sprint 2 assignment: F-06, F-07 Harit (Track B); F-08, F-09, F-10 Jirawat (Track A); contracts F-06…F-10 merged before any Sprint 2 code (PR #66) | Sprint 2 planning; Track A had no Sprint 2 feature of its own |
 | 22 Nov 2026 | AC-TX-15 (F-07) and AC-DEBT-03 (F-08), the overdraft cases, moved to the Lab 7 change L7-01 (#64) | They depend on BR-14, which awaits TA approval; contracts F-07 v0.3 (`ca95736`) and F-08 v0.3 (`7bf378c`), committed before code |
 | 22 Nov 2026 | Review follow-ups for F-06 / F-07 shipped in their own PR (#76) without a separate Issue | Small, non-blocking review notes from #73 / #74; the PR links both |
+| 23 Nov 2026 | Sprint 3 contracts F-11…F-14 merged before any Sprint 3 code (PR #89); owners F-11, F-12 Harit, F-13, F-14 Jirawat | Sprint 3 planning; only F-11 is implemented for Deliverable 2 |
+| 24 Nov 2026 | Lab 7 L7-01 (BR-14) approved by the TA and released with F-11 as `v0.3.0-rc.1` (PRs #91–#93) | Approved maintenance change; it also delivers AC-TX-15 and AC-DEBT-03 |

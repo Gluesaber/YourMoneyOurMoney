@@ -15,19 +15,21 @@
 
 ## 2. Sprint 2 completion table
 
-All results are from the run on `a8d6b06` (`test-results.md`), repeated on `1cf4ccc`; released as `v0.2.0` (§6).
+All results are from the run on `a8d6b06` (`test-results.md`), repeated on `1cf4ccc`; accepted release `v0.2.0` (§6),
+re-run on the release candidate `v0.3.0-rc.1` (`docs/sprints/sprint-3/rc-record.md`). The two overdraft rows were
+delivered later by the approved Lab 7 change L7-01.
 
 | Feature | AC | Implementation | Executed verification | Result |
 |---|---|---|---|---|
 | **F-06** Custom accounts & categories (#67) | AC-ACC-12…22 | `accounts.routes.ts` (POST / PATCH / archive / DELETE), `services/accounts.ts`, migration `add_account_archived_at`, `AccountsPage`, `NewAccountPage` | T-ACC-UNIT-01, T-ACC-API-11…20, T-ACC-DB-01, T-ACC-UI-04, T-ACC-E2E-02 | Pass |
 | | AC-ACC-23 (`inUse`, follow-up #76) | `inUse` in `GET /api/accounts`; Delete / type change hidden for used accounts | T-ACC-API-21, T-ACC-UI-05 | Pass |
 | **F-07** Transfers (#68) | AC-TX-13, 14, 16, 17, 18, 19 | `TransferFormPage`, `lib/transactions.ts` (`isTransfer`, `transferLabel`), dashboard Transfer button; no server change | T-TX-API-11, 12, 14, T-TRF-UNIT-01, T-TRF-UI-01…03, T-HST-UI-04, T-TX-E2E-02 | Pass |
-| | AC-TX-15 (overdraft) | — | moved to L7-01 (#64) by contract v0.3 | Deferred, awaiting TA approval |
+| | AC-TX-15 (overdraft) | BR-14 `checkCashFunds` (L7-01, #64; moved there by contract v0.3) | T-FUND-API-07 | Pass in `v0.3.0-rc.1` (`65538ae`) |
 | **F-08** Lending & borrowing (#69) | AC-DEBT-01, 02, 04, 05, 06, 07 | `LoansPage`, `LoanActionPage`, `lib/loans.ts`; no server change | T-DEBT-API-01, 02, 04, T-DEBT-UNIT-01, T-DEBT-UI-01…02, T-DEBT-E2E-01 | Pass |
-| | AC-DEBT-03 (overdraft) | — | moved to L7-01 (#64) by contract v0.3 | Deferred, awaiting TA approval |
+| | AC-DEBT-03 (overdraft) | BR-14 `checkCashFunds` (L7-01, #64; moved there by contract v0.3) | T-FUND-API-08 | Pass in `v0.3.0-rc.1` (`65538ae`) |
 | **F-09** Search, filter, sort (#70) | AC-HST-04…08 | `lib/transactionQuery.ts`, `GET /api/transactions` query params + `truncated`, `TransactionFilterBar`, `lib/dateRanges.ts` | T-HST-UNIT-01…02, T-HST-API-04…09, T-HST-UI-02, T-HST-E2E-01 | Pass |
 | **F-10** Favorites & duplicate (#71) | AC-FAV-01, 02, 03, 05, 06 | `PATCH /api/transactions/:id/favorite`, `favorite=true`, star toggle, Favorites card, duplicate draft | T-FAV-API-01…03, T-FAV-UNIT-01, T-FAV-UI-01…03, T-ADM-API-04, T-FAV-E2E-01 | Pass |
-| | AC-FAV-04 (duplicate breaking a rule) | archived accounts left blank; server errors shown | T-FAV-UI-02 | Pass for the archived case; the insufficient-funds rule itself arrives with L7-01 |
+| | AC-FAV-04 (duplicate breaking a rule) | archived accounts left blank; server errors shown | T-FAV-UI-02 | Pass for the archived case; a duplicate that would overdraw is refused by BR-14 since `v0.3.0-rc.1` (the duplicate is a new POST) |
 
 **Scope revisions (recorded before code):** AC-TX-15 and AC-DEBT-03 depend on BR-14 (no Cash overdraft), which is
 the Lab 7 change request L7-01 (#64) and awaits TA approval. They were moved to L7-01 by contract revisions F-07 v0.3

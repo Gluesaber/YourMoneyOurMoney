@@ -30,7 +30,10 @@ product yet (F-12, Sprint 3, will apply BR-14). Opening-balance changes are unch
 | Contract commit | `Issue-L7-01` → PR #91 | `8c4491d`, review fixes `4d6cb84`; merged `cbd3461` | this file + F-04 v1.1, SRS, System SDS, traceability |
 | RED tests | `Issue-L7-01` | `6e4405c` | server 9 failed / 298 passed; client 114 / 114 (T-FUND-UI-01 already passes) |
 | GREEN | `Issue-L7-01` | `91b2bcb`, docs `fa4688f` (PR #92) | server 307 / 307, client 114 / 114, E2E 13 / 13; lint · format · types · build clean |
-| Release / deploy | `Sprint-3/staging` → `main` | to record | — |
+| Staging | PR #92 → `Sprint-3/staging` | `25ab556` (24 Nov 20:56) | Jirawat approved; CI run 45407901697 success |
+| Release | PR #93 `Sprint-3/staging` → `main` | `65538ae` (24 Nov 21:03) | with F-11 reports; Jirawat approved; CI run 45408900724 success |
+| Deploy | Deploy demo run 45409970976 | `65538ae` | migrate `ymom-migrate-b6xcr` (no new migration), Cloud Run **`ymom-00010-2xp`** 100% traffic, smoke PASS 21:08 |
+| Tag | `v0.3.0-rc.1` (GitHub pre-release, 21:25) | `65538ae` | Deliverable 2 release candidate; rollback target `v0.2.0` code (`ymom-00009-dd6`) |
 
 Earlier baseline run on the Sprint 1 code (tree `0731479`, 21 Nov 19:52): server 187 / 187, client 72 / 72.
 
@@ -101,3 +104,22 @@ overdraft cases moved from F-07 (AC-TX-15) and F-08 (AC-DEBT-03).
 Reviewer: Jirawat Rachatapramet, on the contract PR #91 before any RED or GREEN commit: changes requested 24 Nov 20:16
 (lock order, shortfall formula, deploy time, T-REP-API-04 revision — fixed in `4d6cb84`), approved 20:24 +07; merged as
 `cbd3461`.
+
+## 7. Post-deploy checks
+
+On the public URL `https://ymom-ck76twbqbq-as.a.run.app`, revision `ymom-00010-2xp`, 24 Nov 2026 21:10–21:25, by
+Harit Chaiyanukit with the demo users. All passed.
+
+| Check | Kind | Result |
+|---|---|---|
+| bob pays exactly his Bank balance (1,000.00 to Dining) | changed rule, AC-FUND-01 | saved; Bank 0.00 |
+| bob pays 0.01 from Bank at 0.00 | changed rule, AC-FUND-02 / 06 | "This would overdraw Bank."; values kept in the form |
+| After the refusal | changed rule, AC-FUND-02 | Bank still 0.00, expense unchanged, no new History row |
+| Payment from Credit Card with Bank at 0 | preserved, AC-FUND-04 | saved |
+| Money received into Bank | preserved, AC-FUND-04 | saved |
+| Another user's accounts | preserved, user isolation | 404, nothing saved |
+| ADMIN on financial data | preserved | 403 |
+| Reports page (F-11, same release) | released with this change | November totals, breakdown and charts shown |
+
+Also checked from the command line after the deploy: `/api/health` 200, `/api/ready` 200, `/api/reports/monthly`
+without a session 401. Screenshots are kept with the Lab 7 report; they show synthetic demo data only.

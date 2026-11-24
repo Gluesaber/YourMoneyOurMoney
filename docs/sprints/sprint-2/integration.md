@@ -70,7 +70,7 @@ top. `Sprint-2/staging` was reset to `c09f4ad` with `--force-with-lease`, the tw
 
 | Item | Status |
 |---|---|
-| AC-TX-15 (F-07) and AC-DEBT-03 (F-08): a transfer or loan payment may not overdraw a Cash account | Deferred to L7-01 (#64), awaiting TA approval; BR-14 not implemented, so overdrafts are still allowed |
+| AC-TX-15 (F-07) and AC-DEBT-03 (F-08): a transfer or loan payment may not overdraw a Cash account | Deferred to L7-01 (#64), awaiting TA approval; BR-14 not implemented, so overdrafts are still allowed at `v0.2.0`. *Update 24 Nov:* delivered by L7-01 in `v0.3.0-rc.1` (T-FUND-API-07, T-FUND-API-08 pass) |
 | AC-FAV-04: the insufficient-funds case of a duplicate | The UI shows any server error (T-FAV-UI-02); the server rule itself arrives with L7-01 |
 | E2E is not part of CI | E2E is run locally before each release; recorded in `test-results.md` |
 | E2E is Chromium-only; no performance measurement | Carried over from Sprint 1 |

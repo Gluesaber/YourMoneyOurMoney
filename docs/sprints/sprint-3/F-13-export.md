@@ -1,6 +1,6 @@
 # F-13 — Data Export: CSV & JSON (Sprint 3 contract) [Added by Team]
 
-> **Status:** v0.1 draft for review (contract Issue S3-01 #83; implementation Issue S3-04 (#86)). Merged before any F-13 code.
+> **Status:** v0.2 — reviewed and merged in #89 (contract Issue S3-01 #83) before any F-13 code; implementation Issue S3-04 (#86) not started.
 > **Requirements:** FR-HST-04 · BR-03, BR-04, BR-05 · NFR-SEC-01, NFR-SEC-03 · DL-09
 > **Depends on:** F-05, F-09 (filter params), F-12 (voided flag).
 > **IDs:** `AC-EXP-01…`, `T-EXP-API-01…` as reserved in `docs/traceability.md`.
