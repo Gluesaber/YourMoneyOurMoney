@@ -85,7 +85,8 @@ GREEN: server 294 / 294, client 113 / 113, E2E 13 / 13, lint · format · types 
 **Lab 7 L7-01 (#64, 2026-11-24)** on `Issue-L7-01` (contract F-04 v1.1 merged in PR #91 `cbd3461`, RED tests `6e4405c`,
 pre-change code `Sprint-3/staging` @ `943b463`): BR-14 `checkCashFunds` / `cashDecreases` in `services/ledger.ts`, run in
 the save transaction after locking the decreased CASH rows (`INSUFFICIENT_FUNDS`). RED: server 9 failed / 298 passed
-(T-FUND-UNIT-01…03, T-FUND-API-01…03, 07…09; T-FUND-API-04…06 already pass — they guard preserved behaviour), client
+(T-FUND-UNIT-01…03 — 4 tests — and T-FUND-API-02, 03, 07, 08, 09; T-FUND-API-01 already passes because paying exactly the
+balance was always allowed, and T-FUND-API-04…06 guard preserved behaviour), client
 114 / 114 (T-FUND-UI-01 already passes — the form shows any server error unchanged). GREEN: server 307 / 307, client
 114 / 114, E2E 13 / 13, lint · format · types · client build clean. T-TX-API-03 and T-REP-API-04 setups revised first
 (they overdrew an empty Bank). Merged PR #92 (`25ab556`), released in PR #93 → `main` `65538ae`, deployed as
