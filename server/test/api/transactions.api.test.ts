@@ -106,7 +106,10 @@ describe("POST /api/transactions — accepted", () => {
   });
 
   it("T-TX-API-03: demo #3 repayment from Bank to Credit Card → 201", async () => {
-    const res = await (await agentAs("alice")).post("/api/transactions").send(demo3());
+    // F-04 v1.1 (L7-01, BR-14): AC-TX-03 now needs Bank to hold the 1,500.00 first, so demo #1 (salary) comes first.
+    const agent = await agentAs("alice");
+    await agent.post("/api/transactions").send(demo1()).expect(201);
+    const res = await agent.post("/api/transactions").send(demo3());
     expect(res.status).toBe(201);
     expect(res.body.transaction.source).toEqual({ id: ids.bank, name: "Bank" });
   });
