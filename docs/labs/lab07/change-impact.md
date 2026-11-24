@@ -27,8 +27,10 @@ product yet (F-12, Sprint 3, will apply BR-14). Opening-balance changes are unch
 | Pre-change **deployed** version | `v0.2.0` → `main` | `cd90cb6` → `249eb2d` | `ymom-00008-5rn`, then `ymom-00009-dd6` (23 Nov 12:42) from `249eb2d`, a docs-only change (`evidence.md` §6); same code as `v0.2.0` |
 | Pre-change **implementation** modified | `Sprint-3/staging` | `943b463` | `v0.2.0` code + F-11 reports (#90). The F-04 save path is the Sprint 1 one plus the F-06 archived-account check |
 | Intervening development (not part of this change) | — | `0731479..943b463` | Sprint 2 F-06…F-10 (#73–#78, `v0.2.0`), Sprint 3 contracts (#89), F-11 reports (#90) |
-| Contract commit | `Issue-L7-01` | this commit | this file + F-04 v1.1, SRS, System SDS, traceability |
-| RED / GREEN / release / deploy | `Issue-L7-01` → `Sprint-3/staging` → `main` | to record | — |
+| Contract commit | `Issue-L7-01` → PR #91 | `8c4491d`, review fixes `4d6cb84`; merged `cbd3461` | this file + F-04 v1.1, SRS, System SDS, traceability |
+| RED tests | `Issue-L7-01` | `6e4405c` | server 9 failed / 298 passed; client 114 / 114 (T-FUND-UI-01 already passes) |
+| GREEN | `Issue-L7-01` | GREEN commit (this PR) | server 307 / 307, client 114 / 114, E2E 13 / 13; lint · format · types · build clean |
+| Release / deploy | `Sprint-3/staging` → `main` | to record | — |
 
 Earlier baseline run on the Sprint 1 code (tree `0731479`, 21 Nov 19:52): server 187 / 187, client 72 / 72.
 
@@ -96,4 +98,6 @@ overdraft cases moved from F-07 (AC-TX-15) and F-08 (AC-DEBT-03).
 
 ## 6. Review before implementation
 
-Reviewer: Jirawat Rachatapramet — recorded on the contract PR before the RED commit is pushed.
+Reviewer: Jirawat Rachatapramet, on the contract PR #91 before any RED or GREEN commit: changes requested 24 Nov 20:16
+(lock order, shortfall formula, deploy time, T-REP-API-04 revision — fixed in `4d6cb84`), approved 20:24 +07; merged as
+`cbd3461`.
