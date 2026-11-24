@@ -41,7 +41,7 @@ Checks run in this order; the **first** failure is returned, and nothing is save
 | 4 | The source account is not one of the lines | BR-11 | 400 `VALIDATION_ERROR`, details `{ "field": "lines", "lineIndex": n }` |
 | 5 | Line types: PAYMENT → EXPENSE, LOAN_TAKEN, LOAN_GIVEN, CASH; RECEIVE → INCOME, LOAN_GIVEN, LOAN_TAKEN, CASH | BR-10 | 400 `INVALID_ACCOUNT_TYPE`, details `{ "field": "lines", "lineIndex": n, "type": … }` |
 | 6 | Sum of line amounts equals `totalAmount` | BR-01 | 400 `ALLOCATION_MISMATCH`, details `{ "totalAmount", "linesTotal", "difference" }` |
-| 7 | *(v1.1, BR-14)* No CASH account the transaction decreases ends below 0. Decrease = `totalAmount` when a CASH account is the PAYMENT source, plus every RECEIVE line on a CASH account (summed per account). Balance = opening balance + every recorded transaction of the user, whatever its date (`system-sds.md` §4.1), read inside the save transaction with the decreased CASH rows locked | BR-14 | 400 `INSUFFICIENT_FUNDS`, message "This would overdraw <name>.", details `{ "accountId", "balance", "required", "shortfall" }` |
+| 7 | *(v1.1, BR-14)* No CASH account the transaction decreases ends below 0. Decrease = `totalAmount` when a CASH account is the PAYMENT source, plus every RECEIVE line on a CASH account (summed per account). Balance = opening balance + every recorded transaction of the user, whatever its date (`system-sds.md` §4.1), read inside the save transaction after locking the decreased CASH rows **in ascending `id` order** (`SELECT "id" FROM "Account" WHERE "id" IN (…) ORDER BY "id" FOR UPDATE`, before the balances are loaded) so two requests can never lock the same accounts in opposite order | BR-14 | 400 `INSUFFICIENT_FUNDS`, message "This would overdraw <name>.", details `{ "accountId", "balance", "required", "shortfall" }` where `balance` = the account's current balance, `required` = this transaction's decrease of it, `shortfall` = `required − balance` (e.g. balance −10,000, PAYMENT 5,000 → shortfall 15,000) |
 | 8 | Save transaction and lines in one `prisma.$transaction` (`TransactionLine.userId` = the user) | BR-13, BR-04 | any failure → nothing saved |
 
 Other decisions (see §8):
@@ -57,7 +57,7 @@ Other decisions (see §8):
 | zod schema (step 1) | `server/src/routes/transactions.routes.ts` | |
 | `validateTransaction(input, accountsById)` (steps 3–6) | `server/src/services/ledger.ts` | Pure function, no database; throws `AppError`. Unit-tested on its own. |
 | Ownership lookup (step 2) and save (step 8) | route + `prisma.$transaction` | One query for all involved accounts filtered by `userId`; the F-06 archived check follows step 2 |
-| `checkCashFunds(input, accountsById, balances)` (step 7, v1.1) | `server/src/services/ledger.ts` | Pure; called inside the save transaction after locking the decreased CASH rows (`SELECT … FOR UPDATE`) and loading balances with the transaction client |
+| `checkCashFunds(input, accountsById, balances)` (step 7, v1.1) | `server/src/services/ledger.ts` | Pure; called inside the save transaction after locking the decreased CASH rows in ascending `id` order (`… ORDER BY "id" FOR UPDATE`) and then loading balances with the transaction client |
 
 ## 3. API
 
@@ -75,7 +75,7 @@ Request
 }
 
 201 { "transaction": Transaction }      // shape: system-sds.md §5.3, lines in request order
-400 VALIDATION_ERROR | INVALID_ACCOUNT_TYPE | ALLOCATION_MISMATCH | INSUFFICIENT_FUNDS (v1.1)
+400 VALIDATION_ERROR | INVALID_ACCOUNT_TYPE | ALLOCATION_MISMATCH | ACCOUNT_ARCHIVED (F-06) | INSUFFICIENT_FUNDS (v1.1)
 401 · 403 · 404
 ```
 
@@ -153,7 +153,7 @@ No schema change. Writes one `Transaction` and its `TransactionLine` rows. The d
 | T-MONEY-UNIT-02 | Unit (client) | `formatBaht(150050)`, `(0)`, `(-150000)`, `(2147483647)` | `"1,500.50"`, `"0.00"`, `"-1,500.00"`, `"21,474,836.47"` | AC-TX-12 |
 | T-TX-UI-01 | Component | form with total 1,500.00 and one line 900.00 | remaining shows 600.00; Save disabled; add line 600.00 → Save enabled | AC-TX-12 |
 | T-TX-UI-02 | Component | server replies `ALLOCATION_MISMATCH` | alert shows its message; inputs keep their values | AC-TX-04 |
-| T-FUND-UNIT-01 | Unit | `checkCashFunds`: Bank balance 150,000; PAYMENT 150,000 / 150,001 | no error / `INSUFFICIENT_FUNDS` `{ balance 150000, required 150001, shortfall 1 }` | AC-FUND-01, 02 |
+| T-FUND-UNIT-01 | Unit | `checkCashFunds`: Bank balance 150,000; PAYMENT 150,000 / 150,001; Bank already at −10,000, PAYMENT 5,000 | no error / `INSUFFICIENT_FUNDS` `{ balance 150000, required 150001, shortfall 1 }` / `{ balance -10000, required 5000, shortfall 15000 }` | AC-FUND-01, 02 |
 | T-FUND-UNIT-02 | Unit | RECEIVE into Bank, lines Wallet 30,000 + Wallet 30,000, Wallet balance 50,000 | `INSUFFICIENT_FUNDS` for Wallet, required 60,000 | AC-FUND-03 |
 | T-FUND-UNIT-03 | Unit | Card source of any amount; RECEIVE into Bank at −10,000; PAYMENT from Card with a CASH line (money into Wallet) | no error | AC-FUND-04 |
 | T-FUND-API-01 | API | `resetDb()`; Bank opening 150,000; PAYMENT Bank → Dining 150,000 | 201; `GET /api/accounts` Bank 0 | AC-FUND-01 |

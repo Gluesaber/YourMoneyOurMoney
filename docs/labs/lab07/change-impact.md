@@ -24,7 +24,7 @@ product yet (F-12, Sprint 3, will apply BR-14). Opening-balance changes are unch
 |---|---|---|---|
 | Rule introduced | F-04 v1.0 | `989daea` (S1-10, PR #21) | First released in `v0.1.0` (`d2be6e7`) |
 | **Accepted Sprint 1 baseline** | `main` (Lab 6) | `0731479` | Cloud Run `ymom-00007-pkv`; CPMS UAT Accepted 18 Nov |
-| Pre-change **deployed** version | `v0.2.0` → `main` | `cd90cb6` → `249eb2d` | `ymom-00008-5rn`, then `ymom-00009-dd6` (23 Nov 11:42) from `249eb2d`, a docs-only change (`evidence.md` §6); same code as `v0.2.0` |
+| Pre-change **deployed** version | `v0.2.0` → `main` | `cd90cb6` → `249eb2d` | `ymom-00008-5rn`, then `ymom-00009-dd6` (23 Nov 12:42) from `249eb2d`, a docs-only change (`evidence.md` §6); same code as `v0.2.0` |
 | Pre-change **implementation** modified | `Sprint-3/staging` | `943b463` | `v0.2.0` code + F-11 reports (#90). The F-04 save path is the Sprint 1 one plus the F-06 archived-account check |
 | Intervening development (not part of this change) | — | `0731479..943b463` | Sprint 2 F-06…F-10 (#73–#78, `v0.2.0`), Sprint 3 contracts (#89), F-11 reports (#90) |
 | Contract commit | `Issue-L7-01` | this commit | this file + F-04 v1.1, SRS, System SDS, traceability |
@@ -42,14 +42,14 @@ Earlier baseline run on the Sprint 1 code (tree `0731479`, 21 Nov 19:52): server
 | SRS | **Yes** | §4 BR-14 row and intro; FR-TX-01 / FR-TX-02 validation rules |
 | System SDS | **Yes** | §3.3 enforcement row; §4.4 decision; §5.1 error table; §5.3 POST errors |
 | Code `server/src/services/ledger.ts` | **Yes** | New pure `checkCashFunds(input, accountsById, balances)`: decrease per CASH account, first account below 0 → `INSUFFICIENT_FUNDS`. `computeBalances`, `validateTransaction` unchanged |
-| Code `server/src/routes/transactions.routes.ts` | **Yes** | Inside the existing `prisma.$transaction`: lock the decreased CASH account rows (`SELECT … FOR UPDATE`), load balances with the transaction client, call `checkCashFunds`, then save |
+| Code `server/src/routes/transactions.routes.ts` | **Yes** | Inside the existing `prisma.$transaction`: lock the decreased CASH account rows in ascending `id` order (`… ORDER BY "id" FOR UPDATE`, so concurrent requests cannot deadlock), then load balances with the transaction client, call `checkCashFunds`, then save |
 | Code `server/src/services/userLedger.ts` | **Small** | `loadLedger` takes an optional Prisma client so the check reads inside the save transaction; GET routes unchanged |
 | Code `server/src/lib/errors.ts` | **Yes** | `INSUFFICIENT_FUNDS` (400) |
 | Callers / dependencies | Checked | Only `POST /api/transactions` saves; F-07 Transfer form, F-08 loan forms and F-10 duplicate all call it. `GET /api/accounts`, `/api/summary`, `/api/reports/*` only read and are unchanged |
 | UI | **None expected** | Every form already shows the server message in an alert and keeps the entered values (T-TX-UI-02, T-TRF-UI-02, loan form tests); covered again by T-FUND-UI-01 |
 | Roles / ownership | Preserved | The check runs after `requireRole("USER")` (ADMIN 403, anonymous 401), after ownership (404) and the F-06 archived check; it reads only the user's own rows, so another user's balance can neither affect nor be revealed by the response |
 | Persistence | Preserved | Same rows on success; nothing on rejection (BR-13) |
-| Concurrency | **New** | The row lock serialises two payments from the same Cash account. The rule is unit-tested; the lock is reviewed in code (a reliable concurrent API test is out of scope — limitation) |
+| Concurrency | **New** | The row lock serialises two payments from the same Cash account; locking in ascending `id` order avoids a deadlock when two RECEIVEs touch the same Cash accounts in opposite order. The rule is unit-tested; the lock is reviewed in code (a reliable concurrent API test is out of scope — limitation) |
 | Historical data / migration | N/A | Balances are computed, not stored; existing rows and already-negative balances are kept. A negative account still accepts RECEIVEs |
 | Precision | Preserved | Integer satang; the boundary is tested at exactly the balance and 1 satang over |
 
@@ -66,9 +66,14 @@ Earlier baseline run on the Sprint 1 code (tree `0731479`, 21 Nov 19:52): server
 | ADMIN 403 / anonymous 401 on financial routes | T-TX-API-10, `access.api.test.ts`, `admin.api.test.ts` |
 | All-or-nothing save | T-TX-API-04, T-FUND-API-02 |
 
-**Expected result legitimately revised:** T-TX-API-03 (demo #3, the Bank → Credit Card repayment) posted with Bank at
-0 and expected 201; under BR-14 it must first record demo #1 (salary into Bank). Any other existing test that pays
-from an unfunded Cash account is listed in the RED / GREEN record with the same reason.
+**Expected results legitimately revised:**
+
+- T-TX-API-03 (demo #3, the Bank → Credit Card repayment) posted with Bank at 0 and expected 201; under BR-14 it
+  first records demo #1 (salary into Bank).
+- T-REP-API-04 (F-11, `reports.api.test.ts`) pays 777,700 from bob's Bank at 0 to prove bob's data stays out of
+  alice's reports; under BR-14 bob's Bank gets an opening balance first (the report assertion is unchanged).
+- Any further existing test found paying from an unfunded Cash account is listed in the RED / GREEN record with the
+  same reason.
 
 **Regression for the PR:** full server, client and E2E suites (every money journey saves through this path), lint,
 format, types and build.

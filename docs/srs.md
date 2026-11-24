@@ -1,7 +1,7 @@
 # YourMoneyOurMoney — Software Requirements Specification (SRS)
 
 > **Document Version:** 1.2.0  
-> **Date:** 2026-11-22  
+> **Date:** 2026-11-24  
 > **Status:** Baseline with approved revisions: Sprint 1 accepted (`v0.1.0`); Sprint 2 FRs (FR-ACC-06, FR-TX-03, FR-TX-07…09, FR-HST-03) and BR-15/16 implemented (S2-07); BR-14 approved 2026-11-24 (Lab 7 L7-01, #64), contract revised, implementation in progress  
 > **Project Theme:** Theme 7 — Personal Money and Expense Logging (CPE 334)  
 > **Authors:** Track A (Identity & Administration) & Track B (Ledger & Reporting)
@@ -109,7 +109,7 @@ A client without an active, valid session cookie.
 
 ---
 
-## 4. Business Rules (BR-01 through BR-13)
+## 4. Business Rules (BR-01 through BR-16)
 
 The system enforces the business rules below across the service layer and database schema. BR-01 … BR-13 come from
 Sprint 1; BR-15 and BR-16 were added by F-06 in Sprint 2 (#67). BR-14 was added by the Lab 7 change request L7-01
