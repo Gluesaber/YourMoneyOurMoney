@@ -21,7 +21,7 @@ This document provides a comprehensive inventory of all product features across 
 | **F-05** | Financial Summary & Transaction History | **Sprint 1** | Track B | Accepted (`v0.1.0`) | Real-time balances, debt tracking, category totals, history list |
 | **F-06** | Custom Account & Category Management | **Sprint 2** | Track B (Harit) | Implemented (S2-02, #67) | Create, edit, archive and delete custom accounts and categories |
 | **F-07** | Internal Account Transfers | **Sprint 2** | Track B (Harit) | Implemented (S2-03, #68) | Dedicated UI for inter-account cash transfers |
-| **F-08** | Debt & Receivable Lifecycle (Lending & Borrowing) | **Sprint 2** | Track A (Jirawat) | Implemented (S2-04, #69); overdraft case (AC-DEBT-03) deferred to L7-01 (#64), pending TA approval | Loan given / loan taken tracking, repayments, outstanding debts |
+| **F-08** | Debt & Receivable Lifecycle (Lending & Borrowing) | **Sprint 2** | Track A (Jirawat) | Implemented (S2-04, #69); overdraft case (AC-DEBT-03) implemented by L7-01 (#64, BR-14) | Loan given / loan taken tracking, repayments, outstanding debts |
 | **F-09** | Transaction Search, Filtering & Sorting | **Sprint 2** | Track A (Jirawat) | Implemented (S2-05, #70) | Date range filtering, account & kind filters, literal `q` search, sorting, URL state |
 | **F-10** | Favorite & Duplicate Transactions | **Sprint 2** | Track A (Jirawat) | Implemented (S2-06, #71) | Quick re-entry, star and view favorite transactions, duplicate draft dated today |
 | **F-11** | Financial Reports & Periodic Spending Summaries | **Sprint 3** | Track B (Harit) | Implemented (S3-02, #84) | Monthly income vs expense & category reports (brief), plus visual charts `[Added by Team]` (DL-09) |
@@ -173,7 +173,7 @@ This document provides a comprehensive inventory of all product features across 
 ### F-07: Internal Account Transfers
 - **Target Sprint:** Sprint 2
 - **Track Owner:** Track B (Harit)
-- **Status:** Implemented (S2-03, #68); overdraft case (AC-TX-15) deferred to L7-01 (#64), pending TA approval
+- **Status:** Implemented (S2-03, #68); overdraft case (AC-TX-15) implemented by L7-01 (#64, BR-14)
 - **User Story:**  
   *As a personal user, I want a dedicated transfer workflow between my liquid accounts (e.g. Bank to Cash Wallet), so that inter-account fund shifts are seamless, clearly logged, and excluded from income/expense summaries.*
 - **Detailed Capabilities:**
@@ -193,7 +193,7 @@ This document provides a comprehensive inventory of all product features across 
 ### F-08: Debt & Receivable Lifecycle (Lending & Borrowing)
 - **Target Sprint:** Sprint 2
 - **Track Owner:** Track A (Jirawat)
-- **Status:** Implemented (S2-04, #69); overdraft case (AC-DEBT-03) deferred to L7-01 (#64), pending TA approval
+- **Status:** Implemented (S2-04, #69); overdraft case (AC-DEBT-03) implemented by L7-01 (#64, BR-14)
 - **User Story:**  
   *As a personal user, I want to log loans I have extended to friends (receivables) and loans I have borrowed (debts), and log partial or full repayments, so that I can keep track of outstanding personal balances.*
 - **Detailed Capabilities:**

@@ -122,6 +122,47 @@ export function validateTransaction(
   }
 }
 
+// BR-14 (Lab 7 L7-01, F-04 v1.1 §2 step 7): how much this transaction takes out of each CASH account. A CASH account is
+// decreased when it is the source of a PAYMENT or a CASH line of a RECEIVE (money moved out of it); lines on the same
+// account are summed. Returned in the order the accounts first appear (source first, then lines).
+export function cashDecreases(
+  input: TransactionInput,
+  accountsById: Map<number, { id: number; type: AccountType }>,
+): Map<number, number> {
+  const decreases = new Map<number, number>();
+  const add = (accountId: number, amount: number) =>
+    decreases.set(accountId, (decreases.get(accountId) ?? 0) + amount);
+  const isCash = (id: number) => accountsById.get(id)?.type === "CASH";
+
+  if (input.kind === "PAYMENT" && isCash(input.sourceAccountId))
+    add(input.sourceAccountId, input.totalAmount);
+  if (input.kind === "RECEIVE") {
+    for (const line of input.lines) if (isCash(line.accountId)) add(line.accountId, line.amount);
+  }
+  return decreases;
+}
+
+// BR-14: no CASH account the transaction decreases may end below 0. `balances` are the current balances (opening
+// balance + every recorded transaction, whatever its date). The first account that would go below 0 is reported with
+// shortfall = required − balance. LOAN_TAKEN sources and money coming into an account are never limited.
+export function checkCashFunds(
+  input: TransactionInput,
+  accountsById: Map<number, { id: number; type: AccountType; name: string }>,
+  balances: Map<number, number>,
+): void {
+  for (const [accountId, required] of cashDecreases(input, accountsById)) {
+    const balance = balances.get(accountId) ?? 0;
+    if (balance - required < 0) {
+      throw new AppError(
+        400,
+        ErrorCode.INSUFFICIENT_FUNDS,
+        `This would overdraw ${accountsById.get(accountId)!.name}.`,
+        { accountId, balance, required, shortfall: required - balance },
+      );
+    }
+  }
+}
+
 export interface SummaryAccount extends LedgerAccount {
   name: string;
 }

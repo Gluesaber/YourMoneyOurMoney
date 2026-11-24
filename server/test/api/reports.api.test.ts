@@ -169,6 +169,11 @@ describe("F-11 validation and access", () => {
 
     const bob = await agentAs("bob");
     const [bobBank, bobDining] = await Promise.all([accountOf("bob", "Bank"), accountOf("bob", "Dining")]);
+    // L7-01 (BR-14): bob's Bank must hold the money first; an opening balance is never income or expense (BR-08).
+    await bob
+      .put(`/api/accounts/${bobBank.id}/opening-balance`)
+      .send({ openingBalance: 1_000_000, openingDate: "2026-11-01" })
+      .expect(200);
     await bob
       .post("/api/transactions")
       .send({
